@@ -1,0 +1,29 @@
+\renewcommand*{\partformat}{}
+% This command calls \partformat (#2) and displays the name of the part (#3).
+\renewcommand*{\partlineswithprefixformat}[3]%
+{%
+    #2
+    \thispagestyle{empty}
+    \setlength{\mytmpa}{0.618\mypaperwidth}%
+    \setlength{\mytmpb}{0.382\mypaperheight}%
+    \ifprintVersion
+        \ifprofessionalPrint
+            \setlength{\mytmpa}{0.618\mypaperwidth + \mybindingcorrection + \extraborderlength}%
+            \setlength{\mytmpb}{0.382\mypaperheight + \extraborderlength}%
+        \fi
+    \fi
+    \begin{tikzpicture}[overlay, remember picture]%
+        \node [inner sep = 0, outer sep = 0, anchor = north] at (current page.north west)%
+        {%
+            \begin{tikzpicture}[overlay, remember picture]%
+            \draw[color = stroke1, line width = 0.7 mm] (\mytmpa, 0) -- (\mytmpa, -\mytmpb);%
+            \end{tikzpicture}%
+        };%
+        \node (align) [align = right, below = \mytmpb - 2 ex, inner sep = 0, outer sep = 0, anchor = north west] at (current page.north west)%
+        {%
+            %\hspace{\mytmpa}\hspace{0.5 em}\partname\ \thepart\\[1 ex]
+            \hspace{\mytmpa}\hspace{0.5 em}\partname\\[1 ex]
+            \color{stroke1}#3%
+        };%
+    \end{tikzpicture}%
+}

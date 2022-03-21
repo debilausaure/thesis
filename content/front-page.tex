@@ -1,0 +1,106 @@
+% This file contains the layout of the title page.
+
+% As taken from the MADIS doctoral school page : 
+% https://lilliad.univ-lille.fr/doctorant/conseils-redaction-page-garde
+
+%La page de garde (ou page de titre) de votre thèse doit comporter au moins les éléments suivants : 
+%    le nom de l’université et son logo : Université de Lille ;
+%    le nom de votre école doctorale ;
+%    le nom de votre laboratoire ;
+%    le titre de la thèse ;
+%    la mention «Thèse préparée et soutenue publiquement par Votre Nom le XX/XX/20XX, pour obtenir le grade de Docteur en Votre discipline de thèse» (ou toute autre formulation équivalente) ;
+%    la liste des membres du jury, avec leur fonction et leur affiliation.
+
+%Votre discipline ou votre spécialité doit être indiquée telle qu’elle a été saisie lors de l’enregistrement du jury de thèse auprès du Service des affaires doctorales - Bureau des soutenances de l’Université. 
+
+%Si vous avez rédigé votre thèse en anglais, n’oubliez pas de faire figurer les titres en anglais et en français sur votre page de garde. Tous deux sont nécessaires.
+
+
+% This page uses a different geometry, as the content will be centered (not including the binding correction).
+\ifprintVersion
+    \ifprofessionalPrint
+        \newgeometry
+        {
+            textwidth = 134 mm,
+            textheight = 220 mm,
+            top = 38 mm + \extraborderlength,
+            inner = 38 mm + \mybindingcorrection + \extraborderlength,
+        }
+    \else
+        \newgeometry
+        {
+            textwidth = 134 mm,
+            textheight = 220 mm,
+            top = 38 mm,
+            inner = 38 mm + \mybindingcorrection,
+        }
+    \fi
+\else
+    \newgeometry
+    {
+        textwidth = 134 mm,
+        textheight = 220 mm,
+        top = 38 mm,
+        inner = 38 mm,
+    }
+\fi
+
+% The format of the title page.
+\begin{titlepage}
+    \sffamily
+    \begin{center}
+	{
+        	\def\svgwidth{20 em}
+		\input{images/ULille_black.pdf_tex}\\
+		{\tiny{CRIStAL - UMR 9189}\hfil{ED MADIS - 631}}
+	}
+        \vfil
+	{
+		{
+			{\Huge{\textsc{\textbf{Thèse}}}}
+		}\\[1 em]
+		{
+			{présentée et soutenue publiquement le}\\
+			{\textbf{T.B.D.}}
+		}\\[1 em]
+		{
+			{pour l'obtention du grade de}\\
+			{\LARGE{\textsc{\textbf{Docteur de l'Université de Lille}}}}\\
+			{\large\textit{spécialité \printProgram}}
+		}\\[1 em]
+		{
+			{par}\\[0.3 em]
+			{\Large\textbf{\printAuthor}}
+		}
+	}
+        \vfil
+        {\LARGE
+            \rule[1 ex]{\textwidth}{1.5 pt}
+            \onehalfspacing\printTitleBold\\[1 ex]
+            \rule[-1 ex]{\textwidth}{1.5 pt}
+        }
+    \end{center}
+    
+    \vfil
+	{\small \centering \underline{Composition du jury :}}
+    \begin{table}[h]
+	\small
+        \sffamily 
+        {%\def\arraystretch{1.2}
+	    \begin{tabular}{
+		>{\raggedright\arraybackslash}p{0.32\textwidth}
+		>{\bfseries\raggedright\arraybackslash}p{0.262\textwidth}% 0.738
+		>{\itshape\raggedleft\arraybackslash}p{0.32\textwidth}
+	    }
+		Gilles Grimaud	& Directeur de thèse	& Professeur des universités, Université de Lille\\
+		XXXXXX XXXXXXX	& Rapportrice		& Maître de conférences, Université de La Rochelle\\
+		XXXXXX XXXXXXX	& Rapporteur		& Maître de conférences, Université de La Rochelle\\
+		XXXXXX XXXXXXX	& Examinatrice		& Professeur des universités, Université de Lille\\
+		XXXXXX XXXXXXX	& Examinateur		& Professeur des universités, Université de Lille\\
+		XXXXXX XXXXXXX	& Invité		& Professeur des universités, Université de Lille\\
+            \end{tabular}
+        }
+    \end{table}
+\end{titlepage}
+
+\restoregeometry

@@ -1,0 +1,10 @@
+\begin{tikzpicture}
+    \node[draw, minimum width=3cm, minimum height=1cm] (child) at (0,0) {Lightweight Server};
+    \node[draw, minimum width=3cm, minimum height=1cm] (parent) at (2,2) {Linux};
+    
+    \draw[<-] (child) to [in=270, out=0 ] node[midway, right, text width=2.5cm] {Linux sends a \texttt{SIGINT} signal} (parent) ;
+    \draw[->] (child) to [out=90, in=180] node[near end, left, text width=1.8cm]
+    {Server calls \texttt{exit()}} (parent);
+%    \draw[thick] (child) -- (parent);
+%    \draw[thick, dashed] (parent) -- ++(1.2,1.2);
+\end{tikzpicture}

@@ -1,0 +1,21 @@
+\begin{tikzpicture}
+\node[draw, dashed, minimum width=3cm, minimum height=3cm] (vidt) at (0,0) {};
+\node[above=0.2cm of vidt] {Caller's VIDT};
+\node[above left=0.2cm of vidt] {No.};
+
+\node[minimum width=3cm, minimum height=0.5cm] (dots2) at (0,1.2) {\textbf{\vdots}};
+
+\node[draw, semithick, minimum width=3cm, minimum height=0.5cm] (ctx_ptr2) at (0,0.1) {context address};
+\node[left=0.1cm of ctx_ptr2, text width=2cm] {Associated interrupt level};
+
+\node[minimum width=3cm, minimum height=0.5cm] (dots) at (0,-0.8) {\textbf{\vdots}};
+
+\node[draw, minimum width=3cm, minimum height=1cm, pattern=south west lines] (ctx) at (4, 0.5) {};
+
+\node[above=0.10cm of ctx] {Context write location};
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\draw[->] (ctx_ptr2.east) -- (ctx.west);
+
+\end{tikzpicture}

@@ -1,0 +1,15 @@
+\begin{tikzpicture}
+    \node[draw, minimum width=3cm, minimum height=1cm] (child) at (0,0) {Child};
+    \node[draw, minimum width=2.5cm, minimum height=1cm] (parent) at (2,3) {Parent};
+    \node[draw, minimum width=1.5cm, minimum height=1.5cm] (kernel) at (4,0) {Pip};
+    \node[above=0.2cm of parent, text width = 5cm] {1. Parent creates a child};
+    \node[right=0.1cm of parent, text width = 3cm] {2. Parent makes one of its child handler point to Pip's memory};
+    \node[text width=2.3cm] at (-1,2) {3. Parent calls the previously modified handler};
+    \node[text width=5cm] at (2.9,1.5) {4. Pip loads the memory pointed by the handler's pointer};
+    \node[text width=7.5cm] at (2,-1.8) {6. Pip dumps the faulting context to the Child's VIDT, and returns to the parent};
+
+    \draw[<-] (child) to [in=198, out=90 ] (parent) ;
+    \draw[->] (child) to [in=150, out=40 ] (kernel) ;
+    \draw[<-] (child) to [in=210, out=320] node[midway, below] {5. Pip data context is loaded, Child partition faults} (kernel) ;
+
+\end{tikzpicture}

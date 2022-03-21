@@ -1,0 +1,26 @@
+\begin{tikzpicture}
+\node[minimum width=3cm, minimum height=3cm] (vidt) at (0,0) {};
+\node[above=0.1cm of vidt] {Partition VIDT};
+\node[above left=0.1cm of vidt] {No.};
+%\draw[dashed] (3.5, -1.5) -- (3.5, 1.5);
+%\draw[dashed] (6.5, -1.5) -- (6.5, 1.5);
+\node[draw, semithick, minimum width=3cm, minimum height=0.5cm] (ctx_ptr1) at (0,1.30) {context pointer};
+\node[left=0.2cm of ctx_ptr1] {\texttt{0}};
+\node[draw, semithick, minimum width=3cm, minimum height=0.5cm] (ctx_ptr2) at (0,0.73) {context pointer};
+\node[left=0.2cm of ctx_ptr2] {\texttt{1}};
+\node[minimum width=3cm, minimum height=0.5cm] (dots) at (0,-0.2) {\vdots};
+\node[left=0.2cm of dots] {\vdots};
+\node[draw, minimum width=3cm, minimum height=1cm, pattern=south west lines] (ctx) at (5, 0.5) {};
+\node[draw, semithick, minimum width=3cm, minimum height=0.5cm] (ctx_ptr3) at (0,-1.36) {context pointer};
+\node[left=0.1cm of ctx_ptr3] {\texttt{255}};
+\node[below=0.02cm of ctx] {Context};
+%\node[above=0.6cm of ctx] {Partition memory};
+\node[draw, color=black!25, pattern color=black!25, minimum width=3cm, minimum height=1cm, pattern=south west lines] (ctx2) at (5, 2) {};
+\node[draw, color=black!25, pattern color=black!25, minimum width=3cm, minimum height=1cm, pattern=south west lines] (ctx3) at (5, -1.5) {};
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\draw[dashed] (ctx_ptr2.south west) -- (ctx_ptr3.north west);
+\draw[dashed] (ctx_ptr2.south east) -- (ctx_ptr3.north east);
+\draw[->, dotted] (ctx_ptr1.east) -- (ctx2.west);
+\draw[->] (ctx_ptr2.east) -- (ctx.west);
+\draw[->, dotted] (ctx_ptr3.east) -- (ctx3.west);
+\end{tikzpicture}
