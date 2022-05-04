@@ -1,36 +1,43 @@
-\chapter{Service de transfert de flot d'exécution avec preuve d'isolation}
-
-% Réecrire le modele de writeContext qui devrait écrire dans le modèle si la page donnée est une page noyau
+\chapter{Politique d'ordonnancement prouvée}
 
 	\section{Motivations}
-		\subsection{Failles de sécurité}
-		\subsection{Changement d'espace d'adressage opération privilégiée}
-		\subsection{Arguments de co-design (minimaliste, générique)}
-			
+	% Intro : ce qu'on va étudier : utliser notre méthode de dévelopement de logiciel pour prouver un algorithme de selection des cibles du transfert de flot d'exécution
+	% Préemption n'est pas la politique
+	% Autre type de preuve : garantir le respect des échéances / pourquoi est ce vraiment critique ?
+	% Différence algorithme / imlplémentation de l'algorithme
 
-	\section{Description du service}
-		\subsection{Définition}
-		% protoype (paramètres)
-		% definitions des structures de données
-		\subsection{Illustration}
-			\subsubsection{Appels explicites}
-			\subsubsection{Fautes}
-			\subsubsection{Interruptions}
+		\subsection{Objet de preuve}
+		% Description informelle des propriétés
+	
 
-		\subsection{Décomposition des opérations et généralisation}
+	\section{Description structurelle}
 
-	\section{Preuve d'isolation}
-		\subsection{Définition de l'interface/monade}
-			% choix des types (générique en fonction des architectures - contextes)
-			% limite de la preuve (écritures atomiques / conceptuelles)
-		\subsection{Rappel? des propriétes d'isolation}
+		\subsection{Définition prototype et oracle}
+
+		\subsection{Place de l'ordonnancement dans Pip}
+			\subsubsection{Ordonnancement dans une partition}
+			\subsubsection{Positionnement par rapport à un système d'exploitation grand public}
+				% Ne pas avoir à prouver les propriétés de sécurité demandées par du code noyau
+				% ordonnanceur et méthodologie sont agnostiques du système d'exploitation
+
+		\subsection{Décomposition des éléments de l'ordonnanceur}
+			\subsubsection{Vue générale}
+			\subsubsection{Fonction d'élection}
+			\subsubsection{État}
+			\subsubsection{Interface avec l'état (monade et oracles)}
+			\subsubsection{Back-end}
+
 		
-		\subsection{Déroulement de la preuve}
-			\subsubsection{Validation des paramètres}
-			\subsubsection{Modification de l'état}
-			\subsubsection{Transfert de flot d'exécution}
+	\section{Conduite de la preuve}
+		% section 5 de l'article
 
-	\section{Retour d'expérience}
-	% Remarques pragmatiques sur cette contribution
+	\section{Mise en oeuvre / Implémentation}
+		\subsection{Dualité implémentation/modélisation}
+			% Méthode générale
+		
+		\subsection{Implémentation vue comme un cas particulier de l'interface abstraite}
+			%section 4 du papier
+
+	\section{Discussion sur la méthodologie suivie}
 		\subsection{Métriques}
-		\subsection{Prise de recul sur la nature de la preuve}
+		\subsection{Choix des primitives}
