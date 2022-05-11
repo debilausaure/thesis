@@ -1,0 +1,33 @@
+\chapter{Ajout incrémental de propriétés sur le code prouvé}
+
+	\section{Motivations}
+		\subsection{Généraliser / modulariser la méthodologie de preuve de Pip}
+
+		\subsection{Raisonner sur le lien entre le Yield et la fonction d'élection}
+		% Description informelle des propriétés
+	
+
+	\section{Abstraction de la monade dans le code prouvé}
+
+		\subsection{Illustration du problème de la monade}
+		% Monade hardcodée dans le code et liée aux propriétés d'isolation
+
+		\subsection{Définition d'une monade générique}
+		% Code paramétré par la monade
+
+		\subsection{Méthode de preuve avec une monade générique}
+		% Instantiation de la monade pour raisonner sur les propriétés à prouver
+		
+	\section{Illustration sur la fonction Yield de Pip}
+		% Preuve fonctionnelle de Yield
+		\subsection{Définition des propriétés de bon fonctionnement du Yield}
+		\subsection{Modélisation de l'état nécessaire au bon fonctionnement de Yield}
+		\subsection{Sketch of proof / Déroulé de la preuve}
+
+	\section{Discussion}
+		\subsection{Lien entre la preuve de bon fonctionnement et le back end de l'ordonnanceur}
+		\subsection{Discussion de la méthodologie}
+			% Conduire les deux preuves indépendamment est différent de conduire deux preuves l'une après l'autre (en oubliant la première)
+			% Lever les interrogations 
+				% - preuve en meme temps aide à débusquer les incohérences / simplifications abusives
+				% - mais trop complexe : explosion des termes -> trop couteux
