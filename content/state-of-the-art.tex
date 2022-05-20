@@ -1,15 +1,45 @@
 \chapter{État de l'art (20-30 pages)}
 
-	
+	Ce chapitre a pour intention de définir et préciser les différentes notions nécessaires à la lecture des travaux de thèses, ainsi que de définir le contexte scientifique du travail. Il portera, dans une première section, sur les détails des différents transferts de flot d'exécution dans les systèmes modernes, ainsi que les changements d'états inhérents à ces transferts de flot d'exécution. Cette section abordera ensuite les problèmes de sécurité liés au transfert de flot d'exécution, ainsi que les techniques de mitigation de ces problèmes. Cette section terminera sur les problématiques temps réel touchant au transfert de flot d'exécution.
+	La seconde section de ce chapitre fera un état des lieux de la preuve de programme. Elle commencera par discuter de ce qu'est une preuve et de leur vérificaton automatique, ainsi que des stratégies de conduite de preuve. Cette section continuera sur la preuve de programme, en particulier comment raisonner sur un programme impératif. Elle abordera aussi les notions de représentation du langage. Enfin, elle terminera sur les exemples de systèmes vérifiés formellement.
+
 	\section{Transfert de flôt d'exécution}
+
+		Cette section va détailler les différents transferts de flot d'exécution mis à disposition dans les cpus modernes.
+		Dans cette section, nous détaillerons les transferts de flot d'exécution qui impliquent une reconfiguration explicite de l'état de la machine ayant un impact sur les droits d'accès aux ressources. Les appels d'une fonction d'un programme vers une autre fonction ne seront pas considérés dans cette section, même s'ils pourraient être considérés comme un transfert de flôt d'exécution. 
+
 
 		\subsection{Hardware}
 
+			\subsubsection{Appels explicites}
+			Les transferts les plus courants sont les transferts de flot d'exécution explicites, c'est-à-dire dont la cible est explicitement fournie lors de l’appel, ou clairement établie dans la documentation.
+
+Par exemple, dans Linux, un processus peut demander l’ouverture d’un fichier avec l’appel système open(). Cet appel transfère le flot d’exécution d’un processus non privilégié vers le noyau Linux disposant du plus haut niveau de privilèges. Les fonctions appelables par des transferts explicites servent d’interface entre des logiciels disposant de droits distincts.
+
+Ce type de transfert de flôt d'exécution, d'apparence assez robuste, est pourtant l'objet d'attaques multiples.
+
+%https://gruss.cc/files/kaiser.pdf
+%Modern Intel protect against code injection attacks through non-executable bits.
+%code execution and data accesses on user space memory are prevented in kernel mode by the CPU features supervisor-mode access prevention (SMAP) and supervisor-mode execution prevention (SMEP)
+%non-executable stack in user programs can be circumvented by jumping to existing functions within libc
+%ret2dir attack which redirects a hijacked control flow in the kernel to arbitrary locations using the kernel physical direct mapping
+%Return-oriented programming (ROP) is a generalization of such attacks
+%To mitigate control-flow-hijacking attacks, modern operating systems randomize the virtual address space, the kernel has a randomized virtual address space every time it is booted
+
+%However through micro-architectural attacks, attackers are still able to guess the kernel's randomised layout
+
+% This led to KAISER, a separate kernel address space, with minimal kernel entrypoints available inside the user space
+
+Ce type de transfert de flot d’exécution est l’objet d’attaques multiples, car c’est lui qui octroie au logiciel appelé des droits supérieurs aux droits de l’appelant. Parvenir à déclencher un tel appel sur un code arbitraire suffit donc au contournement des barrières matérielles de sécurité.
+
+Pour pallier ces attaques, de nombreuses méthodes permettant de détecter et de corriger les vulnérabilités classiques (telles que les dépassements de tableau) ont vu le jour. On pourrait citer les méthodes d’analyse statique, les méthodes d’exécution symbolique, de fuzzing, et plus particulièrement le langage Rust conçu pour éradiquer ces vulnérabilités par conception. Par ailleurs, des travaux ont été entamés pour prouver formellement les fonctionnalités de Rust.
+
 			\subsubsection{Interruptions matérielles}
+
+			
 
 			\subsubsection{Fautes}
 
-			\subsubsection{Appels systèmes}
 
 		\subsection{Software}
 
@@ -24,6 +54,8 @@
 			%https://google.github.io/security-research/pocs/linux/cve-2021-22555/writeup.html
 			%https://github.com/Bonfee/CVE-2022-0995
 			CVE historiques ? :D
+
+			%https://pointer-authentication.github.io/
 
 		\subsection{Ordonnancement}
 
