@@ -16,7 +16,24 @@
 
 Par exemple, dans Linux, un processus peut demander l’ouverture d’un fichier avec l’appel système open(). Cet appel transfère le flot d’exécution d’un processus non privilégié vers le noyau Linux disposant du plus haut niveau de privilèges. Les fonctions appelables par des transferts explicites servent d’interface entre des logiciels disposant de droits distincts.
 
-Ce type de transfert de flôt d'exécution, d'apparence assez robuste, est pourtant l'objet d'attaques multiples.
+Ce type de transfert de flôt d'exécution, d'apparence assez anodine, est pourtant l'objet d'attaques multiples, dont le but est de faire dévier l'exécution vers du code choisi par l'attaquant tout en gardant des droits maximums.
+
+Pour y arriver, un attaquant doit exploiter une vulnérabilité dans une portion de code privilégié, qui lui donnera le contrôle d'une zone de mémoire d'intérêt (la pile, le tas, ou même le code).
+
+Une fois qu'il contrôle la pile, il lui suffit d'écrire une \emph{shellcode}, et de choisir judicieusement l'adresse de retour pour que l'exécution du \texttt{return} de la fonction compromise saute dans le shellcode. L'attaquant gagne à ce moment le contrôle de la machine.
+
+Commence alors un jeu du chat et de la souris pour essayer de mitiger l'impact de ces vulnérabilités.
+
+Pour compliquer la vie de l'attaquant, et qu'il lui soit plus difficile d'exécuter son shellcode, de nombreuses stratégies ont été entreprises par les fabriquant de matériels ainsi que par les développeurs de systèmes d'exploitation. 
+
+\paragraph{Canaries}
+Une première est l'ajout de \emph{canary} qui sont des valeurs écrites dans la pile ou le tas et qui sont générées aléatoirement à chaque exécution. Lors de la sortie de la frame protégée par le canary, le code vérifie que la valeur du canary correspond bien à celle qui a été placée initialement sur la pile ; si ce n'est pas le cas, c'est qu'une corruption mémoire a eu lieu et une faute est levée.
+
+Une des techniques permettant de vaincre les canaries est de lire la valeur initiale de la canary \textbf{qui reste la même pour l'intégralité de l'exécution}, afin de pouvoir écrire la valeur attendue par le test. Il est aussi possible d'éviter simplement l'écriture sur la canary si la vulnérabilité le permet.
+
+\paragraph{Droits fins pour les zones mémoires}
+
+Une stratégie supplémentaire a été de définir des droits fins concernant l'accès aux différentes zones mémoires de l'espace d'adressage des processus.
 
 %https://gruss.cc/files/kaiser.pdf
 %Modern Intel protect against code injection attacks through non-executable bits.
