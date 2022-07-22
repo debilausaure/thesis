@@ -6,7 +6,7 @@
 	\section{Transfert de flôt d'exécution}
 
 		Cette section va détailler les différents transferts de flot d'exécution mis à disposition dans les cpus modernes.
-		Dans cette section, nous détaillerons les transferts de flot d'exécution qui impliquent une reconfiguration explicite de l'état de la machine ayant un impact sur les droits d'accès aux ressources. Les appels d'une fonction d'un programme vers une autre fonction ne seront pas considérés dans cette section, même s'ils pourraient être considérés comme un transfert de flôt d'exécution. 
+		Dans cette section, nous détaillerons les transferts de flot d'exécution qui impliquent une reconfiguration explicite de l'état de la machine ayant un impact sur les droits d'accès aux ressources. Les appels d'une fonction d'un programme vers une autre fonction ne seront pas considérés dans cette section, même s'ils pourraient être considérés comme un transfert de flôt d'exécution.
 
 
 		\subsection{Hardware}
@@ -15,6 +15,8 @@
 			Les transferts les plus courants sont les transferts de flot d'exécution explicites, c'est-à-dire dont la cible est explicitement fournie lors de l’appel, ou clairement établie dans la documentation.
 
 Par exemple, dans Linux, un processus peut demander l’ouverture d’un fichier avec l’appel système open(). Cet appel transfère le flot d’exécution d’un processus non privilégié vers le noyau Linux disposant du plus haut niveau de privilèges. Les fonctions appelables par des transferts explicites servent d’interface entre des logiciels disposant de droits distincts.
+
+
 
 Ce type de transfert de flôt d'exécution, d'apparence assez anodine, est pourtant l'objet d'attaques multiples, dont le but est de faire dévier l'exécution (de préférence en mode privilégié) vers du code choisi par l'attaquant. Pour y arriver, un attaquant doit exploiter une vulnérabilité dans une portion de code, qui lui donnera le contrôle d'une zone de mémoire d'intérêt (la pile, le tas, ou même le code). Une fois qu'il contrôle cette zone mémoire, il lui suffit d'écrire un \emph{shellcode}, et d'exploiter une vulnérabilité dans du code privilégié pour que l'exécution du \texttt{return} de la fonction compromise saute dans le shellcode. L'attaquant gagne à ce moment le contrôle de la machine.
 
@@ -49,7 +51,7 @@ ou grâce à des attaques micro-architecturales % Prefetch Side-Channel Attacks:
 
 \paragraph{Vérification de l'intégrité du flôt d'exécution}
 
-Une autre approche permettant de réduire la marge de manoeuvre de l'attaquant et de vérifier que le flot d'exécution est conforme à celui attendu. À chaque appel et à chaque retour de fonction, le processeur vérifie si la cible du saut est valide. Plusieurs implémentations existent, notamment au sein du matériel processeurs et des compilateurs. Windows, macOS, Android, iOS utilisent déjà une mécanisme de vérification du flot d'exécution.
+Une autre approche permettant de réduire la marge de manoeuvre de l'attaquant et de vérifier que le flot d'exécution est conforme à celui attendu. À chaque appel et à chaque retour de fonction, le processeur vérifie si la cible du saut est valide. Plusieurs implémentations existent, notamment des implémentations métarielles au sein des processeurs, mais aussi certaines implémentation logicielles notamment provenant de compilateurs. Windows, macOS, Android, iOS utilisent déjà un mécanisme de vérification du flot d'exécution.
 % https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/armv8-1-m-pointer-authentication-and-branch-target-identification-extension
 % https://www.intel.com/content/dam/develop/external/us/en/documents/catc17-introduction-intel-cet-844137.pdf
 % https://clang.llvm.org/docs/ControlFlowIntegrity.html
@@ -91,11 +93,75 @@ De nombreux travaux ont été menés afin de détecter les situations de concurr
 
 		\subsection{Software}
 
-			\subsubsection{Capture de l'état d'exécution}
-
 			\subsubsection{Changement de droits}
 
+Sur l'architecture Intel x86, les différents transferts de flot d'exécution peuvent s'opérer par le biais de différentes instructions et événements matériels. Néanmoins, lorsqu'un changement de droits est requis lors d'un transfert, les différents chemins sont régis par un ensemble de mécanismes de contrôle relativement homogènes.
+
+\paragraph{Changement de droits sous x86}
+\label{ring}
+
+Les privilèges attribués au code s'exécutant actuellement sur la machine sont ceux du \emph{segment} chargé dans le registre \texttt{CS} (pour \emph{code segment}). Les segments sont définis dans la \emph{GDT} (pour \emph{Global Descriptor Table}) à l'initialisation de la machine. La \emph{GDT} est une table globale spécifiée par Intel, dont l'adresse est accessible par un registre dédié. Dans cette table par exemple, Linux se contente de définir deux segments de code. Un premier segment associé au niveau de privilèges maximum du microprocesseur, nommé par Intel \emph{ring 0}, utilisé pour le code responsable du système ; et un second segment non-privilégié, associé au niveau de privilèges \emph{ring 3}, pour le reste du code. 
+
+Contrairement au code s'exécutant avec le segment privilégié, le code s'exécutant sans privilège ne peut pas changer de segment à sa guise. Des mécanismes de contrôle du processeur déclenchent une faute si du code non-privilégié essaie de modifier son segment de code. Pour y parvenir, il est possible d'utiliser les \emph{gates}, qui sont des tremplins définis dans les tables globales du système (comme l'\emph{IDT} ou la \emph{GDT}), permettant au code non privilégié d'appeler une fonction prédéfinie qui s'exécute avec d'autres droits.
+
+Lorsqu'un changement de segment déclenche un changement de niveau de privilèges, le processeur change de pile. Ce changement de pile permet d'éviter aux routines privilégiées les échecs dus à un manque de place sur la pile, ainsi qu'à les prémunir d'éventuelles interférences avec les procédures non privilégiées~\cite{intel_stack_switch}. 
+Une pile doit être définie par niveau de privilèges (\emph{ring}) utilisé par le système ; leurs adresses doivent être renseignées dans une structure appelée \emph{TSS} (pour \emph{Task State Segment}). Cette structure est initialisée conjointement avec la \emph{GDT} qui contient son descripteur. Un registre dédié indique au processeur la position de ce descripteur dans la \emph{GDT}.
+
+\paragraph{Appels systèmes sur x86}
+
+Afin d'obtenir un transfert de flot d'exécution avec élévation de privilèges, le logiciel appelant non-privilégié peut exécuter des instructions dédiés aux différentes \emph{gates} des tables globales. Tout d'abord, l'instruction \texttt{int} permet d'appeler les \emph{gates} situées dans l'\emph{IDT}. Ces \emph{gates} sont soit des \emph{interrupt gates}, des \emph{trap gates} ou des \emph{task gates}~\cite{intel_idt_gates}. \texttt{int} s'accompagne d'un argument correspondant à l'index de la \emph{gate} ciblée dans l'\emph{IDT}. Le code ainsi appelé sera exécuté avec le niveau de privilèges spécifié par le segment de code indiqué dans la gate (et chargé dans le registre \texttt{CS}).
+
+L'instruction \texttt{callf} permet d'utiliser les \emph{gates} situées dans la \emph{GDT}. Ces gates sont soit des \emph{call gates} ou des \emph{task gates}. Ces gates permettent de copier un nombre fixé d'arguments depuis la pile de l'appelant dans la pile du code privilégié à l'appel de l'instruction \texttt{callf}. Le nombre d'arguments à copier est renseigné dans la \emph{gate} ciblée par l'instruction. Là aussi, l'élevation de privilèges est spécifiée par le segment de code indiqué dans la gate et chargé dans \texttt{CS} lors de l'appel.
+
+La troisième manière de déclencher une élévation de privilèges est l'instruction \texttt{sysenter}. Cette 
+instruction ne sollicite aucune \emph{gate} : à la place, elle utilise les \emph{MSR} (pour \emph{model-specific registers}), qui sont des registres de contrôle du processeur. Ces \emph{MSR} sont manipulables grâce aux instructions \texttt{wrmsr} et \texttt{rdmsr}, qui sont des instructions privilégiées et qui permettent d'écrire et de lire dans ces registres respectivement. Un appel à \texttt{sysenter} utilise les MSR \texttt{0x174}, \texttt{0x175} et \texttt{0x176} pour charger \texttt{CS} \texttt{EIP} \texttt{SS} \texttt{ESP}. Le système doit donc avoir initialisé ces registres avant l'utilisation de \texttt{sysenter}. De plus, \texttt{sysenter} ne sauvegarde pas l'adresse de retour ni l'adresse de la pile lors d'un appel, qui doivent être placés dans les registres \texttt{ECX} et \texttt{EDX} au moment de l'appel à \texttt{sysexit} pour retourner dans le code appelant.
+
+\paragraph{Interruptions et fautes sur x86}
+
+Les interruptions liées au matériel sur l'architecture x86 étaient autrefois gérées par un coprocesseur (le PIC 8259 \emph{pour Programmable Interrupt Controller} ou plus récemment, l'APIC pour \emph{Advanced Programmable Interrupt Controller}). Ce coprocesseur est maintenant intégré au processeur, mais nous continuerons de parler de coprocesseur pour honorer l'histoire. Ce coprocesseur utilise les \emph{gates} situées dans l'IDT de la même manière que l'instruction \texttt{int}. Il est possible de configurer ce coprocesseur
+pour qu'il utilise une certaine plage de niveaux d'interruption, ou pour qu'il masque temporairement la venue de nouvelles interruptions. Les fautes utilisent elles aussi l'\emph{IDT}, et utilisent les trente-deux premières \emph{gates} de la table, en fonction de la faute à déclencher. Les fautes et interruptions déclenchées par le processeur ou le coprocesseur ont toujours le droit d'utiliser les \emph{gates}, peu importe le niveau de privilèges du code s'exécutant au moment de l'interruption.
+
+\paragraph{Fonctionnement de la \emph{MMU} sur l'architecture Intel 32 bits}
+
+Sur l'architecture Intel x86, mais aussi sur toutes les autres architectures supportant une \emph{MMU} (pour \emph{Memory Management Unit}), il est possible d'associer des droits d'accès spécifiques à chaque pages de mémoire configurée dans l'espace d'adressage virtuel.
+
+Le concept de traduction d'adresse virtuelle vers l'adresse réelle est le suivant. Les bits de poids forts de l'adresse virtuelle servent à traverser les tables de la MMU (sur l'architecture Intel x86, le \emph{Page Directory} et les \emph{Page Tables}). Les bits de poids faible correspondent à l'emplacement de l'adresse désirée dans la page réelle obtenue après traduction (souvent appelé \emph{offset}).
+
+En particulier, sur Intel x86 et en mode de pagination 32 bits pour des pages de 4 Kio, les espaces d'adressage sont configurés par une structure de données arborescente de pages de 4Kio. Cette structure de données a deux étages : la racine appelée PD pour \emph{Page Directory}, et les feuilles appelées PT (pour \emph{Page Tables}). Le développeur renseigne l'adresse du Page Directory à utiliser dans le registre \texttt{CR3} du processeur ; cette adresse est alignée sur 4Kio, les 12 bits de poids faibles (11-0) sont ignorés ou sont réservés pour un autre usage.
+
+Plus précisement, le \emph{Page Directory} est constitué de 1024 entrées de 32 bits appelées les \emph{PDE} (pour \emph{Page Table Entries}). Les 20 bits de poids fort (31-12) de ces entrées déterminent l'adresse de la \emph{Page Table} à utiliser, alignée sur 4Kio. Les \emph{Page Tables} sont aussi constituée de 1024 entrées de 32 bits appelées \emph{PTE} (pour \emph{Page Table Entries}). De la même manière, les 20 bits de poids forts (31-12) déterminent l'adresse de la page de mémoire réelle, alignée sur 4Kio. (Il est aussi possible de configurer des pages de 4Mio plutot que des pages de 4Kio en modifiants certains bits de controle des \emph{PDE}.)
+
+Lors de la traduction d'une adresse virtuelle, les 10 bits de poids forts de l'adresse virtuelle (31-22) déterminent le numéro de \emph{PDE} à utiliser, les bits (21-12) déterminent le numéro de \emph{PTE}, et les 12 bits de poids faible restants (11-0) déterminent l'\emph{offset} de l'adresse cible dans la page réelle.~\cite{intel_32bits_paging}
+
+\paragraph{Contrôle d'accès par la MMU sur Intel x86}
+Dans le mode de pagination 32 bits d'Intel, les droits associés à chaque page sont présents dans les \emph{PTE}, dans les 12 bits de poids faible. Le bit 1 (\texttt{R/W}) permet d'empêcher les accès en écriture sur la page. Le bit 2 (\texttt{U/S}) permet d'empêcher n'importe quel accès utilisateur à la page - en lecture ou en écriture. Le niveau de privilège de l'accès dépend du \emph{CPL} (pour \emph{Current Privilege Level}) de l'instruction courante, souvent déterminée par le segment de code actuel.
+
+Cependant, d'autres fonctionnalités de contrôle d'accès globaux existent.
+Le bit \emph{SMAP} (pour \emph{Supervisor Mode Access Protection} présent dans le registre CR4 permet d'empêcher du code privilégié d'accéder aux pages mémoire annoncées comme étant des pages mémoire utilisateur (bit \texttt{U/S}).
+
+Les architectures x86 (et x64) présentent dans le détail, une grande diversité de modalités de transferts de flot d'exécution, dont cette section a fait une synthèse incomplète. Cette pluralité de modalités de transfert de flot de contrôle est une source de failles de sécurité importante, tant les éléments de configurations sont nombreux et sujet à des paramétrages contradictoires. Le proto-noyau Pip a proposé une méthodologie nouvelle pour produire la preuve de bonne configuration des MMU, garantissant la propriété d'isolation des logiciels. La section suivante présente cette stratégie de conduite de preuve, puis la section suivante présente notre contribution pour adapter cette stratégie à la preuve de sécurité lors des transferts
+de flot d'exécution avec élévation de privilèges.
+
 				Espace d'adressage, niveau de privilèges
+
+			\subsubsection{Capture de l'état d'exécution}
+
+Un transfert de flot d'exécution implique l'existence de deux entités distinctes présentes à l'intérieur du système. Nous allons ici développer les morceaux de logiciels nécessaires permettant de reprendre l'exécution d'une entité.
+
+
+Nous avons vu dans la section précédente que le transfert de flôt d'exécution peut survenir à l'insu total de l'entité interrompue. De ce fait, l'entité est peut être en plein travail, et ne s'est pas nécessairement préparée à ce transfert qui requisitionnerait instantanément une partie des ressources disponibles. C'est pourquoi il incombe au système d'exploitation de faire le nécessaire pour que le transfert soit transparent pour l'entité interrompue. L'entité doit pouvoir reprendre son travail comme si le transfert n'avait jamais eu lieu : le système d'exploitation doit garantir son \emph{contexte d'exécution}. 
+
+\paragraph{Le contexte d'exécution}
+
+Le contexte d'exécution doit alors contenir tout ce qui est susceptible d'être modifié ultérieurement par l'autre entité ou lors du transfert de flot d'exécution. Au minimum, le pointeur d'instruction est préservé. Lors d'un changement de droits sous x86, le processeur opère un changement de pile. 
+
+
+De quoi est constitué ce contexte d'exécution ? À priori cela concerne au moins certains registres du processeur, la mémoire accessible par l'entité, 
+
+Se pose alors la question de ce qu'est l'état d'un programme. Sur un système donné et un programme donné, quel est l'ensemble des informations qu'il est nécessaire de conserver pour reproduire à l'identique le comportement original du programme ?
+
+
+
 
 		\subsection{Failles de sécurités associées}
 			%https://google.github.io/security-research/pocs/linux/bleedingtooth/writeup.html#achieving-rip-control
