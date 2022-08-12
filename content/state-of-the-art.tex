@@ -28,6 +28,7 @@ Une première statégie est l'ajout de \emph{canary} qui visent à détecter les
 Une des techniques permettant de vaincre les canaries est de lire la valeur initiale du canary avant de corrompre la mémoire. En effet, la canary \textbf{reste la même pour l'intégralité de l'exécution}. Une fois cette valeur récupérée, il suffit de corrompre la mémoire en réécrivant cette valeur au bon endroit pour échapper à la détection. De plus, si l'exploitation de la vulnérabilité permet de corrompre la mémoire de manière fine, il suffit d'éviter d'écrire sur la canary.
 
 \paragraph{Droits fins pour les zones mémoires}
+\label{memory_rights}
 Une autre stratégie a été de définir des droits fins concernant l'accès aux différentes zones mémoires de l'espace d'adressage des processus. Le mécanisme de mémoire virtuelle permet de définir des droits d'accès propres à chaque page mémoire configurée (lecture, écriture, éxecution, accessible en mode non priviligié). Par exemple, les pages mémoire contenant du code sont typiquement configurées pour des accès en lecture et exécution, alors que les pages contenant des données (pour la pile, le tas, les sections de données d'un binaire) sont configurées pour des accès en lecture/écriture.
 
 Cette stratégie de défense empêche un attaquant d'exploiter une vulnérabilité pour écrire un shellcode code dans la mémoire si on considère que chaque page de mémoire est soit exécutable, soit accessible en écriture. Cependant, il existe des cas d'usage légitimes qui violent cette contrainte, par exemple lors de compilation à la volée (ou JIT, pour Just-In-Time). Fatalement, de tels logiciels sont devenus la cible privilégiée des attaquants, on pourra par exemple citer Webkit.% https://github.com/saelo/cve-2018-4233
@@ -39,18 +40,20 @@ Ces mécanismes permettent d'isoler le code privilégié de potentiels shellcode
 Nait alors une nouvelle technique d'exploitation de vulnérabilité. 
 
 \paragraph{Return Oriented Programming}
+\label{ROP}
 Le ROP (pour \emph{Return Oriented Programming}) consiste à attaquer du code vulnérable en n'utilisant que le code déjà accessible dans l'environnement d'origine, mais en exécutant des portions arbitraires de celui-ci. L'attaque consiste à repérer des \emph{gadgets} : de brèves portions de code ayant un effet spécifique sur la mémoire ou les registres, suivi d'une instruction \texttt{return}. Pour l'attaquant, il suffit de dévier le flot d'exécution sur l'un de ces gadgets et de manipuler la mémoire, de manière à ce que l'exécution du gadget entraine l'exécution du suivant. L'attaquant parvient au final à exécuter son shellcode constitué d'une succession de gadgets, contournant les mécanismes de sécurité mentionnés dans le paragraphe précédent.\\
 
 Plusieurs contre-mesures ont émergé pour rendre plus difficile le ROP.
 
 \paragraph{Address Space Layout Randomization}
+\label{aslr}
 L'ASLR (pour \emph{Address Space Layout Randomization}) rend imprédictible l'adresse des différentes zones de mémoire au sein d'un espace d'adressage virtuel. Les adresses du binaire, de la pile, du tas, des librairies, du noyau, etc. sont rendus aléatoires à chaque nouvelle exécution. L'ASLR est un de ce fait un frein considérable au développement d'un shellcode en ROP, puisqu'il est impossible de prédire où se situeront les gadgets lors de la prochaine exécution.
 
 L'ASLR n'est cependant pas parfait. Les adresses des zones mémoire restantes peuvent être révélées par des pointeurs dans les zones mémoires controlées par l'attaquant, %https://google.github.io/security-research/pocs/linux/cve-2021-22555/writeup.html#bypassing-kaslrsmep and %https://google.github.io/security-research/pocs/linux/bleedingtooth/writeup.html#leaking-the-memory-layout
 ou grâce à des attaques micro-architecturales % Prefetch Side-Channel Attacks: Bypassing SMAP and Kernel ASLR. In: CCS’16 (2016) && Practical Timing Side Channel Attacks against Kernel Space ASLR. In: S&P’13 (2013)
 
 \paragraph{Vérification de l'intégrité du flôt d'exécution}
-
+\label{cfi}
 Une autre approche permettant de réduire la marge de manoeuvre de l'attaquant et de vérifier que le flot d'exécution est conforme à celui attendu. À chaque appel et à chaque retour de fonction, le processeur vérifie si la cible du saut est valide. Plusieurs implémentations existent, notamment des implémentations métarielles au sein des processeurs, mais aussi certaines implémentation logicielles notamment provenant de compilateurs. Windows, macOS, Android, iOS utilisent déjà un mécanisme de vérification du flot d'exécution.
 % https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/armv8-1-m-pointer-authentication-and-branch-target-identification-extension
 % https://www.intel.com/content/dam/develop/external/us/en/documents/catc17-introduction-intel-cet-844137.pdf
@@ -58,6 +61,7 @@ Une autre approche permettant de réduire la marge de manoeuvre de l'attaquant e
 
 
 \paragraph{eXecute Only Memory}
+\label{execute_only_memory}
 Le XOM (pour \emph{eXecute Only Memory}), est une fonctionnalité de certain processeurs permettant de déclencher une faute lorsque qu'un accès en lecture est fait sur les pages mémoires configurées comme étant exécutables. Avant cette fonctionnalité, aucune distinction n'était faite entre le processus de récupération des instructions par le processeur et la lecture de données par l'utilisateur. Cette fonctionnalité rend considérablement pour difficile la recherche de gadgets, puisqu'il est impossible pour l'attaquant de lire le code qu'il souhaite compromettre directement sur la cible.
 On pourrait cependant argumenter que cette fonctionnalité relève de la sécurité par l'obscurité, et qu'elle n'est pas réellement efficace.
 
@@ -135,33 +139,42 @@ Lors de la traduction d'une adresse virtuelle, les 10 bits de poids forts de l'a
 
 \paragraph{Contrôle d'accès par la MMU sur Intel x86}
 Dans le mode de pagination 32 bits d'Intel, les droits associés à chaque page sont présents dans les \emph{PTE}, dans les 12 bits de poids faible. Le bit 1 (\texttt{R/W}) permet d'empêcher les accès en écriture sur la page. Le bit 2 (\texttt{U/S}) permet d'empêcher n'importe quel accès utilisateur à la page - en lecture ou en écriture. Le niveau de privilège de l'accès dépend du \emph{CPL} (pour \emph{Current Privilege Level}) de l'instruction courante, souvent déterminée par le segment de code actuel.
+L'architecture Intel permet de restreindre la récupération des instructions en discriminant chaque page de mémoire. Cette fonctionnalité n'est cependant pas disponible dans le mode de pagination 32 bits, puisqu'elle nécessite des \emph{PDE} ou \emph{PTE} longues de 64 bits. Elle est par exemple disponible dans le mode de pagination \emph{PAE}. Cette fonctionnalité est activable au travers du bit \texttt{NXE} du registre \texttt{IA32\_EFER}. Pour chaque page de mémoire, mettre le bit 63 (\texttt{XD}) à 1 dans une \emph{PTE} empêche la récupération d'instruction depuis cette page mémoire.
 
-Cependant, d'autres fonctionnalités de contrôle d'accès globaux existent.
-Le bit \emph{SMAP} (pour \emph{Supervisor Mode Access Protection} présent dans le registre CR4 permet d'empêcher du code privilégié d'accéder aux pages mémoire annoncées comme étant des pages mémoire utilisateur (bit \texttt{U/S}).
+Cependant, d'autres fonctionnalités de contrôle d'accès globaux liées à la \emph{MMU} existent. L'architecture Intel propose aussi les mécanismes \emph{SMAP} et \emph{SMEP} comme décris dans le paragraphe \ref{memory_rights}.
+Le bit \emph{SMAP} (pour \emph{Supervisor Mode Access Protection} présent dans le registre CR4 permet d'empêcher du code utilisant un segment de données privilégié d'accéder aux pages mémoire annoncées comme étant des pages mémoire utilisateur (bit \texttt{U/S} à 1).
+Le bit \emph{SMEP} pour \emph{Supervisor Mode Execution Protection} présent dans le registre CR4 permet d'empecher la récupération de code lorsque le segment actuel octroie des accès privilégiés et que la page mémoire contenant les instructions est annoncée comme une page mémoire utilisateur (bit \texttt{U/S} à 1).
 
-Les architectures x86 (et x64) présentent dans le détail, une grande diversité de modalités de transferts de flot d'exécution, dont cette section a fait une synthèse incomplète. Cette pluralité de modalités de transfert de flot de contrôle est une source de failles de sécurité importante, tant les éléments de configurations sont nombreux et sujet à des paramétrages contradictoires. Le proto-noyau Pip a proposé une méthodologie nouvelle pour produire la preuve de bonne configuration des MMU, garantissant la propriété d'isolation des logiciels. La section suivante présente cette stratégie de conduite de preuve, puis la section suivante présente notre contribution pour adapter cette stratégie à la preuve de sécurité lors des transferts
-de flot d'exécution avec élévation de privilèges.
-
-				Espace d'adressage, niveau de privilèges
+%				Espace d'adressage, niveau de privilèges
 
 			\subsubsection{Capture de l'état d'exécution}
 
-Un transfert de flot d'exécution implique l'existence de deux entités distinctes présentes à l'intérieur du système. Nous allons ici développer les morceaux de logiciels nécessaires permettant de reprendre l'exécution d'une entité.
-
-
-Nous avons vu dans la section précédente que le transfert de flôt d'exécution peut survenir à l'insu total de l'entité interrompue. De ce fait, l'entité est peut être en plein travail, et ne s'est pas nécessairement préparée à ce transfert qui requisitionnerait instantanément une partie des ressources disponibles. C'est pourquoi il incombe au système d'exploitation de faire le nécessaire pour que le transfert soit transparent pour l'entité interrompue. L'entité doit pouvoir reprendre son travail comme si le transfert n'avait jamais eu lieu : le système d'exploitation doit garantir son \emph{contexte d'exécution}. 
+\textcolor{red}{J'arrive pas à introduire le concept}
 
 \paragraph{Le contexte d'exécution}
 
-Le contexte d'exécution doit alors contenir tout ce qui est susceptible d'être modifié ultérieurement par l'autre entité ou lors du transfert de flot d'exécution. Au minimum, le pointeur d'instruction est préservé. Lors d'un changement de droits sous x86, le processeur opère un changement de pile. 
+Le contexte d'exécution d'un programme est constitué d'informations permettant de reprendre de manière saine l'exécution d'un programme à un moment arbitraire de son exécution après qu'il ait été interrompu. Le contexte d'exécution est donc intimement lié à l'état de la machine lors de l'exécution du programme. 
+
+\textcolor{red}{J'ai envie de parler de la limite des contextes d'exécution, notamment avec les attaques micro architecturales mais je n'arrive pas à le formuler} Il est difficile de déterminer ce qui fait partie de l'état d'un programme : le contenu des registres du processeur et de la mémoire, mais aussi l'état des composants logiciels ou matériels intéragissant avec le programme (tels que les périphériques, le cache, etc.).
+
+Le contexte d'exécution d'un programme doit contenir toute partie de l'état du programme susceptible d'être modifiée légitimement par d'autres programmes du système. De ce fait, il n'est pas nécessaire de copier la mémoire utilisée par le programme. Dans les systèmes d'exploitation modernes, chaque programme dispose d'une portion de mémoire qui lui est dédiée. Cela peut être garanti par conception dans le cas de systèmes collaboratif ou plus strictement par des mécanismes de controle d'accès relatifs à une \emph{MMU} ou une \emph{MPU} par exemple. 
+Puisqu'il n'est pas nécessaire de copier le contenu de la mémoire, il suffit donc de copier les registres du processeur susceptibles d'être modifiés. Lors d'appels sans changement de droit, des règles de sauvegarde des registres existent (par exemple \cite{arm32_bit_callconv}). Ces règles décrivent notamment quels sont les registres susceptibles d'être modifiés par l'appelé, et peuvent permettre d'économiser la sauvegarde de certain registres.
+Cependant, puisque les transferts de flot d'exécution avec changement d'espace d'adressage et de droits peuvent être implicites, le système ne peut faire aucune hypothèse sur les registres préalablement sauvegardés par le programme interrompu. De plus, il est courant de continuer l'exécution d'un autre programme susceptible de modifier n'importe quel registre à sa disposition. En toute généricité, il est donc impossible de prévoir quels registres resteront intacts lors d'un tel transfert : il est donc nécessaire de sauvegarder tous les registres modifiables par le programme interrompu.
+
+Le processeur nous assiste dans ce travail. En effet, sans l'aide du processeur, le contenu de certains registres comme le pointeur d'instruction ou le pointeur de pile seraient instantanément perdus au moment du transfert. Voici comment se passe le transfert pour chaque mode de transfert différent sous l'architecture Intel x86 : 
 
 
-De quoi est constitué ce contexte d'exécution ? À priori cela concerne au moins certains registres du processeur, la mémoire accessible par l'entité, 
+\paragraph{Changement de pile et registres sauvés lors d'un appel à \texttt{callf}}
 
-Se pose alors la question de ce qu'est l'état d'un programme. Sur un système donné et un programme donné, quel est l'ensemble des informations qu'il est nécessaire de conserver pour reproduire à l'identique le comportement original du programme ?
+Lors d'un appel à \texttt{callf}, le processeur accède à une call gate située dans la \emph{GDT}. Cette callgate indique entre autres, le segment de code à utiliser (et donc le niveau de privilège associé), le code à exécuter, le nombre d'arguments à copier depuis la pile utilisateur. La pile ainsi que le segment à utiliser sont eux renseignés dans la \emph{TSS} et sont liés au niveau de privilège du segment de code de la callgate.
 
+Tout d'abord, le processeur sauve de manière temporaire le segment de pile et le pointeur de pile dans un tampon interne. Il remplace les registres de segment de pile et de pointeur de pile par ceux renseignés dans la \emph{TSS}, changeant de pile. Il pousse ensuite le segment de pile et le pointeur de pile de l'utilisateur dans la nouvelle pile. Il copie ensuite les arguments depuis la pile utilisateur vers la nouvelle pile, leur nombre étant renseigné dans la call gate. Le processeur pousse ensuite sur la pile le registre de segment de code et le pointeur d'instruction, avant de les remplacer par ceux renseignés dans la call gate.
 
+\paragraph{Changement de pile et registres sauvés lors d'une interruption, d'une faute ou d'un appel à \texttt{int}}
 
+Lors d'une faute, d'une interruption ou d'un appel à \texttt{int}, le processeur accède à une interrupt gate ou une trap gate dans l'\emph{IDT}. Comme pour la call gate, la gate contient le segment de code à utiliser, le code à exécuter. Ce transfert de flot d'exécution n'entraine pas une copie par le processeur d'éventuels arguments depuis la pile utilisateur sur la nouvelle pile.
+
+Tout d'abord, le processeur change de pile, en sauvant temporairement les valeurs utilisateurs du segment de pile \texttt{SS} et de la pile \texttt{ESP}, et en les écrivants sur la pile renseignée dans la nouvelle pile renseignée dans la \emph{TSS}. Le processeur sauve ensuite l'état des registres \texttt{EFLAGS}, du segment de code \texttt{CS} et du pointeur d'instruction \texttt{EIP}. EFLAGS contient entre autres l'état des drapeaux d'overflow, de retenue, de parité, de conditions, mais aussi d'activation des interruptions. Le processeur peut pousser un code d'erreur supplémentaire sur la pile dans le cas de déclenchement de certaines fautes afin de préciser leur cause.
 
 		\subsection{Failles de sécurités associées}
 			%https://google.github.io/security-research/pocs/linux/bleedingtooth/writeup.html#achieving-rip-control
@@ -173,9 +186,28 @@ Se pose alors la question de ce qu'est l'état d'un programme. Sur un système d
 
 		\subsection{Ordonnancement}
 
+		Le transfert de flôt d'exécution est au coeur du fonctionnement de systèmes complexes, par exemple lors de l'ordonnancement au sein d'un système informatique. L'ordonnancement dans un système d'exploitation permet à plusieurs programmes de s'exécuter de manière concurrentielle sur le même processeur, en alternant leur exécution. L'ordonnanceur décide quel programme sera le prochain à s'exécuter sur une unité de calcul donnée, qu'il décide selon une \emph{politique d'ordonnancement}. Ces politiques sont multiples et visent à satisfaire des contraintes diverses, pouvant par exemple viser à exécuter les programmes interactifs de manière prioritaire, ou plus simplement à exécuter chaque programme l'un après l'autre. L'ordonnancement permet ainsi d'optimiser l'utilisation du processeur pour un objectif particulier. 
+
 			\subsubsection{Partage équitable du CPU}
+		Une des fonctions principales de l'ordonnancement est le partage du temps CPU. En effet, les programmes s'exécutant à sur un système ne collaborent pas forcément avec le système pour permettre aux autres programmes de s'exécuter. Il revient alors au système d'exploitation d'interrompre les programmes à intervalles réguliers, grâce aux interruptions déclenchées par l'horloge par exemple, pour ne pas créer de situation de \emph{famine}. Lorsque le programme est interrompu, le système appelle l'ordonnanceur, qui choisira le meilleur programme à exécuter selon sa politique.
+		Plusieurs indicateurs permettent d'évaluer les politiques d'ordonnancement dans les systèmes classiques, notamment :
+		\begin{itemize}
+			\item{le débit, mesurant le nombre de tâches terminées sur une certaine période}
+			\item{le temps d'attente, mesurant le temps moyen entre le moment où la tâche a été créée et le moment où elle a commencé à être exécutée}
+			\item{l'équité, mesurant la différence entre les temps CPU accordés à chaque processus}
+			\item{la latence, mesurant le temps d'attente moyen entre la soumission de la tache et la production des premières sorties par la tache}
+		\end{itemize}
 
 			\subsubsection{Respect des contraintes de temps}
+
+		L'ordonnancement est un élément clé des systèmes temps réel. Les systèmes temps réel ont des contraintes de temps associées à chaque unité de travail. Les systèmes temps réel \emph{souples} sont munis de contraintes de temps indicatives, le non respect des contraintes temporelles pouvant mener à une dégradation de la qualité des résultats produits par le système, par exemple dans le cas d'applications multimédia (audio, vidéo, etc.) ou dans le cas de recensement de données. Nous nous attarderons sur les systèmes temps réel \emph{stricts}, qui doivent impérativement compléter chaque unité de travail demandée avant leur expiration sous peine de dysfonctionnement critique du système. Ces systèmes s'appuient sur des modèles mathématiques décrivant les actions à accomplir par le système.
+
+		\paragraph{Tâches et jobs}
+		Les systèmes temps réel sont conçus pour réaliser des actions dans certaines limites temporelles. En toute généricité, ces actions sont uniques au sein des systèmes, et sont désignées en anglais par le terme \emph{job} (utilisé dans la suite du document faute d'un équivalent français adéquat). Les \emph{jobs} ont au minimum une action qui leur est associée, une date à partir de laquelle il est possible de commencer à réaliser l'action (appelée \emph{release date}), une durée (appelée \emph{duration}), et une échéance (appelée \emph{deadline}.
+		Cependant, les actions à réaliser par les systèmes temps réels sont rarement unique en pratique : les systèmes peuvent être amenés à répéter certaines actions (ou \emph{job}) tout au long de leur fonctionnement. On parle alors d'une \emph{tâche} (ou \emph{task} en anglais), produisant un nouveau job unique à chaque fois que l'action doit être répétée. Par exemple, un système temps réel pourrait être amené à vérifier périodiquement la valeur produite par une sonde pour vérifier son bon fonctionnement : on parlerait alors de tâche de vérification des valeurs de la sonde ; chaque vérification indépendante de la valeur produisant un \emph{job}.
+
+		\paragraph{Vérification du respect des échéances}
+		La vérification du respects des contraintes temporelles s'effectue \emph{avant} la mise en fonctionnement du système temps réel. Lors de la conception du système, un modèle du fonctionnement du système doit être créé, associant une durée (ou une borne supérieure associée à la durée) à chaque action réalisée par le système, ainsi qu'un modèle spécifiant à quel moment chaque action doit être effectuée. Une fois ce modèle créé, il doit faire l'objet d'une \emph{analyse d'ordonnançabilité}, vérifiant que chaque action entreprise pourra se terminer dans le temps imparti.
 
 	\section{Preuve de code}
 
