@@ -200,31 +200,79 @@ Tout d'abord, le processeur change de pile, en sauvant temporairement les valeur
 
 			\subsubsection{Respect des contraintes de temps}
 
-		L'ordonnancement est un élément clé des systèmes temps réel. Les systèmes temps réel ont des contraintes de temps associées à chaque unité de travail. Les systèmes temps réel \emph{souples} sont munis de contraintes de temps indicatives, le non respect des contraintes temporelles pouvant mener à une dégradation de la qualité des résultats produits par le système, par exemple dans le cas d'applications multimédia (audio, vidéo, etc.) ou dans le cas de recensement de données. Nous nous attarderons sur les systèmes temps réel \emph{stricts}, qui doivent impérativement compléter chaque unité de travail demandée avant leur expiration sous peine de dysfonctionnement critique du système. Ces systèmes s'appuient sur des modèles mathématiques décrivant les actions à accomplir par le système.
+		L'ordonnancement est un élément clé des systèmes temps réel. Les systèmes temps réel ont des contraintes de temps associées à chaque unité de travail. Les systèmes temps réel \emph{souples} sont munis de contraintes de temps indicatives, le non respect des contraintes temporelles pouvant mener à une dégradation de la qualité des résultats produits par le système, par exemple dans le cas d'applications multimédia (audio, vidéo, etc.) ou dans le cas de systèmes de surveillance collectant des données (par exemple météorologiques). Nous nous attarderons sur les systèmes temps réel \emph{stricts}, qui doivent impérativement compléter chaque unité de travail demandée avant leur expiration sous peine de dysfonctionnement critique du système. Ces systèmes s'appuient sur des modèles mathématiques décrivant les actions à accomplir par le système.
 
 		\paragraph{Tâches et jobs}
 		Les systèmes temps réel sont conçus pour réaliser des actions dans certaines limites temporelles. En toute généricité, ces actions sont uniques au sein des systèmes, et sont désignées en anglais par le terme \emph{job} (utilisé dans la suite du document faute d'un équivalent français adéquat). Les \emph{jobs} ont au minimum une action qui leur est associée, une date à partir de laquelle il est possible de commencer à réaliser l'action (appelée \emph{release date}), une durée (appelée \emph{duration}), et une échéance (appelée \emph{deadline}.
 		Cependant, les actions à réaliser par les systèmes temps réels sont rarement unique en pratique : les systèmes peuvent être amenés à répéter certaines actions (ou \emph{job}) tout au long de leur fonctionnement. On parle alors d'une \emph{tâche} (ou \emph{task} en anglais), produisant un nouveau job unique à chaque fois que l'action doit être répétée. Par exemple, un système temps réel pourrait être amené à vérifier périodiquement la valeur produite par une sonde pour vérifier son bon fonctionnement : on parlerait alors de tâche de vérification des valeurs de la sonde ; chaque vérification indépendante de la valeur produisant un \emph{job}.
 
+		\paragraph{Modèles de tâches}
+		Les tâches d'un système temps réel sont traditionnellement par trois modèles mathématiques différents. Les tâches \emph{périodiques} permettent de représenter les tâches qui doivent produire un nouveau job après chaque période qui leur est propre. Les tâches \emph{sporadiques} permettent de représenter les tâches qui peuvent produire un nouveau job à un moment aléatoire, mais qui ne peuvent produire un nouveau job tant qu'après un certain délai d'attente. Les tâches \emph{apériodiques} sont des tâches qui peuvent produire un nouveau job à un moment aléatoire, sans délai particulier.
+
 		\paragraph{Vérification du respect des échéances}
-		La vérification du respects des contraintes temporelles s'effectue \emph{avant} la mise en fonctionnement du système temps réel. Lors de la conception du système, un modèle du fonctionnement du système doit être créé, associant une durée (ou une borne supérieure associée à la durée) à chaque action réalisée par le système, ainsi qu'un modèle spécifiant à quel moment chaque action doit être effectuée. Une fois ce modèle créé, il doit faire l'objet d'une \emph{analyse d'ordonnançabilité}, vérifiant que chaque action entreprise pourra se terminer dans le temps imparti.
+		La vérification du respect des contraintes temporelles s'effectue \emph{avant} la mise en fonctionnement du système temps réel. Lors de la conception du système, un modèle du fonctionnement du système doit être créé, associant une durée (ou une borne supérieure associée à la durée) à chaque action réalisée par le système, ainsi qu'un modèle spécifiant à quel moment chaque action doit être effectuée. Une fois ce modèle créé, il doit faire l'objet d'une \emph{analyse d'ordonnançabilité}, vérifiant que chaque action entreprise pourra se terminer dans le temps imparti.
+
+		Lorsque l'analyse d'ordonnançabilité a été effectuée, et qu'elle atteste qu'il sera toujours possible d'ordonnancer les différents jobs du système en respectant les échéances, il existe deux méthodes permettant d'ordonnancer les jobs. La première méthode consiste à précalculer l'ordonnancement des jobs, et à l'inclure de manière statique dans le système. Cette méthode de calcul hors ligne (ou \emph{offline} en anglais) du plan d'ordonnancement, a pour avantages d'affranchir le système temps réel du coût de l'ordonnancement "en direct". Le système n'aura pas à choisir lui même la prochaine tâche à effectuer ; elle lui a été précalculée. Cependant, il n'est pas toujours possible de savoir à chaque instant du fonctionnement d'un système temps réel quels seront les jobs à exécuter par exemple dans le cas de tâches sporadiques ou apériodiques. En effet, certaines actions des sytèmes temps réels peuvent être liées à des stimuli externes, comme par exemple l'action de maintenir l'assiette d'un avion en vol lorsqu'il tangue sous l'effet de turbulences. Dans ce genre de cas, le système temps réel doit pouvoir s'accomoder de telles variations, et en conséquence le plan d'ordonnancement doit pouvoir être modifié pendant le fonctionnement du système. Il n'est alors plus possible de précalculer le plan d'ordonnancement ; le système temps réel doit intégrer un ordonnanceur pour faire face à ces aléas.
+
+		\paragraph{Vérification des résultats produits par l'ordonnanceur}
+		De nombreuses politiques d'ordonnancement existent :
+		\begin{itemize}
+			\item{tourniquet, fair-share, foreground-background }
+			\item{Rate monotonic (ancien et fondateur, liu et layland)}
+			\item{Deadline monotonic (optimal sous quelques hypothèses)}
+			\item{earliest deadline first (optimal)}
+			\item{shortest job next, shortest remaining time (famine)}
+			\item{Highest response ratio next (variante de shortest job next proposant une réponse aux problèmes de famine)}
+			\item{Multilevel feedback queue (ancien, prix turing)}
+			\item{YDS (politique visant à minimiser la consommation énergétique, optimal quelques conditions)}
+		\end{itemize}
+		\textcolor{red}{Est ce que je dois détailler ? Est ce que c'est pas hors sujet et qu'on s'en foutrait pas un peu}
 
 	\section{Preuve de code}
 
+	Cette section va décrire les notions et travaux nécessaires à la compréhension des contributions sur la preuve formelle sur du code décrits dans les chapitres suivants. La première sous-section décrira le processus de vérification automatique de preuves, en décrivant d'abord le processus de raisonnement automatique et introduisant les notions d'axiomes, d'hypothèses, ainsi que le déroulement de la preuve avec les règles d'inférence. Cette description sera ensuite illustrée par l'exemple de l'assistant de preuve Coq, outil de l'état de l'art utilisé dans les contributions. Enfin, la sous-section décrira les deux méthodes principales de raisonnement : la preuve directe et la preuve par raffinement.
+
+	La seconde sous-section décrira plus spécifiquement le processus de raisonnement formel sur du code. Elle commencera par discuter du raisonnement sur des programmes impératifs, et en particulier de la \emph{logique de Hoare}. En seconde partie de cette sous section seront décrits les aspects concernant la représentation du programme dans l'assistant de preuve, ainsi que le principe des \emph{monades}, permettant de capturer les effets de bords des programmes impératifs dans les langages fonctionnels des assistants de preuve.
+
+	Enfin, la dernière sous-section décrira les travaux les plus reconnus concernant l'application du raisonnement formel sur les systèmes d'exploitation, en finissant par le proto-noyau développé au sein de l'équipe.
+
 		\subsection{Vérification automatique d'une preuve}
 
-			\subsubsection{Qu'est ce qu'une preuve ?}
+			\subsubsection{Qu'est ce qu'une preuve formelle?}
+			Une preuve ou une démonstration formelle se place dans le cadre d'un système formel, qui défini les règles permettant de formuler des propositions mathématiques valides ainsi que les règles de transformations pouvant s'appliquer aux propositions. Une démonstration est l'ensemble des transformations effectuées sur une proposition initiale pour la transformer en une proposition finale. Cette proposition finale peut porter plusieurs noms suivant l'importance du résultat obtenu : \emph{proposition}, \emph{lemme}, ou encore \emph{théorème}. Une preuve est correcte si chaque transformation fait parti des règles de transformation (ou \emph{règles d'inférence}) du système formel dans lequel se place la démonstration. L'utilisation d'un système formel permet la vérification automatique des preuves par un ordinateur.
 
-				\paragraph{Axiomes}
-				\paragraph{Hypothèses}
-				\paragraph{Raisonnement}
+			\paragraph{Axiomes} Le système formel peut parfois inclure des \emph{axiomes} qui sont des propositions qui n'ont pas été prouvées, et qui servent de point de départ au raisonnement au sein de ce système formel. Pour qu'un système formel soit intéressant, il faut que ses axiomes n'amènent pas à une \emph{contradiction}.
+
+			\paragraph{Hypothèses} Les hypothèses sont des propositions qui n'ont pas été prouvées. Les hypothèses peuvent servir à établir des preuves d'autres propositions. Cependant, toute démonstration utilisant une hypothèse n'est pas complète tant que l'hypothèse elle même n'a pas été prouvée, contrairement aux axiomes qui n'ont pas vocation à être prouvés. Les hypothèses peuvent par exemple servir à structurer les longues preuves.
+
+			\paragraph{Raisonnement}
+			Le raisonnement au sein d'une preuve est déroulée grâce à l'application de \emph{règles d'inférence}. Une règle d'inférence s'applique sur une ou plusieurs propositions initiales appelées \emph{prémisses} et crée une nouvelle proposition en retour qu'on appelle la \emph{conclusion}.
+
+			\textcolor{red}{Petit exemple sur la forme des règles d'inférences ? type : $ \text{prémisses} \vdash \text{conclusion}$ ?}
+
+			\paragraph{Lien entre preuve et véracité de la proposition finale} Il est important de distinguer le fait qu'une preuve soit correcte et la valeur de vérité de la proposition finale. En effet, la valeur de vérité d'une proposition résultant d'une démonstration est liée à la valeur de vérité des prémisses. Entre d'autres termes, toutes les hypothèses utilisées dans la démonstration doivent être vrais pour que la proposition finale soit vraie.
 
 			\subsubsection{Exemple de Coq}
+			L'assistant de preuve Coq est un logiciel open-source français initiallement développé à l'INRIA permettant de vérifier automatiquement des preuves. Le langage de Coq est Gallina, un langage fonctionnel proche d'OCaml permettant de décrire à la fois preuves, programmes, et prédicats. En effet, Coq repose sur le calcul des constructions : un système formel dérivé du lambda calcul et utilisant l'isomorphisme de Curry-Howard pour établir un lien entre les démonstrations et les programmes. Ainsi, le calcul des constructions s'inscrit dans la lignée des logiques intuitionnistes formant des preuves \emph{constructives}. 
 
-			\subsubsection{Stratégie de conduite / vérification de preuve}
+			\paragraph{Logique intuitionniste et preuves constructives} La logique intuitionniste et des preuves constructives rejettent le principe de \emph{tiers exclu} qui stipule que soit une proposition est vraie, soit sa négation est vraie. En particulier, il n'est pas possible d'établir une preuve d'une proposition par l'absurde, c'est à dire en montrant que la négation d'une proposition aboutie à une contradiction ($ \neg P \implies \bot \vdash P$). Cette règle, uniquement valide en logique classique est à distinguer de la règle de réfutation ($P \implies \bot \vdash \neg P$). Cette règle, valide à la fois en logique classique et en logique intuitionniste, peut par exemple être utilisée pour prouver $\sqrt{2}$ n'est pas rationnel.
+			Pour en faciliter la compréhension, certaines propositions en logique intuitionniste peuvent être interprétées d'une manière différente de la logique classique, par exemple:
+			\begin{itemize}
+				\item{$A$ se lit << $A$ est prouvable >>}
+				\item{$\neg A$ se lit << $A$ est contradictoire >>}
+				\item{$\exists x, A(x)$ se lit << On peut exhiber un élément $x$ tel que $A(x)$ est prouvable >>}
+				\item{$\forall x, A(x)$ se lit << Pour n'importe quel élément $x$, $A(x)$ est prouvable >>}
+			\end{itemize}
 
-				\paragraph{Preuve directe}
-				\paragraph{Preuve par raffinement}
+			\paragraph{Autres assistants de preuve} D'autre assistants de preuve existent tels que Isabelle/HOL, F*, Agda, Lean... \textcolor{red}{Que dois-je détailler ici ?}
+
+			\subsubsection{Stratégie de conduite de preuve}
+			Il existe deux méthodes principales permettant de compléter la preuve d'une proposition : la preuve directe et la preuve par raffinement.
+
+			\paragraph{Preuve directe}
+			
+			\paragraph{Preuve par raffinement} La preuve par raffinement est plutôt employée lorsque les étapes de la preuve à conduire ne sont pas immédiates, souvent de par la complexité de la preuve. La méthode de preuve par raffinement consiste à appliquer la stratégie diviser pour régner en trouvant des abstractions intermédiaires permettant de découper la preuve en morceaux indépendants, ce qui permet aussi de rendre la preuve modulaire. Ces avantages viennent au prix d'un effort d'abstraction supplémentaire non requis par la preuve directe. Cependant, certaines abstractions intermédiaires peuvent déjà avoir été définies par des travaux préliminaires, réduisant le coût de recherche des abstractions.
+			De nombreux travaux munis de preuves formelles sur les systèmes d'exploitation utilisent le raffinement. CertikOS et SeL4 en sont les exemples les plus connus. Le projet CompCert, compilateur de code source C garantissant la préservation de la sémantique, utilise aussi le raffinement pour montrer que le processus de compilation est correct.
 
 		\subsection{Preuve de programme}
 
