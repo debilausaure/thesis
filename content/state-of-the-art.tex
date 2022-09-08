@@ -241,7 +241,7 @@ Tout d'abord, le processeur change de pile, en sauvant temporairement les valeur
 			\subsubsection{Qu'est ce qu'une preuve formelle?}
 			Une preuve ou une démonstration formelle se place dans le cadre d'un système formel, qui défini les règles permettant de formuler des propositions mathématiques valides ainsi que les règles de transformations pouvant s'appliquer aux propositions. Une démonstration est l'ensemble des transformations effectuées sur une proposition initiale pour la transformer en une proposition finale. Cette proposition finale peut porter plusieurs noms suivant l'importance du résultat obtenu : \emph{proposition}, \emph{lemme}, ou encore \emph{théorème}. Une preuve est correcte si chaque transformation fait parti des règles de transformation (ou \emph{règles d'inférence}) du système formel dans lequel se place la démonstration. L'utilisation d'un système formel permet la vérification automatique des preuves par un ordinateur.
 
-			\paragraph{Axiomes} Le système formel peut parfois inclure des \emph{axiomes} qui sont des propositions qui n'ont pas été prouvées, et qui servent de point de départ au raisonnement au sein de ce système formel. Pour qu'un système formel soit intéressant, il faut que ses axiomes n'amènent pas à une \emph{contradiction}.
+			\paragraph{Axiomes} Le système formel peut parfois inclure des \emph{axiomes} qui sont des propositions qui ne peuvent pas être prouvées, et qui servent de point de départ au raisonnement au sein de ce système formel. Pour qu'un système formel soit intéressant, il faut que ses axiomes n'amènent pas à une \emph{contradiction}.
 
 			\paragraph{Hypothèses} Les hypothèses sont des propositions qui n'ont pas été prouvées. Les hypothèses peuvent servir à établir des preuves d'autres propositions. Cependant, toute démonstration utilisant une hypothèse n'est pas complète tant que l'hypothèse elle même n'a pas été prouvée, contrairement aux axiomes qui n'ont pas vocation à être prouvés. Les hypothèses peuvent par exemple servir à structurer les longues preuves.
 
@@ -281,7 +281,7 @@ Tout d'abord, le processeur change de pile, en sauvant temporairement les valeur
 
 			\subsubsection{Logique de Hoare}
 
-			La logique de Hoare est un système formel permettant de raisonner sur les programmes séquentiels non-interruptibles. 
+			La logique de Hoare est un système formel permettant de raisonner sur les programmes séquentiels non-interruptibles.
 			La logique de Hoare raisonne sur des \emph{triplets de Hoare} qui sont définis comme suit :
 			
 			\begin{subequations}
@@ -291,63 +291,49 @@ Tout d'abord, le processeur change de pile, en sauvant temporairement les valeur
 			
 			où :
 			\begin{itemize}
-				\item $P$ représente les \emph{pré-conditions} qui sont les propriétés sur l'état de la machine supposées prouvables\emph{avant} l'exécution du programme à vérifier - ses \emph{prémisses}.
+				\item $P$ représente les \emph{préconditions} qui sont les propriétés sur l'état de la machine supposées prouvables \emph{avant} l'exécution du programme à vérifier - ses \emph{prémisses}.
 			    \item $c$ représente le code du programme à exécuter sur la machine et qu'on souhaite vérifier.
-			    \item $Q$ représente les \emph{post-conditions} qui sont les propriétés sur l'état de la machine qu'on souhaite pouvoir prouver \emph{après} l'exécution du code $c$ du programme à vérifier.
+			    \item $Q$ représente les \emph{postconditions} qui sont les propriétés sur l'état de la machine qu'on souhaite pouvoir prouver \emph{après} l'exécution du code $c$ du programme à vérifier.
 			\end{itemize}
-			Au travers du prisme intuitionniste, on pourrait lire le triplet de Hoare $\{P\}~c~\{Q\}$ comme << Étant donné des propriétés $P$ sur l'état de la machine supposées prouvables avant l'exécution du code $c$ du programme, alors les propriétés $Q$ sur l'état de la machine après exécution de $c$ sont prouvables >>.
+			Par définition, un triplet de Hoare est \emph{prouvable si et seulement si}, quel que soit l'état du système initial $E_0$ satisfaisant les propriétés $P$ alors $c$ fait entrer le système dans un nouvel état $E_n$ dans lequel les propriétés $Q$ sont prouvables.
+			Si le nouvel état $E_n$ engendré par $c$ viole les \emph{postconditions} $Q$, alors le triplet $\{P\}~c~\{Q\}$ est contradictoire.
+			Au travers du prisme intuitionniste, on pourrait lire le triplet de Hoare $\{P\}~c~\{Q\}$ comme << Si les propriétés $P$ sur l'état de la machine sont supposées prouvables avant l'exécution du code du programme $c$, alors les propriétés $Q$ sur l'état de la machine après exécution de $c$ sont prouvables >>.
 			
-			Par définition, un triplet de Hoare est \emph{prouvable si et seulement si}, quel que soit l'état du système satisfaisant les propriétés $P$ alors soit $c$ arrête l’exécution du système, soit $c$ fait entrer le système dans un nouvel état dans lesquelles les propriétés $Q$ sont prouvables.
-			Si le nouvel état engendré par $c$ viole les \emph{post-conditions} $Q$, alors le triplet $\{P\}~c~\{Q\}$ est contradictoire.
-			
-			Pour s'assurer que $c$ respecte les propriétés qu'on souhaite garantir sur le système, on commence par décomposer $c$ en parties $c_i$ aussi élémentaires que possible.\\
+			Pour garantir formellement que $c$ respecte les propriétés qu'on souhaite garantir sur le système, on peut décomposer le code du programme $c$ en parties $c_i$ aussi élémentaires que souhaité.\\
 			Le triplet devient alors : 
 			
 			\begin{gather}
-			    \{P\}\ c_0 ; c_1 ; ... ; c_n \ \{Q\}
+			    \{P\}~c_1 ; c_2 ; \hdots ; c_n~\{Q\}
 			\end{gather}
-			
-			La logique de Hoare nous permet alors de décomposer la preuve en séparant ces instructions par des états intermédiaires.
+
+			On pourrait par exemple considérer que ces parties élémentaires sont les instructions assembleur de la machine.
+
+			La logique de Hoare nous permet alors de décomposer la preuve en observant un enchaînement d'états intermédiaires $E_i$ résultant de l'exécution des instructions $c_i$.
+
+			\begin{gather}
+				E_0 \overset{c_1}{\rightarrow} E_1 \overset{c_2}{\rightarrow} \hdots \overset{c_n}{\rightarrow} E_n
+			\end{gather}
+
+			 Chaque instruction $c_i$ amène de nouvelles propriétés sur l'état $E_i$ nouvellement créé et permet de créer des triplets de Hoare intermédiaires. Ces nouvelles propriétés servent à la fois de postconditions $Q_i$ pour le triplet concernant l'instruction $c_i$ et de préconditions pour le triplet de l'instruction suivante.
 			
 			\begin{gather}
-			    \{P\}\ c_0\ \{Q_0\}, \{Q_0\}\ c_1\ ...\ \{Q_{n-1}\}\ c_n\ \{Q\}
+			    \{P\}~c_1~\{Q_1\}, \{Q_1\}~c_2~\{Q_2\},~\hdots~, \{Q_{n-1}\}~c_n~\{Q_n\}
 			\end{gather}
 			\end{subequations}
-			
-			La méthode consiste à avancer en prouvant instruction par instruction que les \emph{pré-conditions} $P$ se propagent dans chaque état intermédiaire.
+		
+			Ainsi, au fur et à mesure de l'exécution du programme et de l'enchaînement des états, les propriétés sur l'état de la machine changent et s'étoffent. Pour montrer que les postconditions $Q$ souhaitées sur l'état final $E_n$ sont prouvables, il faut montrer qu'elles sont prouvables si les postconditions $Q_n$ résultant de l'exécution de $c$ sont prouvables, soit $Q_n \implies Q$.
 
+			\paragraph{Modèle de la machine et sémantique opérationnelle} Pour pouvoir raisonner grâce à la logique de Hoare, un modèle de la machine et des instructions élémentaires doit être établi. Ces modèles permettent de décrire un système de transition d'état, donnant une signification formelle au programme. Cette sémantique du programme, décrivant des états successifs de la machine, est appelée \emph{sémantique opérationnelle}.
 
-			La logique de Hoare introduit la notion de \emph{triplet de Hoare}, noté génériquement $\{P\}~c~\{Q\}$. $P$ représente les \emph{préconditions} : l'état de la machine, ainsi que les propriétés ou hypothèses connues avant l'exécution du programme - ses prémisses. $c$ représente le code du programme séquentiel à exécuter sur la machine et sur lequel on voudrait établir une preuve. Enfin, $Q$ représente les \emph{postconditions}, l'état de la mahcine ainsi que les propriétés déduites des préconditions $P$ et de l'exécution du programme $c$. En prenant les règles de la logique constructive, on peut lire le triplet de Hoare $\{P\}~c~\{Q\}$ de la sorte : si la machine se trouve dans l'état $P$ avant les sont prouvables avant l'exécution du programme $c$, alors après l'exécution de $c$, on peut démontrer que la machine sera dans l'état $Q$, et les propriétés et hypothèses inclues dans $Q$ sont prouvables.
-			La logique de Hoare stipule que le programme $c$ peut être divisé en une séquences d'opérations élémentaires dont les effets sur l'état de la machine sont connus et pris comme axiomes. Le triplet de Hoare peut alors se réécrire de la manière suivante :
-			\begin{subequations}
-			\begin{gather}
-			\{P\}~c~\{Q\} \\
-			\{P\}~c_1~;~c_2~;~\hdots~;~c_n~\{Q\}
-			\end{gather}
-
-			On peut alors décomposer le triplet initial ; on peut créer des postconditions et préconditions intermédiaires pour chaque opération élémentaire $c_i$ du programme $c$.
-			\begin{gather}
-				\{P\}~c_1~\{Q_1\}~\{P_2\}~c_2~\{Q_2\}~\hdots~\{P_n\}~c_n~\{Q\}
-			\end{gather}
-
-			Or, si le programme $c$ n'est pas interrompu et qu'il est le seul à s'exécuter sur la machine, la postcondition du triplet d'une instruction élémentaire et la précondition de l'instruction suivante sont égales
-
-			\end{subequations}
-				\paragraph{preconditions}
-
-				\paragraph{règles de transition} (sémantique opérationnelle)
-
-				\paragraph{postconditions} (Hoare, logique de séparation)
+			Par ailleurs, il est important de garder à l'esprit que ces modèles sont \textbf{arbitraires}, et qu'ils ne sont pas intrinséquement équivalents à la machine et aux instructions modélisées. Chaque choix de modèle pour l'étude d'un objet réel vient avec sa part d'incertitude, quelles que soient les précautions prises lors de ce choix.	La preuve d'un programme n'échappe pas à cette règle : elle est aussi contestable que les modèles sur lesquels elle repose.
 
 			\subsubsection{Langage}
+			L'assistant de preuve Coq utilise un langage de programmation fonctionnel nommé Gallina. Étant un langage fonctionnel, il est peu adapté à l'écriture de certains programmes tels que les systèmes d'exploitation qui sont des programmes impératifs séquentiels. La sous-section précédente a introduit la logique de Hoare, permettant de raisonner sur de tels programmes. Il faut alors réussir à représenter les programmes séquentiels dans un langage fonctionnel. \textcolor{red}{J'arrive pas à introduire le concept} Deux méthodes existent : le \emph{shallow embedding} et le \emph{deep embedding}.
 
-				\paragraph{Représentation du programme}
-				\begin{itemize}
-					\item{Deep embedding}
-					\item{Shallow embedding}
-				\end{itemize}
+				\paragraph{Deep embedding} Le deep embedding permet de représenter un langage cible en modélisant la syntaxe (et plus particulièrement l'\emph{AST} du langage cible ainsi que sa sémantique. Il permet de ce fait d'exprimer des propriétés sur la structure du programme. Ces propriétés sont parfois intéressantes, notamment pour procéder à la preuve de propriétés concernant la compilation du langage ciblé. Le projet CompCert utilise un deep embedding de C pour garantir la préservation de la sémantique lors de la compilation vers l'assembleur Intel.
+				\paragraph{Shallow embedding} Le shallow embedding au contraire ne définit pas la syntaxe du langage cible, et se contente de ne définir que la sémantique des programmes à prouver. Cette approche est plus légère, mais ne permet cependant pas de prouver de propriétés relatives à la structure du programme. Un shallow embedding se sert de la syntaxe du langage hôte.
 
-				\paragraph{Monade}
+				\paragraph{Monade} Les programmes fonctionnels n'ont pas la même structure que les langages impératifs, et ne sont pas séquentieks
 
 			\subsubsection{Compilation et préservation de la sémantique}
 				Est ce que c'est pertinent ?
