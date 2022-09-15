@@ -239,7 +239,7 @@ Tout d'abord, le processeur change de pile, en sauvant temporairement les valeur
 		\subsection{Vérification automatique d'une preuve}
 
 			\subsubsection{Qu'est ce qu'une preuve formelle?}
-			Une preuve ou une démonstration formelle se place dans le cadre d'un système formel, qui défini les règles permettant de formuler des propositions mathématiques valides ainsi que les règles de transformations pouvant s'appliquer aux propositions. Une démonstration est l'ensemble des transformations effectuées sur une proposition initiale pour la transformer en une proposition finale. Cette proposition finale peut porter plusieurs noms suivant l'importance du résultat obtenu : \emph{proposition}, \emph{lemme}, ou encore \emph{théorème}. Une preuve est correcte si chaque transformation fait parti des règles de transformation (ou \emph{règles d'inférence}) du système formel dans lequel se place la démonstration. L'utilisation d'un système formel permet la vérification automatique des preuves par un ordinateur.
+			Une preuve ou une démonstration formelle se place dans le cadre d'un système formel, qui définit les règles permettant de formuler des propositions mathématiques valides ainsi que les règles de transformations pouvant s'appliquer aux propositions. Une démonstration est l'ensemble des transformations effectuées sur une proposition initiale pour la transformer en une proposition finale. Cette proposition finale peut porter plusieurs noms suivant l'importance du résultat obtenu : \emph{proposition}, \emph{lemme}, ou encore \emph{théorème}. Une preuve est correcte si chaque transformation fait parti des règles de transformation (ou \emph{règles d'inférence}) du système formel dans lequel se place la démonstration. L'utilisation d'un système formel permet la vérification automatique des preuves par un ordinateur.
 
 			\paragraph{Axiomes} Le système formel peut parfois inclure des \emph{axiomes} qui sont des propositions qui ne peuvent pas être prouvées, et qui servent de point de départ au raisonnement au sein de ce système formel. Pour qu'un système formel soit intéressant, il faut que ses axiomes n'amènent pas à une \emph{contradiction}.
 
@@ -333,10 +333,32 @@ Tout d'abord, le processeur change de pile, en sauvant temporairement les valeur
 				\paragraph{Deep embedding} Le deep embedding permet de représenter un langage cible en modélisant la syntaxe (et plus particulièrement l'\emph{AST} du langage cible ainsi que sa sémantique. Il permet de ce fait d'exprimer des propriétés sur la structure du programme. Ces propriétés sont parfois intéressantes, notamment pour procéder à la preuve de propriétés concernant la compilation du langage ciblé. Le projet CompCert utilise un deep embedding de C pour garantir la préservation de la sémantique lors de la compilation vers l'assembleur Intel.
 				\paragraph{Shallow embedding} Le shallow embedding au contraire ne définit pas la syntaxe du langage cible, et se contente de ne définir que la sémantique des programmes à prouver. Cette approche est plus légère, mais ne permet cependant pas de prouver de propriétés relatives à la structure du programme. Un shallow embedding se sert de la syntaxe du langage hôte.
 
-				\paragraph{Monade} Les programmes fonctionnels n'ont pas la même structure que les langages impératifs, et ne sont pas séquentieks
+				\paragraph{Monade d'état} Les langages purement fonctionnels n'ont pas de notion d'état. Ainsi pour modéliser fidèlement des programmes impératifs et leurs effets de bords sur l'état de la machine, on peut le simuler. Dans le cas de Pip, une monade d'état est toute indiquée : elle permet en quelque sorte d'<< enrober >> des valeurs avec un état. Pip utilise des fonctions manipulant ces valeurs et qui sont des fonctions partielles sur l'état, indiquant comment produire la valeur de retour mais aussi quelles modifications éventuelles sont apportées à l'état. Ces fonctions sont dites \emph{monadiques}. Cette construction explicite l'état implicite des programmes impératifs qui transite de fonction en fonction grâce à la fonction \texttt{bind}. Le passage d'état est transparent dans le code grâce à du sucre syntaxique. En plus de la fonction \texttt{bind}, chaque monade nécessite un élément neutre (ou \emph{unit}). Les effets des deux fonctions sont expliqués ci-après.
+
+				Voyons comment la monade d'état a été définie dans Pip. Tout d'abord, Pip définit un type \texttt{state} représentant l'état de la machine qui transitera de fonction en fonction. Pip définit aussi un type \texttt{result} représentant soit une valeur \texttt{val} soit un comportement indéfini \texttt{undef}.
+
+\begin{figure}[!h]
+	\coqcode{code/monad.v}
+	\caption{Définition de la monade d'état avec ses fonctions \texttt{bind} et \texttt{ret}}
+	\label{code:monad}
+\end{figure}
+
+Ces types sont utilisés pour définir la monade d'état \texttt{LLI}, présentée en figure \ref{code:monad}. La monade \texttt{LLI} est définie comme une fonction sur des types, prenant un type \texttt{state} en argument, et renvoyant une valeur de retour de type \texttt{result} composé d'un type arbitraire \texttt{A} et d'un \texttt{state}. Les fonctions partielles sur l'état renvoyant un type \texttt{LLI} sont donc \emph{monadiques}. La monade \texttt{LLI} << enrobe >> des valeurs quelconques avec le type \texttt{state}.
+
+Lorsqu'on lui donne une fonction monadique \texttt{f} de \texttt{A} vers \texttt{LLI B} et une valeur monadique de type \texttt{LLI A}, la fonction \texttt{bind} permet de récupérer la valeur << enrobée >> \texttt{A} et de lui appliquer la fonction \texttt{f}, produisant une valeur monadique \texttt{LLI B}. La fonction \texttt{ret} sert d'élément neutre, qui à partir d'un état et d'une valeur, renvoie cette même valeur << enrobée >> avec l'état.
+
+Peut être devrais-je donner une définition plus formelle d'une monade qui pourrait s'avérer beaucoup plus parlante. La définition repose sur la théorie des catégories et est attribuée à Saunders Mac Lane \cite{mac2013categories} que l'on pourrait traduire de la sorte :
+
+\blockquote{Une monade dans $X$ est juste un monoïde dans la catégorie des endofoncteurs de $X$, ayant pour produit $\times$ la composition d'endofoncteurs et pour élément neutre l'endofoncteur identité.}
 
 			\subsubsection{Compilation et préservation de la sémantique}
-				Est ce que c'est pertinent ?
+				Une problématique subsiste lorsque des propriétés formelles ont été prouvées sur du code source. Comment peut-on s'assurer que ces propriétés resteront vraies une fois que le code source aura été compilé ?
+
+				La recherche dans ce domaine a mené au projet CompCert, un compilateur de code source C dont la préservation de la sémantique est garantie formellement jusqu'au code assembleur. La propriété de préservation de la sémantique est enoncée comme suit :
+
+\begin{theorem}	
+	Pour tout programme source $S$ et pour tout code généré par le compilateur $C$, si le compilateur a produit le code $C$ à partir du programme source $S$ sans remonter d'erreur de compilation, alors le comportement observable de $C$ est l'un des comportements observables possibles de $S$.
+\end{theorem}
 
 		\subsection{Illustration système}
 
