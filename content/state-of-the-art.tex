@@ -354,11 +354,25 @@ Peut être devrais-je donner une définition plus formelle d'une monade qui pour
 			\subsubsection{Compilation et préservation de la sémantique}
 				Une problématique subsiste lorsque des propriétés formelles ont été prouvées sur du code source. Comment peut-on s'assurer que ces propriétés resteront vraies une fois que le code source aura été compilé ?
 
-				La recherche dans ce domaine a mené au projet CompCert, un compilateur de code source C dont la préservation de la sémantique est garantie formellement jusqu'au code assembleur. La propriété de préservation de la sémantique est enoncée comme suit :
+				\paragraph{CompCert} La recherche dans ce domaine a mené au projet CompCert\cite{Leroy-backend}, un compilateur de code source C dont la préservation de la sémantique est garantie formellement jusqu'au code assembleur.
+
+	La propriété de préservation de la sémantique est enoncée comme suit :
 
 \begin{theorem}	
-	Pour tout programme source $S$ et pour tout code généré par le compilateur $C$, si le compilateur a produit le code $C$ à partir du programme source $S$ sans remonter d'erreur de compilation, alors le comportement observable de $C$ est l'un des comportements observables possibles de $S$.
+	Pour tout programme source $S$ et pour tout code $C$ généré par le compilateur, si le compilateur a produit le code $C$ à partir du programme source $S$ sans remonter d'erreur de compilation, alors le comportement observable de $C$ est l'un des comportements observables possibles de $S$.
 \end{theorem}
+
+CompCert compile le programme source $S$ à partir de son \emph{Abstract Syntax Tree} (ou \emph{AST}) issu de la passe du préprocesseur, de l'analyseur syntaxique et de la phase de vérification des erreurs de type (\emph{type checking}). CompCert produit un code assembleur $C$ sous la forme d'un \emph{AST} du langage assembleur ciblé.
+
+À ce jour, le projet CompCert a prouvé 90\% de la chaîne de compilation, notamment les algorithmes d'optimisation et de génération de code assembleur. Les 10\% restants à prouver incluent l'assemblage et la phase d'édition des liens \cite{compcert_online}.
+
+Les projets ayant recourt à la vérification de programme par \emph{deep embedding} ont l'avantage de pouvoir aisément reconstruire l'\emph{AST} du programme et de le compiler grâce à CompCert. Cependant, pour les projets comme Pip utilisant un \emph{shallow embedding} et n'explicitant pas l'\emph{AST} du programme vérifié, l'étape de reconstruction du programme n'est pas triviale.
+
+Auparavant, la chaîne de compilation de Pip utilisait \emph{Digger}~\cite{digger}, un outil écrit en Haskell qui transforme le code C shallow embedded écrit en Gallina en code C. Digger n'est pas muni de preuve formelle de préservation de la sémantique. Ainsi, l'argument de la préservation de la sémantique de Pip résidait dans l'extrême simplicité apparente de la conversion.
+
+		\paragraph{$\partial x$} $\partial x$ est le remplaçant de \emph{Digger} dans la chaîne de compilation de Pip. Comme \emph{Digger}, il permet de transformer le code C écrit en Gallina vers un code source C. Cependant, $\partial x$ produit ce code source en présentant à CompCert un \emph{AST} du programme, et en utilisant le \emph{pretty-printer} de CompCert.
+
+		$\partial x$ comporte deux phases de fonctionnement : la première phase consiste à extraire l'AST du programme écrit en Gallina sous la forme d'une représentation intermédiaire ; la seconde transforme cet \emph{AST} en \emph{AST} CompCert \texttt{Csyntax}. La première phase est écrite en Elpi~\cite{elpi} car Coq ne propose pas nativement de mécanisme de \emph{réflexion}. La seconde phase est écrite directement dans Coq sur laquelle il est possible de raisonner. \textcolor{red}{C'est moche c'est mal dit}
 
 		\subsection{Illustration système}
 
