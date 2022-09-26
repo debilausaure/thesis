@@ -333,6 +333,7 @@ Tout d'abord, le processeur change de pile, en sauvant temporairement les valeur
 				\paragraph{Deep embedding} Le deep embedding permet de représenter un langage cible en modélisant la syntaxe (et plus particulièrement l'\emph{AST} du langage cible ainsi que sa sémantique. Il permet de ce fait d'exprimer des propriétés sur la structure du programme. Ces propriétés sont parfois intéressantes, notamment pour procéder à la preuve de propriétés concernant la compilation du langage ciblé. Le projet CompCert utilise un deep embedding de C pour garantir la préservation de la sémantique lors de la compilation vers l'assembleur Intel.
 				\paragraph{Shallow embedding} Le shallow embedding au contraire ne définit pas la syntaxe du langage cible, et se contente de ne définir que la sémantique des programmes à prouver. Cette approche est plus légère, mais ne permet cependant pas de prouver de propriétés relatives à la structure du programme. Un shallow embedding se sert de la syntaxe du langage hôte.
 
+				\label{monad}
 				\paragraph{Monade d'état} Les langages purement fonctionnels n'ont pas de notion d'état. Ainsi pour modéliser fidèlement des programmes impératifs et leurs effets de bords sur l'état de la machine, on peut le simuler. Dans le cas de Pip, une monade d'état est toute indiquée : elle permet en quelque sorte d'<< enrober >> des valeurs avec un état. Pip utilise des fonctions manipulant ces valeurs et qui sont des fonctions partielles sur l'état, indiquant comment produire la valeur de retour mais aussi quelles modifications éventuelles sont apportées à l'état. Ces fonctions sont dites \emph{monadiques}. Cette construction explicite l'état implicite des programmes impératifs qui transite de fonction en fonction grâce à la fonction \texttt{bind}. Le passage d'état est transparent dans le code grâce à du sucre syntaxique. En plus de la fonction \texttt{bind}, chaque monade nécessite un élément neutre (ou \emph{unit}). Les effets des deux fonctions sont expliqués ci-après.
 
 				Voyons comment la monade d'état a été définie dans Pip. Tout d'abord, Pip définit un type \texttt{state} représentant l'état de la machine qui transitera de fonction en fonction. Pip définit aussi un type \texttt{result} représentant soit une valeur \texttt{val} soit un comportement indéfini \texttt{undef}.
@@ -347,12 +348,13 @@ Ces types sont utilisés pour définir la monade d'état \texttt{LLI}, présent�
 
 Lorsqu'on lui donne une fonction monadique \texttt{f} de \texttt{A} vers \texttt{LLI B} et une valeur monadique de type \texttt{LLI A}, la fonction \texttt{bind} permet de récupérer la valeur << enrobée >> \texttt{A} et de lui appliquer la fonction \texttt{f}, produisant une valeur monadique \texttt{LLI B}. La fonction \texttt{ret} sert d'élément neutre, qui à partir d'un état et d'une valeur, renvoie cette même valeur << enrobée >> avec l'état.
 
-Peut être devrais-je donner une définition plus formelle d'une monade qui pourrait s'avérer beaucoup plus parlante. La définition repose sur la théorie des catégories et est attribuée à Saunders Mac Lane \cite{mac2013categories} que l'on pourrait traduire de la sorte :
+Peut être devrais-je donner une définition plus formelle d'une monade qui pourrait s'avérer beaucoup plus parlante. La définition repose sur la théorie des catégories et est attribuée à Saunders Mac Lane \cite[134]{mac2013categories} que l'on pourrait traduire de la sorte :
 
 \blockquote{Une monade dans $X$ est juste un monoïde dans la catégorie des endofoncteurs de $X$, ayant pour produit $\times$ la composition d'endofoncteurs et pour élément neutre l'endofoncteur identité.}
 
 			\subsubsection{Compilation et préservation de la sémantique}
-				Une problématique subsiste lorsque des propriétés formelles ont été prouvées sur du code source. Comment peut-on s'assurer que ces propriétés resteront vraies une fois que le code source aura été compilé ?
+			\label{compilation}
+				Une problématique subsiste lorsque des propriétés formelles ont été prouvées sur du code source. Comment peut-on s'assurer que ces propriétés resteront prouvables une fois que le code source aura été compilé ?
 
 				\paragraph{CompCert} La recherche dans ce domaine a mené au projet CompCert\cite{Leroy-backend}, un compilateur de code source C dont la préservation de la sémantique est garantie formellement jusqu'au code assembleur.
 
@@ -370,12 +372,46 @@ Les projets ayant recourt à la vérification de programme par \emph{deep embedd
 
 Auparavant, la chaîne de compilation de Pip utilisait \emph{Digger}~\cite{digger}, un outil écrit en Haskell qui transforme le code C shallow embedded écrit en Gallina en code C. Digger n'est pas muni de preuve formelle de préservation de la sémantique. Ainsi, l'argument de la préservation de la sémantique de Pip résidait dans l'extrême simplicité apparente de la conversion.
 
-		\paragraph{$\partial x$} $\partial x$ est le remplaçant de \emph{Digger} dans la chaîne de compilation de Pip. Comme \emph{Digger}, il permet de transformer le code C écrit en Gallina vers un code source C. Cependant, $\partial x$ produit ce code source en présentant à CompCert un \emph{AST} du programme, et en utilisant le \emph{pretty-printer} de CompCert.
+		\paragraph{$\partial x$} $\partial x$ est le remplaçant de \emph{Digger} dans la chaîne de compilation de Pip. Comme \emph{Digger}, il permet de transformer le code C écrit en Gallina vers un code source C, sous une forme attendue par CompCert.
 
-		$\partial x$ comporte deux phases de fonctionnement : la première phase consiste à extraire l'AST du programme écrit en Gallina sous la forme d'une représentation intermédiaire ; la seconde transforme cet \emph{AST} en \emph{AST} CompCert \texttt{Csyntax}. La première phase est écrite en Elpi~\cite{elpi} car Coq ne propose pas nativement de mécanisme de \emph{réflexion}. La seconde phase est écrite directement dans Coq sur laquelle il est possible de raisonner. \textcolor{red}{C'est moche c'est mal dit}
+		$\partial x$ comporte deux phases de fonctionnement : la première phase consiste à extraire l'\emph{AST} du programme écrit en Gallina sous la forme d'une représentation intermédiaire ; la seconde transforme cet \emph{AST} en \emph{AST} CompCert \texttt{Csyntax}. La première phase est écrite en Elpi~\cite{elpi} car Coq ne propose pas nativement de mécanisme de \emph{réflexion}. La seconde phase est écrite directement dans Coq. Il est de ce fait désormais possible de raisonner sur la phase de transformation de l'\emph{AST}.~~$\partial x$ permet en outre d'afficher le code source C produit, en utilisant le \emph{pretty-printer} de CompCert.
 
-		\subsection{Illustration système}
+		\subsection{Illustration système}	
 
-			\subsubsection{SeL4}
+			\subsubsection{seL4}
+	seL4 \cite{sel4website} est un noyau de système d'exploitation de la famille des noyaux L4 pour de nombreuses architectures (Armv6, Armv7, Armv8, x86, x86\_64 et RISC-V RV64) \cite{sel4hardware}. seL4 propose des mécanismes de gestion de la mémoire virtuelle, de gestion des interruptions, de communication inter-processus (\emph{IPC}) qui reposent sur un système gestion des droits par \emph{capacités}~\cite{capabilities}.
+
+	seL4 offre en outre, pour certaines plateformes, une vérification formelle de son implémentation. Cette vérification peut inclure :
+	\begin{itemize}
+		\item{une preuve formelle fonctionnelle du code C (c'est à dire une preuve que le code respecte sa spécification) \cite{sel4}}
+		\item{une preuve formelle de la propagation de la preuve jusqu'au binaire exécutable\cite{sel4binary}}
+		\item{une preuve du maintient de l'\emph{intégrité} et de la \emph{confidentialité} \cite{sel4integrity}}
+		\item{des propriétés temps-réel notamment sur le respect de bornes sur le temps d'exécution (\emph{WCET})\cite{sel4wcet}}
+	\end{itemize}
+
+	Pour arriver au code C exécutable, seL4 définit tout d'abord une spécification abstraite, définissant la fonction du code à produire. Ensuite, un prototype en Haskell est implémenté, respectant à priori cette spécification. Ce prototype permet de générer automatiquement une spécification exécutable, définissant comment le code doit remplir sa fonction. L'implémentation réelle en C est réalisée manuellement et doit respecter la spécification exécutable.
+
+	La preuve fonctionnelle de code dans le noyau seL4 est donc naturellement découpée en un raffinement en trois couches : la spécification abstraite, la spécification exécutable et l'implémentation réelle. La première étape pour établir une preuve fonctionnelle est de montrer que la spécification exécutable dérivée du prototype Haskell raffine la spécification abstraite. La seconde étape est de montrer que l'implémentation en C raffine la spécification exécutable \cite{sel4}.
+
 			\subsubsection{CertikOS}
+
+	
+
 			\subsubsection{Pip}
+
+	Pip est un noyau de système d'exploitation \emph{minimal} dont le seul but est la gestion de portions isolées de mémoire appelées \emph{partitions}, et du transfert de flôt d'exécution entre ces partitions. Pip est muni d'une preuve formelle garantissant que ses appels systèmes ne brisent pas \emph{l'isolation} des partitions. Pip a été initialement conçu pour fonctionner avec de la mémoire virtuelle en manipulant une \emph{MMU}. Cependant, de récents travaux ont fait évoluer Pip pour qu'il supporte la mémoire physique par le biais d'une \emph{MPU}.
+
+	Dans Pip, les partitions forment une structure arborescente qui déterminent les droits d'accès à la mémoire. Au démarrage du système, une partition responsable de la totalité de la mémoire du système est créée. Pip permet à chaque partition de créer une autre partition en partageant une partie de sa propre mémoire avec la partition nouvellement créée. La nouvelle partition est appelée \emph{partition enfant}, la partition ayant partagé sa propre mémoire est appelée \emph{partition parent}. Cette relation parent/enfant crée la structure arborescente : les enfants pouvant créer à leur tour de nouvelles partitions en partageant leur mémoire.
+
+	\paragraph{Propriété d'isolation} La propriété d'isolation de Pip est divisée en trois sous-propriétés :
+	\begin{itemize}
+		\item La première, la propriété de \textbf{partage vertical}, stipule que la mémoire partagée par une partition parent avec ses enfants reste accessible au parent par conception.
+
+		\item La seconde, la propriété d'\textbf{isolation horizontale}. Dans Pip, chaque partition peut créer plusieurs partitions enfant ; cependant les portions de mémoire partagées avec chacune doit être strictement disjointe. Autrement dit, une partition ne peut pas partager une même portion de mémoire avec deux partitions enfant simultanément. Ainsi, deux partitions enfant issues d'une même partition parent sont \emph{isolées} : la mémoire accessible dans l'une d'entre elle est nécessairement inaccessible dans l'autre.
+
+		\item La dernière, la propriété d'\textbf{isolation noyau}. À chaque création de partition, Pip réserve une petite portion de mémoire afin d'y stocker les structures nécessaires au contrôle des droits. Ces portions de mémoire deviennent inaccessibles à n'importe quelle partition.
+	\end{itemize}
+
+
+	\paragraph{Méthodologie de preuve} Pip a pris le contrepied des projets majeurs du domaine en utilisant un \emph{shallow embedding} de C plutôt que d'utiliser un \emph{deep embedding}. Ce \emph{shallow embedding} nécessite l'utilisation d'une monade d'état en Coq (voir \ref{monad}) et d'un outil spécifique (voir $\partial x$ \ref{compilation}) pour reconstruire l'AST ou le code source du noyau pour le compiler.
+	Le pari de cette méthodologie est de pouvoir se concentrer sur la sémantique des programmes à prouver afin d'alléger l'effort de preuve général par rapport aux méthodologies utilisant un \emph{deep embedding}. Aussi, les proriétés de préservation de l'isolation de Pip ont été prouvées directement, plutôt qu'en passant par un raffinement.

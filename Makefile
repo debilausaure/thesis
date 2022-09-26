@@ -16,7 +16,7 @@ SETTINGS_FILES=$(wildcard $(SETTINGS_DIR)/*.tex)
 MAIN_SRC=thesis.tex
 MAIN_PDF=$(BUILD_DIR)/$(basename $(MAIN_SRC)).pdf
 
-$(MAIN_PDF) : $(MAIN_SRC) $(CONTENT_FILES) $(FIGURES_FILES) $(CODE_FILES) $(SETTINGS_FILES)
+$(MAIN_PDF) : $(MAIN_SRC) $(CONTENT_FILES) $(FIGURES_FILES) $(CODE_FILES) $(SETTINGS_FILES) $(REFERENCES_FILES)
 	latexmk -auxdir=$(BUILD_DIR) -outdir=$(BUILD_DIR) -xelatex -pdfxelatex="xelatex %O --shell-escape %S" -dvi- -ps- $(MAIN_SRC)
 
 clean:
