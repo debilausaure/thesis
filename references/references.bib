@@ -1,4 +1,4 @@
-@misc{mozRR,
+﻿@misc{mozRR,
   doi = {10.48550/ARXIV.1705.05937},
   url = {https://arxiv.org/abs/1705.05937},
   author = {O'Callahan, Robert and Jones, Chris and Froyd, Nathan and Huey, Kyle and Noll, Albert and Partush, Nimrod},
@@ -52,6 +52,84 @@
   pages={595--608},
   year={2015},
   publisher={ACM New York, NY, USA}
+}
+
+@online{armpointerauth,
+  author = {Alan Mujumdar},
+  title = {Armv8.1-M Pointer Authentication and Branch Target Identification Extension},
+  urldate = {2022-09-27},
+  year = {2021},
+  url = {https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/armv8-1-m-pointer-authentication-and-branch-target-identification-extension}
+}
+
+@online{intelpointerauth,
+  author = {Anati, Ittai and Simhon, Oren Ben and Intel},
+  title = {Control Flow Enforcement Technology (CET)},
+  subtitle = {Slides of a talk given at CATC 2017},
+  urldate = {2022-09-27},
+  year = {2017},
+  url = {https://www.intel.com/content/dam/develop/external/us/en/documents/catc17-introduction-intel-cet-844137.pdf}
+}
+
+@inproceedings{compilerpointerauth,
+  title={Enforcing Forward-Edge Control-Flow Integrity in GCC \& LLVM},
+  author={Tice, Caroline and Roeder, Tom and Collingbourne, Peter and Checkoway, Stephen and Erlingsson, {\'U}lfar and Lozano, Luis and Pike, Geoff},
+  booktitle={23rd USENIX security symposium (USENIX security 14)},
+  pages={941--955},
+  year={2014}
+}
+
+
+@inproceedings{microarchitecturalbypass,
+  title={Prefetch side-channel attacks: Bypassing SMAP and kernel ASLR},
+  author={Gruss, Daniel and Maurice, Cl{\'e}mentine and Fogh, Anders and Lipp, Moritz and Mangard, Stefan},
+  booktitle={Proceedings of the 2016 ACM SIGSAC conference on computer and communications security},
+  pages={368--379},
+  year={2016}
+}
+
+@online{bypasskaslr,
+  author = {Andy TheFlow Nguyen},
+  title = {Turning \texttt{\textbackslash{}x00\textbackslash{}x00} into 10000\$},
+  subtitle = {CVE-2021-22555},
+  urldate = {2022-09-27},
+  year = {2021},
+  url = {https://google.github.io/security-research/pocs/linux/cve-2021-22555/writeup.html#bypassing-kaslrsmep}
+}
+
+@online{webkitexploit,
+  author = {Samuel saelo Groß},
+  title = {Exploit for a WebKit JIT optimization bug used during Pwn2Own 2018},
+  subtitle = {CVE-2018-4233},
+  urldate = {2022-09-27},
+  year = {2018},
+  url = {https://github.com/saelo/cve-2018-4233}
+}
+
+@online{switchbug,
+  author = {plutoo},
+  title = {A one-in-a-million bug in Switch kernel},
+  urldate = {2022-09-27},
+  year = {2022},
+  url = {https://gist.githubusercontent.com/plutooo/2aadbd4a718e269df474079dd2e584fb/raw/7b3af77b5202366c8934c88ef251f1e905967040/gistfile1.txt}
+}
+
+@online{ps4bug,
+  author = {Andy TheFlow Nguyen},
+  title = {Use-After-Free In \texttt{IPV6\_2292PKTOPTIONS} leading To Arbitrary Kernel R/W Primitives},
+  subtitle = {CVE-2020-7457},
+  urldate = {2022-09-27},
+  year = {2020},
+  url = {https://hackerone.com/reports/826026}
+}
+
+@online{ps5bug,
+  author = {Andy TheFlow Nguyen},
+  title = {Use-After-Free In \texttt{IPV6\_2292PKTOPTIONS} leading To Arbitrary Kernel R/W Primitives},
+  subtitle = {CVE-2020-7457},
+  urldate = {2022-09-27},
+  year = {2022},
+  url = {https://hackerone.com/reports/1441103}
 }
 
 @article{sel4wcet,
