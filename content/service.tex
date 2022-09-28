@@ -1,8 +1,20 @@
 \chapter{Service de transfert de flot d'exécution avec preuve d'isolation}
 
+Ce chapitre décrit la première contribution de cette thèse : un service de transfert de flôt d'exécution pour Pip. Ce chapitre commencera par exposer les motivations qui ont conduit à ce service de transfert de flôt d'exécution.
+
+Ensuite, nous décrirons 
+
 % Réecrire le modele de writeContext qui devrait écrire dans le modèle si la page donnée est une page noyau
 
 	\section{Motivations}
+
+		Point de vue pragmatique :
+			- anciennement deux appels systèmes \texttt{dispatch} et \texttt{resume} disponibles, écrit en C sans documentation, qui ne couvraient pas la totalité des cas d'usage.
+			  donc nécessité de (re-)conception d'un mécanisme de transfert de flot d'exécution car le changement d'espace d'adressage est une opération privilégiée.
+
+		Point de vue académique :
+			- compléter la preuve des appels système de Pip pour surenchérir sur la validité de la méthologie de Pip
+			- valeur intrinsèque de l'unification des diférents tranferts de lot de controle
 		\subsection{Failles de sécurité}
 		\subsection{Changement d'espace d'adressage opération privilégiée}
 		\subsection{Arguments de co-design (minimaliste, générique)}
