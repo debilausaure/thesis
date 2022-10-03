@@ -2,7 +2,11 @@
 
 Ce chapitre décrit la première contribution de cette thèse : un service de transfert de flôt d'exécution pour Pip. Ce chapitre commencera par exposer les motivations qui ont conduit à ce service de transfert de flôt d'exécution.
 
-Ensuite, nous décrirons 
+La seconde section décrira le service tel qu'il a été conçu : en premier lieu, nous exposerons le principe général derrière le service, en explicitant notamment les structures de données et le prototype du service. Cette exposition du service sera suivie d'une illustration de l'utilisation du service sur les trois différents transferts de flot d'exécution au sein d'un système : les appels systèmes entre différents espaces d'adressages, ainsi que les transferts de flot d'exécution suite à une faute ou une interruption. Cette section s'achèvera sur une vue interne du service, décrivant les différents blocs unifiant ces trois différents transferts.
+
+La troisième section expliquera le processus de preuve du service, en commençant par la définition des types nécessaire à l'écriture du service et plus généralement de la conception des ajouts à l'interface avec la monade. Cette section détaillera ensuite les différentes propriétés d'isolation, puis identifiera les points délicats de l'établissement de la preuve en s'appuyant sur les différents blocs détaillés dans la section précédente.
+
+La dernière section de ce chapitre reviendra sur la conception de ce service d'un point de vue pragmatique, en s'intéressant à quelques métriques et en revenant sur la pertinence de la preuve.
 
 % Réecrire le modele de writeContext qui devrait écrire dans le modèle si la page donnée est une page noyau
 
@@ -14,7 +18,7 @@ Ensuite, nous décrirons
 
 		Point de vue académique :
 			- compléter la preuve des appels système de Pip pour surenchérir sur la validité de la méthologie de Pip
-			- valeur intrinsèque de l'unification des diférents tranferts de lot de controle
+			- valeur intrinsèque de l'unification des diférents transferts de flot de controle
 		\subsection{Failles de sécurité}
 		\subsection{Changement d'espace d'adressage opération privilégiée}
 		\subsection{Arguments de co-design (minimaliste, générique)}
@@ -23,6 +27,7 @@ Ensuite, nous décrirons
 	\section{Description du service}
 		\subsection{Définition}
 		% protoype (paramètres)
+		\coqcode{code/prototype.v}
 		% definitions des structures de données
 		\subsection{Illustration}
 			\subsubsection{Appels explicites}
