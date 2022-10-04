@@ -4,6 +4,7 @@
 	La seconde section de ce chapitre fera un état des lieux de la preuve de programme. Elle commencera par discuter de ce qu'est une preuve et de leur vérificaton automatique, ainsi que des stratégies de conduite de preuve. Cette section continuera sur la preuve de programme, en particulier comment raisonner sur un programme impératif. Elle abordera aussi les notions de représentation du langage. Enfin, elle terminera sur les exemples de systèmes vérifiés formellement.
 
 	\section{Transfert de flôt d'exécution}
+	\label{control_flow_transfer}
 
 		Cette section va détailler les différents transferts de flot d'exécution mis à disposition dans les cpus modernes.
 		Dans cette section, nous détaillerons les transferts de flot d'exécution qui impliquent une reconfiguration explicite de l'état de la machine ayant un impact sur les droits d'accès aux ressources. Les appels d'une fonction d'un programme vers une autre fonction ne seront pas considérés dans cette section, même s'ils pourraient être considérés comme un transfert de flôt d'exécution.
@@ -77,6 +78,7 @@ Les différentes formes de fautes logicielles constituent aussi une forme de tra
   \item demande d'exécution d'une instruction privilégiée en mode non-privilégié.
 \end{itemize}
 Dans ces différentes situations il s'agit de transferts implicites depuis le logiciel en faute vers une fonction d'un logiciel en charge du traitement de cette faute. Les différentes fonctions de gestion des fautes sont généralement définies par des éléments de configuration du matériel, et, le plus souvent, par l'intermédiaire d'une table (ou vecteur) dont le nom change d'une architecture de microprocesseur à l'autre. Ce vecteur précise généralement le niveau d'élévation de privilèges associé à l'exécution de la fonction de traitement de la faute. Sur les architectures Intel cette table est appelée \emph{IDT} (pour \emph{Interrupt Descriptor Table}).
+\label{IDT}
 
 \subsubsection{Interruptions matérielles}
 Les interruptions matérielles sont des transferts non explicites à priori non contrôlés par le code non privilégié. Elles sont déclenchées par le matériel, signalant un événement important à traiter, tel que l'arrivée d'un paquet réseau par exemple. Les fonctions de traitement des interruptions matérielles ainsi que leur niveau de privilèges sont aussi définis dans l'\emph{IDT}.
@@ -146,6 +148,7 @@ Le bit \emph{SMEP} pour \emph{Supervisor Mode Execution Protection} présent dan
 
 			\subsubsection{Capture de l'état d'exécution}
 
+\label{context}
 \textcolor{red}{J'arrive pas à introduire le concept}
 
 \paragraph{Le contexte d'exécution}
@@ -168,7 +171,7 @@ Lors d'un appel à \texttt{callf}, le processeur accède à une call gate situé
 Tout d'abord, le processeur sauve de manière temporaire le segment de pile et le pointeur de pile dans un tampon interne. Il remplace les registres de segment de pile et de pointeur de pile par ceux renseignés dans la \emph{TSS}, changeant de pile. Il pousse ensuite le segment de pile et le pointeur de pile de l'utilisateur dans la nouvelle pile. Il copie ensuite les arguments depuis la pile utilisateur vers la nouvelle pile, leur nombre étant renseigné dans la call gate. Le processeur pousse ensuite sur la pile le registre de segment de code et le pointeur d'instruction, avant de les remplacer par ceux renseignés dans la call gate.
 
 \paragraph{Changement de pile et registres sauvés lors d'une interruption, d'une faute ou d'un appel à \texttt{int}}
-
+\label{intel_hard_context}
 Lors d'une faute, d'une interruption ou d'un appel à \texttt{int}, le processeur accède à une interrupt gate ou une trap gate dans l'\emph{IDT}. Comme pour la call gate, la gate contient le segment de code à utiliser, le code à exécuter. Ce transfert de flot d'exécution n'entraine pas une copie par le processeur d'éventuels arguments depuis la pile utilisateur sur la nouvelle pile.
 
 Tout d'abord, le processeur change de pile, en sauvant temporairement les valeurs utilisateurs du segment de pile \texttt{SS} et de la pile \texttt{ESP}, et en les écrivants sur la pile renseignée dans la nouvelle pile renseignée dans la \emph{TSS}. Le processeur sauve ensuite l'état des registres \texttt{EFLAGS}, du segment de code \texttt{CS} et du pointeur d'instruction \texttt{EIP}. EFLAGS contient entre autres l'état des drapeaux d'overflow, de retenue, de parité, de conditions, mais aussi d'activation des interruptions. Le processeur peut pousser un code d'erreur supplémentaire sur la pile dans le cas de déclenchement de certaines fautes afin de préciser leur cause.
