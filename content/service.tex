@@ -47,7 +47,14 @@ Ainsi, même s'il existe un grand nombre de modalités de transfert de flôt d'e
 
 	\subsubsection{Structures de données du service}
 
-Les services exposés par les différentes partitions sont définis dans une structure appelée \emph{Virtual Interrupt Descriptor Table} ou \emph{VIDT}. Cette structure reprend les concepts de l'\emph{IDT} classique (voir \ref{IDT}), appliqués à chaque partition. Elle doit être placée - par convention - au début de la dernière page virtuelle de chaque partition. Cependant, contrairement à l'\emph{IDT} qui contient des \emph{gates} composées de pointeurs de fonctions et de contrôles de droits, la \emph{VIDT} de chaque partition contient des pointeurs vers des \emph{contextes} d'exécution.
+Les services exposés par les différentes partitions sont définis dans une structure appelée \emph{Virtual Interrupt Descriptor Table} ou \emph{VIDT}. Cette structure reprend les concepts de l'\emph{IDT} classique (voir \ref{IDT}), appliqués à chaque partition. Elle doit être placée - par convention - au début de la dernière page virtuelle de chaque partition. Cependant, contrairement à l'\emph{IDT} qui contient des \emph{gates} composées de pointeurs de fonctions et de contrôles de droits, la \emph{VIDT} de chaque partition contient des pointeurs vers des \emph{contextes} d'exécution, comme illustré sur la figure \ref{fig:vidt}.
+
+\begin{figure}[!ht]
+	\centering
+	\input{figures/VIDT.tex}
+	\caption{La structure d'une VIDT}
+	\label{fig:vidt}
+\end{figure}
 
 Ces \emph{contextes} sont des instantanés de l'état du processeur au moment du transfert du flot d'exécution. Pour l'architecture Intel x86, ils sont partiellement générés par les mécanismes du matériel tels que détaillé dans le chapitre précédent dans la section \ref{context}, puis complétés par du logiciel. Ces contextes d'exécution peuvent aussi être créés ex-nihilo par les partitions afin de définir de nouveaux services.
 
@@ -57,17 +64,21 @@ Plus simplement, les services de chaque partition sont définis dans leur \emph{
 
 	\subsubsection{Utilisation du service pour un transfert de flôt d'exécution explicite et prototype du service}
 
-	Lors d'un appel explicite au service de transfert de flôt d'exécution, la partition appelante va chercher à viser un service particulier proposé par la partition ciblée.
-
-	\begin{listing}
+	\begin{listing}[!ht]
 		\ccode{code/entrypoint_prototype.c}
 		\caption{Prototype du point d'entrée du service tel qu'appelée par les partitions}
 		\label{code:c_proto}
 	\end{listing}
 
+	Lors d'un appel explicite au service de transfert de flôt d'exécution dont le protoype est donné par le listing \ref{code:c_proto}, la partition appelante doit désigner une autre partition ainsi que le numéro de service désiré. La partition est désignée l'adresse virtuelle de son descripteur correspondant au paramètre \texttt{calleePartDescVAddr}. Dans le cas d'un appel vers la partition parent, l'adresse par défaut est utilisée. Le numéro de service n'est autre que la position du pointeur vers le contexte d'exécution à restaurer dans la VIDT de la partition ciblée, correspondant au paramètre \texttt{userTargetInterrupt}. Ces deux paramètres permettent de déterminer où transférer le flôt d'exécution.
+
+	De plus, Pip permet à la partition appelante de sauvegarder son contexte d'exécution actuel afin qu'il puisse être restauré et que l'exécution puisse reprendre ultérieurement. La partition appelante doit avoir réservé préalablement de la mémoire pour que Pip puisse y placer un contexte, et renseigné un pointeur vers cet espace dans sa propre VIDT. Pour que Pip préserve le contexte d'exécution, la partition doit fournir l'entier \texttt{userContextSaveIndex} qui indique la position du pointeur dans sa VIDT pointant vers l'espace réservé. Si un pointeur nul se trouve à la position indiquée, le contexte n'est pas sauvegardé.
+
+Les deux derniers paramètres, \texttt{flagsOnYield} et \texttt{flagsOnWake} permettent à la partition de restreindre l'utilisation de certains de ses services. Ce sont en réalité des drapeaux vérifiés par le service de transfert de flôt d'exécution de Pip indiquant que certains services de la partition sont temporairement indisponibles, bien qu'ils soient correctement configurés. \texttt{flagsOnYield} sont les drapeaux qui seront appliqués immédiatement par Pip à la partition appelante au moment du transfert de flôt d'exécution. \texttt{flagsOnWake} sont les drapeaux qui seront appliqués au moment de la restauration du contexte d'exécution actuel de la partition.
+
 
 		% protoype (paramètres)
-	\begin{listing}
+	\begin{listing}[!ht]
 		\coqcode{code/prototype.v}
 		\caption{Prototype du point d'entrée du service en Gallina}
 		\label{code:gallina_proto}

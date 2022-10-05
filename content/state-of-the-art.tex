@@ -405,7 +405,17 @@ Auparavant, la chaîne de compilation de Pip utilisait \emph{Digger}~\cite{digge
 
 	Pip est un noyau de système d'exploitation \emph{minimal} dont le seul but est la gestion de portions isolées de mémoire appelées \emph{partitions}, et du transfert de flôt d'exécution entre ces partitions. Pip est muni d'une preuve formelle garantissant que ses appels systèmes ne brisent pas \emph{l'isolation} des partitions. Pip a été initialement conçu pour fonctionner avec de la mémoire virtuelle en manipulant une \emph{MMU}. Cependant, de récents travaux ont fait évoluer Pip pour qu'il supporte la mémoire physique par le biais d'une \emph{MPU}.
 
-	Dans Pip, les partitions forment une structure arborescente qui déterminent les droits d'accès à la mémoire. Au démarrage du système, une partition responsable de la totalité de la mémoire du système est créée. Pip permet à chaque partition de créer une autre partition en partageant une partie de sa propre mémoire avec la partition nouvellement créée. La nouvelle partition est appelée \emph{partition enfant}, la partition ayant partagé sa propre mémoire est appelée \emph{partition parent}. Cette relation parent/enfant crée la structure arborescente : les enfants pouvant créer à leur tour de nouvelles partitions en partageant leur mémoire.
+	Dans Pip, les partitions forment une structure arborescente qui déterminent les droits d'accès à la mémoire, comme illustré avec la figure \ref{fig:partition_tree}. Au démarrage du système, une partition responsable de la totalité de la mémoire du système est créée. Pip permet à chaque partition de créer une autre partition en partageant une partie de sa propre mémoire avec la partition nouvellement créée. La nouvelle partition est appelée \emph{partition enfant}, la partition ayant partagé sa propre mémoire est appelée \emph{partition parent}. Cette relation parent/enfant crée la structure arborescente : les enfants pouvant créer à leur tour de nouvelles partitions en partageant leur mémoire.
+
+	\begin{figure}[!ht]
+	\centering{
+		\input{figures/partition_tree.tex}
+		\caption{Exemple d'arbre de partition dans Pip}
+	}
+		\label{fig:partition_tree}
+	\end{figure}
+
+	
 
 	\paragraph{Propriété d'isolation} La propriété d'isolation de Pip est divisée en trois sous-propriétés :
 	\begin{itemize}
