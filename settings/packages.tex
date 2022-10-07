@@ -113,7 +113,27 @@
 	showtabs =false,
 	texcl=false,
 }
+
 \newmintedfile[ccode]{c}{
+	fontfamily=tt, % select the correct font family
+	linenos=false,
+	numberblanklines=true,
+	numbersep=5pt,
+	gobble=0,
+	frame=lines,
+	framerule=0.4pt,
+	framesep=2mm,
+	funcnamehighlighting=true,
+	tabsize=4,
+	obeytabs=false,
+	mathescape=true
+	samepage=false, %with this setting you can force the list to appear on the same page
+	showspaces=false,
+	showtabs =false,
+	texcl=false,
+}
+
+\newmintedfile[asmcode]{nasm}{
 	fontfamily=tt, % select the correct font family
 	linenos=false,
 	numberblanklines=true,

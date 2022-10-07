@@ -42,12 +42,12 @@ La dernière section de ce chapitre reviendra sur la conception de ce service d'
 
 Ainsi, même s'il existe un grand nombre de modalités de transfert de flôt d'exécution en pratique, l'architecture du proto-noyau Pip promeut un modèle unifié qui adapte à une tour de virtualisation les trois situations génériques. En réduisant à trois cas distincts l'ensemble des modalités de transferts de flot d'exécution, le travail de preuve de programme nécessaire pour établir une garantie de sécurité est simplifié. Cependant, la sous-section suivante s'attache à démontrer qu'il est possible de résumer ces trois cas distincts en un seul service dont la preuve de bon fonctionnement apporte les garanties de sécurité à l'ensemble des situations de transfert de flot d'exécution possibles au sein de l'architecture x86.
 
-	\subsection{Unification des transferts}
-	\label{unification}
+	\subsection{Principe de fonctionnement du service} 
+	\label{service_idea}
 
 	\subsubsection{Structures de données du service}
 
-Les services exposés par les différentes partitions sont définis dans une structure appelée \emph{Virtual Interrupt Descriptor Table} ou \emph{VIDT}. Cette structure reprend les concepts de l'\emph{IDT} classique (voir \ref{IDT}), appliqués à chaque partition. Elle doit être placée - par convention - au début de la dernière page virtuelle de chaque partition. Cependant, contrairement à l'\emph{IDT} qui contient des \emph{gates} composées de pointeurs de fonctions et de contrôles de droits, la \emph{VIDT} de chaque partition contient des pointeurs vers des \emph{contextes} d'exécution, comme illustré sur la figure \ref{fig:vidt}.
+	\paragraph{VIDT} Les services exposés par les différentes partitions sont définis dans une structure appelée \emph{Virtual Interrupt Descriptor Table} ou \emph{VIDT}. Cette structure reprend les concepts de l'\emph{IDT} classique (voir \ref{IDT}), appliqués à chaque partition. Elle doit être placée - par convention - au début de la dernière page virtuelle de chaque partition. Cependant, contrairement à l'\emph{IDT} qui contient des \emph{gates} composées de pointeurs de fonctions et de contrôles de droits, la \emph{VIDT} de chaque partition contient des pointeurs vers des \emph{contextes} d'exécution, comme illustré sur la figure \ref{fig:vidt}.
 
 \begin{figure}[!ht]
 	\centering
@@ -56,14 +56,13 @@ Les services exposés par les différentes partitions sont définis dans une str
 	\label{fig:vidt}
 \end{figure}
 
-Ces \emph{contextes} sont des instantanés de l'état du processeur au moment du transfert du flot d'exécution. Pour l'architecture Intel x86, ils sont partiellement générés par les mécanismes du matériel tels que détaillé dans le chapitre précédent dans la section \ref{context}, puis complétés par du logiciel. Ces contextes d'exécution peuvent aussi être créés ex-nihilo par les partitions afin de définir de nouveaux services.
+	\paragraph{Contexte d'exécution} Ces \emph{contextes} sont des instantanés de l'état du processeur au moment du transfert du flot d'exécution. Pour l'architecture Intel x86, ils sont partiellement générés par les mécanismes du matériel tels que détaillé dans le chapitre précédent dans la section \ref{context}, puis complétés par du logiciel. Ces contextes d'exécution peuvent aussi être créés ex-nihilo par les partitions afin de définir de nouveaux services.
 
-Par exemple, lors d'une interruption matérielle survenant en espace utilisateur, le processeur va changer de niveau de privilèges et changer de pile, puis sauver quelques registres sur le sommet de la pile (\texttt{SS}, \texttt{ESP}, \texttt{EFLAGS}, \texttt{CS}, \texttt{EIP} - voir sous-section \ref{intel_hard_context}). Le code de gestion d'interruption pousse à son tour les registres généraux sur le sommet de pile, complétant la structure de \emph{contexte}. Ces quelques lignes d'assembleurs seront détaillées dans la sous-section suivante.
 
 Plus simplement, les services de chaque partition sont définis dans leur \emph{VIDT} au moyen de pointeurs vers des contextes d'exécution. Il est important de noter que ces contextes d'exécution sont situés dans l'espace d'adressage de chaque partition, et sont donc \textbf{accessibles et modifiables} par le code non privilégié.
 
-	\subsubsection{Utilisation du service pour un transfert de flôt d'exécution explicite et prototype du service}
-
+	\subsubsection{Principe d'utilisation et prototype du service pour un transfert de flôt d'exécution}
+	\label{sec:service_usage}
 	\begin{listing}[!ht]
 		\ccode{code/entrypoint_prototype.c}
 		\caption{Prototype du point d'entrée du service tel qu'appelée par les partitions}
@@ -74,36 +73,61 @@ Plus simplement, les services de chaque partition sont définis dans leur \emph{
 
 	De plus, Pip permet à la partition appelante de sauvegarder son contexte d'exécution actuel afin qu'il puisse être restauré et que l'exécution puisse reprendre ultérieurement. La partition appelante doit avoir réservé préalablement de la mémoire pour que Pip puisse y placer un contexte, et renseigné un pointeur vers cet espace dans sa propre VIDT. Pour que Pip préserve le contexte d'exécution, la partition doit fournir l'entier \texttt{userContextSaveIndex} qui indique la position du pointeur dans sa VIDT pointant vers l'espace réservé. Si un pointeur nul se trouve à la position indiquée, le contexte n'est pas sauvegardé.
 
-Les deux derniers paramètres, \texttt{flagsOnYield} et \texttt{flagsOnWake} permettent à la partition de restreindre l'utilisation de certains de ses services. Ce sont en réalité des drapeaux vérifiés par le service de transfert de flôt d'exécution de Pip indiquant que certains services de la partition sont temporairement indisponibles, bien qu'ils soient correctement configurés. \texttt{flagsOnYield} sont les drapeaux qui seront appliqués immédiatement par Pip à la partition appelante au moment du transfert de flôt d'exécution. \texttt{flagsOnWake} sont les drapeaux qui seront appliqués au moment de la restauration du contexte d'exécution actuel de la partition.
+	Les deux derniers paramètres, \texttt{flagsOnYield} et \texttt{flagsOnWake} permettent à la partition de restreindre l'utilisation de certains de ses services. Ce sont en réalité des drapeaux vérifiés par le service de transfert de flôt d'exécution de Pip indiquant que certains services de la partition sont temporairement indisponibles, bien qu'ils soient correctement configurés. \texttt{flagsOnYield} sont les drapeaux qui seront appliqués immédiatement par Pip à la partition appelante au moment du transfert de flôt d'exécution. \texttt{flagsOnWake} sont les drapeaux qui seront appliqués au moment de la restauration du contexte d'exécution actuel de la partition.
 
+	Enfin, un dernier paramètre contenant un pointeur vers le contexte d'exécution est généré par le code trampoline permettant d'exécuter le code du service écrit en Gallina. Ceci permet au service de sauvegarder le contexte d'exécution comme énoncé précédemment. La figure \ref{code:gallina_proto} montre le prototype attendu par le code prouvé.
 
-		% protoype (paramètres)
-	\begin{listing}[!ht]
-		\coqcode{code/prototype.v}
-		\caption{Prototype du point d'entrée du service en Gallina}
-		\label{code:gallina_proto}
-	\end{listing}
+		\begin{listing}[!ht]
+			\coqcode{code/prototype.v}
+			\caption{Prototype du point d'entrée du service en Gallina}
+			\label{code:gallina_proto}
+		\end{listing}
+		
+		\subsection{Illustration de mise en place du service sur l'architecture Intel x86 au travers d'un appel explicite}
 
-Lors d'un appel explicite, le service requiert trois arguments principaux : le premier est l'adresse \emph{virtuelle} de la partition qui recevra le flot de contrôle. Cette adresse est fournie par Pip au moment de la création de la partition dans le cas des partitions enfants. Pour transférer le flot de contrôle à son parent, la partition appelante fournit l'adresse par défaut. Le second argument est l'indice du contexte à charger dans la \emph{VIDT} de la partition cible. Le dernier argument indique l'indice de sauvegarde du contexte courant de la partition appelante dans sa propre \emph{VIDT}. Si Pip trouve un pointeur nul à l'indice indiqué, le contexte n'est pas sauvegardé.
+			\subsubsection{Point d'entrée par \texttt{callgate}}
 
-À l'appel du service, le contexte d'exécution de la partition appelante est sauvé sur la pile de Pip. Pip commence alors par vérifier les paramètres qui lui sont passés. Il traduit ensuite l'adresse virtuelle de la partition appelée en adresse physique. Pip accède à la \emph{VIDT} de la partition courante, et récupère le pointeur situé à l'indice de sauvegarde passé en argument. De la même manière, Pip accède ensuite à la VIDT de la partition cible, et récupère le pointeur indiqué par l'indice de chargement passé en argument. Dans ce processus, si aucune erreur ne s'est produite, et si les pointeurs de contexte mènent bien dans les espaces d'adressage respectifs des deux partitions, Pip copie le contexte de la partition interrompu dans la zone mémoire de sauvegarde calculé précédemment. Enfin, Pip copie le contexte à charger sur sa propre pile, restaure les registres généraux du contexte, puis exécute l'instruction \texttt{iret} après avoir ajusté les registres critiques pour la sécurité. Pip modifie notamment les registres \texttt{CS} et \texttt{EFLAGS}, afin que la partition ne puisse pas s'octroyer de privilèges arbitraires.
+		Dans l'implémentation de Pip sur l'architecture Intel x86, les services de Pip sont appelables au travers de \emph{callgates} (voir \ref{sec:x86_syscall}). Ces callgates permettent au code non privilégié des partitions d'appeler les services privilégiés de Pip.
+		Pour ce faire, la partition doit pousser les arguments décrits en section \ref{sec:service_usage} sur sa pile, puis utiliser un \emph{farcall}. Cet appel est implémenté au sein de la LibPip, la librairie utilisateur facilitant l'utilisation du noyau.
 
-Si une erreur survient lors de ce processus (\emph{VIDT} non accessible, pointeur en dehors de l'espace d'adressage, etc.), une erreur est renvoyée à la partition appelante.
+		\begin{listing}[!ht]
+			\ccode{code/libpip_yield.c}
+			\caption{Implémentation de l'appel vers le service en espace utilisateur}
+			\label{code:libpip_yield}
+		\end{listing}
 
-\subsection{Cas des fautes, interruptions logicielles et matérielles}
+		Lorsque le processeur exécute l'instruction \texttt{lcall} (voir figure \ref{code:libpip_yield}), le flôt d'exécution est transféré vers Pip et le processeur passe en mode privilégié, copie les paramètres et pousse partiellement l'état précédent sur la pile (voir \ref{sec:intel_callgate}). Dans le cas de l'appel au service de transfert de flôt d'exécution, le processeur commence par exécuter une routine qui va sauver sur la pile noyau le contexte d'exécution de la partition encore partiellement présent dans les registres. Accessoirement, cette routine réordonne les éléments de la pile afin de regrouper les différentes parties du contexte et de pouvoir utiliser une structure pour le représenter. Cette routine étant un peu longue, elle est placée en annexe (voir Fragment de code \ref{code:cg_yieldGlue}).
+		La figure \ref{fig:stack_cg_asm} montre l'état de la pile après l'exécution de la routine.
 
-L'idée principale derrière cette unification est qu'il est possible pour le système de fixer certains paramètres et de commencer l'exécution à un endroit arbitraire du service. Il est notamment possible de commencer l'exécution directement après la validation des paramètres et de la traduction de l'adresse virtuelle de la partition cible. Ceci permet au système de fixer des adresses physiques de partitions qui seront la cible des différents événements. La figure \ref{callgraph} montre comment sont placés les différents points d'entrée du système dans le service.
+		\textcolor{red}{Schéma de la pile après l'exécution de la routine assembleur}
+	
+		\paragraph{Harmonisation du contexte d'exécution et appel du service prouvé} Avant d'appeler le code prouvé, une dernière transformation est opérée sur le contexte d'exécution. Il est copié en haut de la pile, puis transformé en contexte générique afin d'harmoniser les différentes représentations de contexte entre les différents points d'entrées du service. Le code est disponible en annexe (voir Fragment de code \ref{code:yieldGlue}).
 
-Cependant, les différents mécanismes décrits dans la section \ref{S3} ne présentent pas d'interface commune ; c'est pourquoi, de petites portions d'assembleur sont placées juste avant les différents points d'entrée afin d'harmoniser les différents formats de contexte (un exemple est disponible en annexe). Ces morceaux d'assembleur sont placés dans l'\emph{IDT} du système, afin qu'ils soient appelés lors d'une faute ou d'une interruption. Deux niveaux d'interruption sont réservés à la sauvegarde des contextes par Pip lorsqu'une interruption survient. Sur l'architecture \texttt{x86} ce sont les niveaux 48 et 49 qui sont utilisés (0-31 fautes réservées par Intel, 32-47 interruptions matérielles liées au coprocesseur).
+			\subsubsection{Description détaillée du code prouvé du service}
 
-%Les partitions peuvent \emph{déclarer} qu'elles ne souhaitent pas être interrompues, appelé \emph{état d'interruption} des partitions dans ce paragraphe. Ce mécanisme est analogue aux instructions \texttt{cli} et \texttt{sti} d'Intel ; cependant, les partitions indiquant qu'elles ne souhaitent pas être interrompues \textbf{le seront, peu importe leur état d'interruption}. L'état d'interruption sert uniquement à indiquer à la partition parente qu'il est nécessaire que le contexte courant de son enfant soit restauré en priorité. Il incombe donc au parent de s'assurer de restaurer ce contexte, plutôt qu'un autre. Pour cela, il existe un appel système permettant à un parent de récupérer l'état d'interruption de ses partitions enfants.
+			Le service écrit en Gallina permettant de transférer le flôt d'exécution procède en trois étapes.
 
-		\subsection{Illustration}
-			\subsubsection{Appels explicites}
-			\subsubsection{Fautes}
-			\subsubsection{Interruptions}
+			\paragraph{Étape préliminaire de validation et de récupération des données} Avant toute chose, la première étape du service vérifie la validité des arguments et des structures modifiables en espace utilisateur. En particulier, elle vérifie que l'adresse virtuelle fournie comme la cible du transfert correspond bien à une partition enfant ou parent, et récupère l'adresse réelle à laquelle débute son descripteur. Elle vérifie aussi que les \emph{VIDT} des partitions appelantes et appelées sont accessibles en espace utilisateur, et que les espaces de mémoires ciblés par l'appel sont eux aussi accessibles. Ceci permet par exemple de récupérer le contexte d'exécution de la partition ciblée par l'appel. Cette étape préliminaire permet de s'assurer que le service ne pourra pas rencontrer d'erreur dans les prochaines étapes.
+
+			\paragraph{Étape de modification de l'état} La seconde partie du service est une étape procédant à la modification de l'état du système. Cette étape regroupe toutes les écritures en mémoire requises par le service. Tout d'abord, le service va procéder à l'écriture du contexte de la partition appelante dans son espace d'adressage (si demandé lors de l'appel). Le contexte est recopié depuis la pile noyau jusqu'à la zone de mémoire pointée par le pointeur dans la \emph{VIDT} de la partition appelante.
+			Ensuite, le service met à jour l'espace d'adressage pour refléter l'espace d'adressage de la partition cible.
+			Enfin, le service procède à la mise à jour des structures de données du noyau afin de préserver les propriétés de cohérence internes de Pip. Cette étape ne nécessite en fait qu'une unique écriture dans une variable globale, indiquant quelle partition s'exécutera lorsque le flôt d'exécution repassera en espace utilisateur.
+
+			\paragraph{Étape de transfert de flôt d'exécution} La troisième et dernière étape du service transfère le flôt d'exécution vers la partition appelée au travers du contexte d'exécution récupéré lors de l'étape préliminaire. Cette étape est représentée dans le code prouvé par un appel à une fonction de l'interface.
+
+		\subsection{Cas des fautes, interruptions logicielles et matérielles}
+
+	L'idée principale derrière cette unification est qu'il est possible pour le système de fixer certains paramètres et de commencer l'exécution à un endroit arbitraire du service. Il est notamment possible de commencer l'exécution directement après la validation des paramètres et de la traduction de l'adresse virtuelle de la partition cible. Ceci permet au système de passer en arguments les adresses réelles de partitions qui seront la cible des différents événements. La figure \ref{callgraph} montre comment sont placés les différents points d'entrée du système dans le service.
+
+	Cependant, les différents mécanismes décrits dans la section \ref{S3} ne présentent pas d'interface commune ; c'est pourquoi, de petites portions d'assembleur sont placées juste avant les différents points d'entrée afin d'harmoniser les différents formats de contexte (un exemple est disponible en annexe). Ces morceaux d'assembleur sont placés dans l'\emph{IDT} du système, afin qu'ils soient appelés lors d'une faute ou d'une interruption. Deux niveaux d'interruption sont réservés à la sauvegarde des contextes par Pip lorsqu'une interruption survient. Sur l'architecture \texttt{x86} ce sont les niveaux 48 et 49 qui sont utilisés (0-31 fautes réservées par Intel, 32-47 interruptions matérielles liées au coprocesseur).
+
+	Par exemple, lors d'une interruption matérielle survenant en espace utilisateur, le processeur va changer de niveau de privilèges et changer de pile, puis sauver quelques registres sur le sommet de la pile (\texttt{SS}, \texttt{ESP}, \texttt{EFLAGS}, \texttt{CS}, \texttt{EIP} - voir sous-section \ref{intel_hard_context}). Le code de gestion d'interruption pousse à son tour les registres généraux sur le sommet de pile, complétant la structure de \emph{contexte}. Ces quelques lignes d'assembleurs seront détaillées dans la sous-section suivante.
+	%Les partitions peuvent \emph{déclarer} qu'elles ne souhaitent pas être interrompues, appelé \emph{état d'interruption} des partitions dans ce paragraphe. Ce mécanisme est analogue aux instructions \texttt{cli} et \texttt{sti} d'Intel ; cependant, les partitions indiquant qu'elles ne souhaitent pas être interrompues \textbf{le seront, peu importe leur état d'interruption}. L'état d'interruption sert uniquement à indiquer à la partition parente qu'il est nécessaire que le contexte courant de son enfant soit restauré en priorité. Il incombe donc au parent de s'assurer de restaurer ce contexte, plutôt qu'un autre. Pour cela, il existe un appel système permettant à un parent de récupérer l'état d'interruption de ses partitions enfants.
 
 		\subsection{Décomposition des opérations et généralisation}
+		
+			\subsubsection{Interruptions}
+
 
 	\section{Preuve d'isolation}
 		\subsection{Définition de l'interface/monade}
@@ -120,3 +144,5 @@ Cependant, les différents mécanismes décrits dans la section \ref{S3} ne pré
 	% Remarques pragmatiques sur cette contribution
 		\subsection{Métriques}
 		\subsection{Prise de recul sur la nature de la preuve}
+		\subsection{Limites du service}
+			- parler de la limite de la taille des flags comparé à nombre d'interruptions
