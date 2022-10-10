@@ -115,18 +115,30 @@ Plus simplement, les services de chaque partition sont définis dans leur \emph{
 
 			\paragraph{Étape de transfert de flôt d'exécution} La troisième et dernière étape du service transfère le flôt d'exécution vers la partition appelée au travers du contexte d'exécution récupéré lors de l'étape préliminaire. Cette étape est représentée dans le code prouvé par un appel à une fonction de l'interface.
 
+		\subsection{Décomposition des opérations et généralisation}
+
+		Afin de pouvoir accomoder les différents modes de transfert de flôt d'exécution au sein d'un même service, le service est composé de plusieurs blocs de code remplissant leur propre fonction et appelant le bloc de code suivant. Cette conception du service pourrait être assimilé à des \emph{continuations}. Les blocs composants le service sont illustrés sur la figure \ref{fig:callgraph}.
+
+		\begin{figure}[!ht]
+			\input{figures/callgraph.tex}
+			\caption{Vue éclatée des blocs constituant le service}
+			\label{fig:callgraph}
+		\end{figure}
+		Le code Gallina du service est décomposé en plusieurs \emph{continuations}.
+		\ref{fig:callgraph}
+		
+			\subsubsection{Interruptions}
+
+			\subsubsection{Fautes}
 		\subsection{Cas des fautes, interruptions logicielles et matérielles}
 
-	L'idée principale derrière cette unification est qu'il est possible pour le système de fixer certains paramètres et de commencer l'exécution à un endroit arbitraire du service. Il est notamment possible de commencer l'exécution directement après la validation des paramètres et de la traduction de l'adresse virtuelle de la partition cible. Ceci permet au système de passer en arguments les adresses réelles de partitions qui seront la cible des différents événements. La figure \ref{callgraph} montre comment sont placés les différents points d'entrée du système dans le service.
+	L'idée principale derrière cette unification est qu'il est possible pour le système de fixer certains paramètres et de commencer l'exécution à un endroit arbitraire du service. Il est notamment possible de commencer l'exécution directement après la validation des paramètres et de la traduction de l'adresse virtuelle de la partition cible. Ceci permet au système de passer en arguments les adresses réelles de partitions qui seront la cible des différents événements. La figure \ref{fig:callgraph} montre comment sont placés les différents points d'entrée du système dans le service.
 
 	Cependant, les différents mécanismes décrits dans la section \ref{S3} ne présentent pas d'interface commune ; c'est pourquoi, de petites portions d'assembleur sont placées juste avant les différents points d'entrée afin d'harmoniser les différents formats de contexte (un exemple est disponible en annexe). Ces morceaux d'assembleur sont placés dans l'\emph{IDT} du système, afin qu'ils soient appelés lors d'une faute ou d'une interruption. Deux niveaux d'interruption sont réservés à la sauvegarde des contextes par Pip lorsqu'une interruption survient. Sur l'architecture \texttt{x86} ce sont les niveaux 48 et 49 qui sont utilisés (0-31 fautes réservées par Intel, 32-47 interruptions matérielles liées au coprocesseur).
 
 	Par exemple, lors d'une interruption matérielle survenant en espace utilisateur, le processeur va changer de niveau de privilèges et changer de pile, puis sauver quelques registres sur le sommet de la pile (\texttt{SS}, \texttt{ESP}, \texttt{EFLAGS}, \texttt{CS}, \texttt{EIP} - voir sous-section \ref{intel_hard_context}). Le code de gestion d'interruption pousse à son tour les registres généraux sur le sommet de pile, complétant la structure de \emph{contexte}. Ces quelques lignes d'assembleurs seront détaillées dans la sous-section suivante.
 	%Les partitions peuvent \emph{déclarer} qu'elles ne souhaitent pas être interrompues, appelé \emph{état d'interruption} des partitions dans ce paragraphe. Ce mécanisme est analogue aux instructions \texttt{cli} et \texttt{sti} d'Intel ; cependant, les partitions indiquant qu'elles ne souhaitent pas être interrompues \textbf{le seront, peu importe leur état d'interruption}. L'état d'interruption sert uniquement à indiquer à la partition parente qu'il est nécessaire que le contexte courant de son enfant soit restauré en priorité. Il incombe donc au parent de s'assurer de restaurer ce contexte, plutôt qu'un autre. Pour cela, il existe un appel système permettant à un parent de récupérer l'état d'interruption de ses partitions enfants.
 
-		\subsection{Décomposition des opérations et généralisation}
-		
-			\subsubsection{Interruptions}
 
 
 	\section{Preuve d'isolation}

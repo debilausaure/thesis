@@ -1,0 +1,24 @@
+\begin{tikzpicture}[>=triangle 45,font=\sffamily, every text node part/.style={align=center}, scale=1, every node/.style={transform shape}] {
+	\node[draw, fill=white, ultra thin, drop shadow, minimum width=3cm, minimum height=1cm] (int_no_checks) at (0,9.5) {\footnotesize{Vérification du n° contexte appelé}};
+	\node[draw, fill=white, ultra thin, drop shadow, minimum width=3cm, minimum height=1cm] (ctx_sav_checks) at (0,8.45) {\footnotesize{Vérification du n° de sauvegarde du contexte}};
+	\node[draw, fill=white, ultra thin, drop shadow, minimum width=3cm, minimum height=1cm] (child_checks) at (-3, 6.95) {\footnotesize{Récupération partition enfant}};
+	\node[draw, fill=white, ultra thin, drop shadow, minimum width=3cm, minimum height=1cm] (parent_checks) at (3, 6.95) {\footnotesize{Récupération partition parent}};
+	\node[draw, fill=white, ultra thin, drop shadow, minimum width=3cm, minimum height=1cm] (source_checks) at (0, 5.45) {\footnotesize{Récupération VIDT appelant}};
+	\node[draw, fill=white, ultra thin, drop shadow, minimum width=3cm, minimum height=1cm] (target_checks) at (0, 4.40) {\footnotesize{Récupération VIDT appelé}};
+	\node[draw, fill=white, ultra thin, drop shadow, minimum width=3cm, minimum height=1cm] (target_ctx) at (0, 3.35) {\footnotesize{Récupération contexte appelé}};
+	\node[draw, fill=white, ultra thin, drop shadow, minimum width=3cm, minimum height=1.5cm] (save_ctx) at (-3, 1.60) {\footnotesize{Vérification de l'espace de sauvegarde du contexte}\\\footnotesize{Sauvegarde du contexte}};
+	\node[draw, fill=white, ultra thin, drop shadow, minimum width=3cm, minimum height=2cm] (switch_ctx) at (2, -0.65) {\footnotesize{Changement d'espace d'adressage}\\\footnotesize{Mise à jour des structures internes de Pip}\\\footnotesize{Chargement du contexte appelé}};
+	\draw[->] (ctx_sav_checks) to[in=90, out=200] (child_checks.20);\draw[->] (ctx_sav_checks) to[in=90, out=340] (parent_checks.160);
+	\draw[->] (child_checks) to[in=90, out=0] (source_checks.140);\draw[->] (parent_checks) to[in=90, out=180] (source_checks.40);
+	\draw[->] (target_ctx) to[in=90, out=180] (save_ctx);\draw[->] (target_ctx) to[in=90, out=340] (switch_ctx);
+	\draw[->] (save_ctx) to[in=180, out=270] (switch_ctx);
+
+	%\node[above right=0.2cm of parent_checks.60, fill=red!30, drop shadow={shadow xshift=0.05cm,shadow yshift=-0.05cm}] (fault) {\small{\texttt{Entrée fautes}}};
+	\node[right=0.2cm of parent_checks.07, fill=red!30, drop shadow={shadow xshift=0.05cm,shadow yshift=-0.05cm}] (fault) {\small{\texttt{Entrée fautes}}};
+	\node[above right=0.2cm of parent_checks.45, fill=red!30, drop shadow={shadow xshift=0.05cm,shadow yshift=-0.05cm}] {\small{\texttt{Entrée int. logicielle}}};
+	\node[right=0.2cm of target_checks.07, fill=red!30, drop shadow={shadow xshift=0.05cm,shadow yshift=-0.05cm}]{\small{\texttt{Entrée double fautes}}};
+	\node[above=0.2cm of int_no_checks.90, fill=red!30, drop shadow={shadow xshift=0.05cm,shadow yshift=-0.05cm}]{\small{\texttt{Entrée explicite}}};
+	\node[left=0.2cm of source_checks.173, fill=red!30, drop shadow={shadow xshift=0.05cm,shadow yshift=-0.05cm}]{\small{\texttt{Entrée int. matérielle}}};
+}
+
+\end{tikzpicture}
