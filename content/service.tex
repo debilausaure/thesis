@@ -115,30 +115,132 @@ Plus simplement, les services de chaque partition sont définis dans leur \emph{
 
 			\paragraph{Étape de transfert de flôt d'exécution} La troisième et dernière étape du service transfère le flôt d'exécution vers la partition appelée au travers du contexte d'exécution récupéré lors de l'étape préliminaire. Cette étape est représentée dans le code prouvé par un appel à une fonction de l'interface.
 
-		\subsection{Décomposition des opérations et généralisation}
+		\subsection{Décomposition des opérations}
 
-		Afin de pouvoir accomoder les différents modes de transfert de flôt d'exécution au sein d'un même service, le service est composé de plusieurs blocs de code remplissant leur propre fonction et appelant le bloc de code suivant. Cette conception du service pourrait être assimilé à des \emph{continuations}. Les blocs composants le service sont illustrés sur la figure \ref{fig:callgraph}.
+		Afin de pouvoir accomoder les différents modes de transfert de flôt d'exécution au sein d'un même service, le service est composé de plusieurs blocs de code remplissant leur propre fonction et appelant le bloc de code suivant. Ces blocs pourraient être assimilés à des \emph{continuations}. Les blocs composants le service sont illustrés à la fin de la sous-section sur la figure \ref{fig:callgraph}.
+
+		\paragraph{Vérification du numéro de contexte ciblé}
+
+		Le bloc de code \texttt{checkIntLevelCont} est le point d'entrée dans le service lors d'un appel explicite, tel que présenté dans le code \ref{code:gallina_proto}.
+		Il se contente de vérifier que le numéro de contexte ciblé soit bien valide et transforme son type pour qu'il soit utilisable par le noyau. Il appelle ensuite le bloc de code \texttt{checkCtxSaveIdxCont}.
+
+		%\begin{listing}[!ht]
+		%	\coqcode{code/checkIntLevelCont.v}
+		%	\caption{Prototype du point d'entrée du service en Gallina}
+		%	\label{code:checkIntLevelCont}
+		%\end{listing}
+
+		\paragraph{Vérification du numéro de sauvegarde du contexte de la partition appelante}
+		
+		Le bloc de code \texttt{checkCtxSaveIdxCont} vérifie que le numéro de sauvegarde du contexte de la partition appelante est valide, et transforme son type pour qu'il soit utilisable par le noyau. Il récupère ensuite le descripteur de partition de la partition appelante, ainsi que son Page Directory (la page mémoire racine de la configuration de son espace d'adressage -- voir \ref{sec:intel_mmu}).
+
+		Enfin, ce bloc de code va vérifier si la valeur de l'adresse virtuelle désignant la partition appelée est celle par défaut. Si c'est le cas, le prochain bloc de code sera \texttt{getParentPartDescCont}. Si ce n'est pas la valeur par défaut, il va appeler le bloc de code \texttt{getChildPartDescCont}.
+
+		%\begin{listing}[!ht]
+		%	\coqcode{code/checkCtxSaveIdxCont.v}
+		%	\caption{Prototype du point d'entrée du service en Gallina}
+		%	\label{code:checkCtxSaveIdxCont}
+		%\end{listing}
+
+		\paragraph{Récupération de la partition parent}
+
+		Le bloc de code \texttt{getParentPartDescCont} est un des deux blocs d'exécution possibles concernant la cible du transfert de flôt d'exécution qui traite de l'appel vers le parent. Il vérifie uniquement que la partition appelante n'est pas la partition racine, puisque la partition racine n'a pas de parent. Il récupère ensuite le descripteur de partition de son parent, qu'il passera en tant que descripteur de partition appelée au prochain bloc de code \texttt{getSourceVidtCont}. Ce prochain bloc de code est commun aux deux fils d'exécutions alternatifs.
+
+		%\begin{listing}[!ht]
+		%	\coqcode{code/getParentPartDescCont.v}
+		%	\caption{Prototype du point d'entrée du service en Gallina}
+		%	\label{code:getParentPartDescCont}
+		%\end{listing}
+
+		\paragraph{Récupération de la partition enfant}
+
+		Le bloc de code \texttt{getChildPartDescCont} est l'autre alternative d'exécution du transfert de flôt d'exécution qui traite de l'appel vers un enfant. Il vérifie que l'adresse virtuelle passée comme paramètre correspond au descripteur de partition d'une partition enfant. Pour le vérifier, Pip vérifie tout d'abord que l'adresse virtuelle réside bien dans l'espace d'adressage de la partition appelante, et vérifie ensuite dans ses structures de données internes que l'adresse correspond à un descripteur de partition.
+
+		Ensuite, de la même manière que le bloc de code concernant l'appel à un parent, ce bloc de code passe le descripteur de partition au prochain bloc de code \texttt{getSourceVidtCont}.
+
+		%\begin{listing}[!ht]
+		%	\coqcode{code/getChildPartDescCont.v}
+		%	\caption{Prototype du point d'entrée du service en Gallina}
+		%	\label{code:getChildPartDescCont}
+		%\end{listing}
+
+		\paragraph{Récupération de la VIDT de la partition appelante}
+		\label{sec:getSourceVidtCont}
+
+		Le bloc de code \texttt{getSourceVidtCont} vérifie d'abord que la VIDT de la partition appelante est mappée et accessible dans son espace d'adressage. Une fois qu'il a déterminé qu'il était possible de lire dans la VIDT, il va récupérer l'adresse virtuelle de l'espace mémoire où sauvegarder le contexte de la partition appelante. Enfin, la page de mémoire contenant la VIDT, et l'adresse virtuelle de l'espace mémoire de sauvegarde sont passés au bloc de code suivant \texttt{getTargetVidtCont}.
+
+		%\begin{listing}[!ht]
+		%	\coqcode{code/getSourceVidtCont.v}
+		%	\caption{Prototype du point d'entrée du service en Gallina}
+		%	\label{code:getSourceVidtCont}
+		%\end{listing}
+
+		\paragraph{Récupération de la VIDT de la partition ciblée}
+		\label{sec:getTargetVidtCont}
+		Tout d'abord, le bloc de code \texttt{getTargetVidtCont} va récupérer le \emph{Page Directory} de la partition appelée à partir de son descripteur de partition. Ensuite, similairement au bloc de code précédent, il vérifie que la VIDT de la partition appelée est mappée et accessible dans son espace d'adressage. Ensuite, la page de mémoire contenant la VIDT ainsi que son \emph{Page Directory} sont passés au bloc de code suivant \texttt{getTargetContextCont}.
+		%\begin{listing}[!ht]
+		%	\coqcode{code/getTargetVidtCont.v}
+		%	\caption{Prototype du point d'entrée du service en Gallina}
+		%	\label{code:getTargetVidtCont}
+		%\end{listing}
+
+		\paragraph{Récupération du contexte de la partition ciblée}
+
+		Le bloc de code \texttt{getTargetContextCont} vérifie que le pointeur vers le contexte d'exécution ciblé pointe bien dans l'espace d'adressage de la partition ciblée, et que cet espace est bien accessible à la partition. En supplément, le bloc va vérifier que l'adresse de fin du contexte ne va pas overflow, et que la dernière adresse du contexte est aussi accessible à la partition afin de s'assurer que l'entièreté du contexte pourra être lu sans déclencher de faute. Ceci introduit l'hypothèse qu'un contexte d'exécution a une taille inférieure à une page mémoire.
+		Enfin, le bloc de code va comparer l'adresse virtuelle de sauvegarde de contexte récupérée au bloc \texttt{getSourceVidtCont} (voir \ref{sec:getSourceVidtCont}) avec l'adresse virtuelle par défaut. Si cette adresse n'est pas celle par défaut, c'est que la partition veut sauvegarder son contexte , et le bloc de code \texttt{saveSourceContextCont} est appelé. Sinon, le bloc de code \texttt{switchContextCont} est appelé.
+		%\begin{listing}[!ht]
+		%	\coqcode{code/getTargetContextCont.v}
+		%	\caption{Prototype du point d'entrée du service en Gallina}
+		%	\label{code:getTargetContextCont}
+		%\end{listing}
+
+		\paragraph{Sauvegarde du contexte de la partition appelante}
+
+		Le bloc de code \texttt{saveSourceContextCont} va se contenter de vérifier que l'espace mémoire pointé par l'adresse récupérée dans la VIDT de la partition appelante est bien dans l'espace d'adressage de la partition appelante et qu'il est accessible en espace utilisateur. Comme dans le bloc précédent, il va vérifier en supplément que l'adresse de fin de cet espace mémoire n'overflow pas, et qu'il reste accessible dans son espace d'adressage, afin de s'assurer qu'une écriture dans cette zone mémoire ne déclenchera pas de faute. Une fois les vérifications faites, il écrit le contexte de la partition appelante dans la zone mémoire, puis appelle le dernier bloc de code \texttt{switchContextCont}.
+		%\begin{listing}[!ht]
+		%	\coqcode{code/saveSourceContextCont.v}
+		%	\caption{Prototype du point d'entrée du service en Gallina}
+		%	\label{code:saveSourceContextCont}
+		%\end{listing}
+
+		\paragraph{Changement d'espace d'adressage et chargement du contexte d'exécution}
+
+		Le bloc de code \texttt{switchContextCont} ne procède plus à aucune vérification. Il commence par écrire les drapeaux \texttt{flagsOnYield} dans la partition appelante. Ensuite, l'espace d'adressage est changé par celui de la partition appelée -- son \emph{Page Directory} ayant été récupéré dans le bloc de code \texttt{getTargetVidtCont} (voir \ref{sec:getTargetVidtCont}). Ensuite, il met à jour la variable de Pip indiquant la partition qui s'exécutera lorsque le processeur repassera en mode utilisateur. Le bloc de code récupère ensuite les drapeaux \texttt{flagsOnWake} du contexte d'exécution de la partition à réveiller et les applique à la partition courante, sur le nouvel espace d'adressage. À partir de ces drapeaux, il détermine si la partition appelée peut demander à ne pas être interrompue, puis procède enfin au chargement de son contexte.
+		%\begin{listing}[!ht]
+		%	\coqcode{code/switchContextCont.v}
+		%	\caption{Prototype du point d'entrée du service en Gallina}
+		%	\label{code:switchContextCont}
+		%\end{listing}
+
+		\newpage
 
 		\begin{figure}[!ht]
 			\input{figures/callgraph.tex}
 			\caption{Vue éclatée des blocs constituant le service}
 			\label{fig:callgraph}
 		\end{figure}
-		Le code Gallina du service est décomposé en plusieurs \emph{continuations}.
-		\ref{fig:callgraph}
-		
-			\subsubsection{Interruptions}
+		\newpage
 
-			\subsubsection{Fautes}
-		\subsection{Cas des fautes, interruptions logicielles et matérielles}
+		\subsection{Généralisation du service aux fautes et aux interruptions}
 
-	L'idée principale derrière cette unification est qu'il est possible pour le système de fixer certains paramètres et de commencer l'exécution à un endroit arbitraire du service. Il est notamment possible de commencer l'exécution directement après la validation des paramètres et de la traduction de l'adresse virtuelle de la partition cible. Ceci permet au système de passer en arguments les adresses réelles de partitions qui seront la cible des différents événements. La figure \ref{fig:callgraph} montre comment sont placés les différents points d'entrée du système dans le service.
+		L'idée principale derrière cette unification est qu'il est possible pour Pip de fixer certains paramètres et de commencer l'exécution à un endroit arbitraire du service. Il est notamment possible de commencer l'exécution directement après la validation des paramètres et de la traduction de l'adresse virtuelle de la partition cible. Ceci permet au système de passer en arguments les adresses réelles de partitions qui seront la cible des différents événements. La figure \ref{fig:callgraph} montre comment sont placés les différents points d'entrée du système dans le service.
 
-	Cependant, les différents mécanismes décrits dans la section \ref{S3} ne présentent pas d'interface commune ; c'est pourquoi, de petites portions d'assembleur sont placées juste avant les différents points d'entrée afin d'harmoniser les différents formats de contexte (un exemple est disponible en annexe). Ces morceaux d'assembleur sont placés dans l'\emph{IDT} du système, afin qu'ils soient appelés lors d'une faute ou d'une interruption. Deux niveaux d'interruption sont réservés à la sauvegarde des contextes par Pip lorsqu'une interruption survient. Sur l'architecture \texttt{x86} ce sont les niveaux 48 et 49 qui sont utilisés (0-31 fautes réservées par Intel, 32-47 interruptions matérielles liées au coprocesseur).
+		Cependant, les différents mécanismes décrits dans la section \ref{sec:x86_syscall} ne présentent pas d'interface commune ; c'est pourquoi, de petites portions de code C et assembleur sont placées juste avant les différents points d'entrée afin d'harmoniser les différents formats de contexte. Ces morceaux d'assembleur sont placés dans l'\emph{IDT} du système, afin qu'ils soient appelés lors d'une faute ou d'une interruption. Deux niveaux d'interruption sont réservés à la sauvegarde des contextes par Pip lorsqu'une ifaute ou une interruption survient. Sur l'architecture \texttt{x86} ce sont les niveaux 48 et 49 qui sont utilisés (les niveaux d'interruptions 0 à 31 sont réservés par Intel pour les fautes, les niveaux d'interrruptions de 32 à 47 ont été configurés pour correspondre aux interruptions matérielles).
+
+		\subsubsection{Implémentation des fautes utilisant le service sur l'architecture x86}
+
+		Pour rappel, les fautes doivent être transmises au parent de la partition fautive. Il est donc naturel de commencer l'exécution du service au bloc de code \texttt{getParentPartDescCont}. Le prototype de ce bloc de code est présenté en listing \ref{code:getParentPartDescCont}.
+
+		\begin{listing}[!ht]
+			\coqcode{code/getParentPartDescCont.v}
+			\caption{Prototype du point d'entrée du service en Gallina}
+			\label{code:getParentPartDescCont}
+		\end{listing}
+
+		\subsubsection{Implémentation des interruptions utilisant le service sur l'architecture x86}
 
 	Par exemple, lors d'une interruption matérielle survenant en espace utilisateur, le processeur va changer de niveau de privilèges et changer de pile, puis sauver quelques registres sur le sommet de la pile (\texttt{SS}, \texttt{ESP}, \texttt{EFLAGS}, \texttt{CS}, \texttt{EIP} - voir sous-section \ref{intel_hard_context}). Le code de gestion d'interruption pousse à son tour les registres généraux sur le sommet de pile, complétant la structure de \emph{contexte}. Ces quelques lignes d'assembleurs seront détaillées dans la sous-section suivante.
 	%Les partitions peuvent \emph{déclarer} qu'elles ne souhaitent pas être interrompues, appelé \emph{état d'interruption} des partitions dans ce paragraphe. Ce mécanisme est analogue aux instructions \texttt{cli} et \texttt{sti} d'Intel ; cependant, les partitions indiquant qu'elles ne souhaitent pas être interrompues \textbf{le seront, peu importe leur état d'interruption}. L'état d'interruption sert uniquement à indiquer à la partition parente qu'il est nécessaire que le contexte courant de son enfant soit restauré en priorité. Il incombe donc au parent de s'assurer de restaurer ce contexte, plutôt qu'un autre. Pour cela, il existe un appel système permettant à un parent de récupérer l'état d'interruption de ses partitions enfants.
-
 
 
 	\section{Preuve d'isolation}

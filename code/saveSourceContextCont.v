@@ -1,0 +1,10 @@
+Definition saveSourceContextCont (targetPartDesc           : page)
+                                 (targetPageDir            : page)
+                                 (sourcePageDir            : page)
+                                 (sourceContextSaveVAddr   : vaddr)
+                                 (nbL                      : level)
+                                 (flagsOnYield             : interruptMask)
+                                 (flagsOnWake              : interruptMask)
+                                 (sourceInterruptedContext : contextAddr)
+                                 (targetContext            : contextAddr)
+           : LLI yield_checks.

@@ -126,7 +126,7 @@ Les interruptions liées au matériel sur l'architecture x86 étaient autrefois 
 pour qu'il utilise une certaine plage de niveaux d'interruption, ou pour qu'il masque temporairement la venue de nouvelles interruptions. Les fautes utilisent elles aussi l'\emph{IDT}, et utilisent les trente-deux premières \emph{gates} de la table, en fonction de la faute à déclencher. Les fautes et interruptions déclenchées par le processeur ou le coprocesseur ont toujours le droit d'utiliser les \emph{gates}, peu importe le niveau de privilèges du code s'exécutant au moment de l'interruption.
 
 \paragraph{Fonctionnement de la \emph{MMU} sur l'architecture Intel 32 bits}
-
+\label{sec:intel_mmu}
 Sur l'architecture Intel x86, mais aussi sur toutes les autres architectures supportant une \emph{MMU} (pour \emph{Memory Management Unit}), il est possible d'associer des droits d'accès spécifiques à chaque pages de mémoire configurée dans l'espace d'adressage virtuel.
 
 Le concept de traduction d'adresse virtuelle vers l'adresse réelle est le suivant. Les bits de poids forts de l'adresse virtuelle servent à traverser les tables de la MMU (sur l'architecture Intel x86, le \emph{Page Directory} et les \emph{Page Tables}). Les bits de poids faible correspondent à l'emplacement de l'adresse désirée dans la page réelle obtenue après traduction (souvent appelé \emph{offset}).

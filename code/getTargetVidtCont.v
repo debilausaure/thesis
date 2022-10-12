@@ -1,0 +1,11 @@
+Definition getTargetVidtCont (targetPartDesc : page)
+                             (sourcePageDir : page)
+                             (vidtVAddr : vaddr)
+                             (sourceContextSaveVAddr : vaddr)
+                             (targetInterrupt : index)
+                             (nbL : level)
+                             (idxVidtInLastMMUPage : index)
+                             (flagsOnYield : interruptMask)
+                             (flagsOnWake : interruptMask)
+                             (sourceInterruptedContext : contextAddr)
+           : LLI yield_checks.

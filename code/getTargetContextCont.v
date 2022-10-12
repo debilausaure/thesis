@@ -1,0 +1,11 @@
+Definition getTargetContextCont (targetPartDesc : page)
+                                (targetPageDir  : page)
+                                (targetVidt     : page)
+                                (sourcePageDir  : page)
+                                (sourceContextSaveVaddr : vaddr)
+                                (targetInterrupt : index)
+                                (nbL : level)
+                                (flagsOnYield   : interruptMask)
+                                (flagsOnWake    : interruptMask)
+                                (sourceInterruptedContext : contextAddr)
+           : LLI yield_checks.
