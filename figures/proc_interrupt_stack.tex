@@ -1,0 +1,14 @@
+\centering
+\begin{tikzpicture}
+
+	\node[draw, semithick, minimum width=4cm, minimum height=0.6cm] (ss)         at (0, 3.3) {\texttt{SS}};
+	\node[draw, semithick, minimum width=4cm, minimum height=0.6cm] (esp)        at (0, 2.7) {\texttt{ESP}};
+	\node[draw, semithick, minimum width=4cm, minimum height=0.6cm] (eflags)     at (0, 2.1) {\texttt{EFLAGS}};
+	\node[draw, semithick, minimum width=4cm, minimum height=0.6cm] (cs)         at (0, 1.5) {\texttt{CS}};
+	\node[draw, semithick, minimum width=4cm, minimum height=0.6cm] (eip)        at (0, 0.9) {\texttt{EIP}};
+	\node[draw, semithick, minimum width=4cm, minimum height=0.6cm] (error_code) at (0, 0.3) {\texttt{(Error Code)}};
+	\node[                                    minimum height=0.6cm]              at (0,-0.5) {$\downarrow$};
+
+	\draw[semithick] (-2, 0) -- (-2, -0.9);
+	\draw[semithick] ( 2, 0) -- ( 2, -0.9);
+\end{tikzpicture}

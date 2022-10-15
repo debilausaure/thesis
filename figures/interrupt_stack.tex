@@ -1,0 +1,32 @@
+\centering
+\begin{tikzpicture}
+
+	\node[draw, semithick, minimum width=4cm, minimum height=0.6cm] (ss)         at (0, 3.3) {\texttt{SS}};
+	\node[draw, semithick, minimum width=4cm, minimum height=0.6cm] (esp)        at (0, 2.7) {\texttt{ESP}};
+	\node[draw, semithick, minimum width=4cm, minimum height=0.6cm] (eflags)     at (0, 2.1) {\texttt{EFLAGS}};
+	\node[draw, semithick, minimum width=4cm, minimum height=0.6cm] (cs)         at (0, 1.5) {\texttt{CS}};
+	\node[draw, semithick, minimum width=4cm, minimum height=0.6cm] (eip)        at (0, 0.9) {\texttt{EIP}};
+	\node[draw, semithick, minimum width=4cm, minimum height=0.6cm] (error_code) at (0, 0.3) {\texttt{(Error Code)}};
+	\node[draw, semithick, minimum width=4cm, minimum height=0.6cm] (int_level)  at (0,-0.3) {\texttt{Interrupt Level}};
+	\node[draw, semithick, minimum width=4cm, minimum height=1.8cm, align=center] (greg) at (0,-1.5) {Registres généraux\\\texttt{(8 dwords)}};
+	\node[draw, semithick, minimum width=4cm, minimum height=0.6cm] (ctx_ptr)    at (0,-2.7) {\texttt{int\_ctx\_t *}};
+	\node[                                    minimum height=0.6cm]              at (0,-3.5) {$\downarrow$};
+
+	\draw[semithick] (-2, -3) -- (-2, -3.9);
+	\draw[semithick] ( 2, -3) -- ( 2, -3.9);
+
+	\node[left=0.5cm of eflags, minimum width=3cm] (iret_ctx_t) {\texttt{iret\_ctx\_t}};
+	\draw[dashed, thin] (ss.north west) -- (iret_ctx_t.north |- ss.north west) -- (iret_ctx_t.north);
+	\draw[dashed, thin] (eip.south west) -- (iret_ctx_t.south |- eip.south west) -- (iret_ctx_t.south);
+
+	\node[left=0.5cm of greg,   minimum width=3cm] (pushad_regs_t) {\texttt{pushad\_regs\_t}};
+	\draw[dashed, thin] (pushad_regs_t.north) -- (pushad_regs_t.north |- greg.north west) -- (greg.north west);
+	\draw[dashed, thin] (pushad_regs_t.south) -- (pushad_regs_t.south |- greg.south west) -- (greg.south west);
+
+	\node[right=0.5cm of eip.south east, minimum width=3cm] (int_ctx_t) {\texttt{int\_ctx\_t}};
+	\draw[dashed, thin] (ss.north east) -- (int_ctx_t.north |- ss.north east) -- (int_ctx_t.north);
+	\draw[dashed, thin] (greg.south east) -- (int_ctx_t.south |- greg.south east) -- (int_ctx_t.south);
+
+	\draw[dashed, thin] (ctx_ptr.east) -- (int_ctx_t.320 |- ctx_ptr.east);
+	\draw[dashed, thin, ->] (int_ctx_t.320 |- ctx_ptr.east) -- (int_ctx_t.320);
+\end{tikzpicture}

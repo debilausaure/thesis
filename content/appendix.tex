@@ -2,6 +2,15 @@
 
 \chapter{Annexes de la première contribution}
 
+\section{Implémentation de l'appel au service de Pip au sein de la LibPip, sa librairie utilisateur}
+
+\begin{listing}[!ht]
+	\ccode{code/libpip_yield.c}
+	\caption{Implémentation de l'appel vers le service en espace utilisateur}
+	\label{code:libpip_yield}
+\end{listing}
+
+\newpage
 \section{Implémentation de la routine de sauvegarde du contexte et d'harmonisation de la pile}
 
 \begin{codeenv}
@@ -10,7 +19,7 @@
 	\label{code:cg_yieldGlue}
 \end{codeenv}
 
-
+\newpage
 \section{Création du contexte générique et appel vers le code prouvé}
 
 \begin{codeenv}
@@ -19,3 +28,11 @@
 	\label{code:yieldGlue}
 \end{codeenv}
 
+\newpage
+\section{Fonction de récupération des arguments après une faute}
+
+\begin{codeenv}
+	\ccode{code/faultInterruptHandler.c}
+	\caption{Fonction de récupération des arguments après une faute}
+	\label{code:faultInterruptHandler}
+\end{codeenv}

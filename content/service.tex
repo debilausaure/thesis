@@ -88,22 +88,20 @@ Plus simplement, les services de chaque partition sont définis dans leur \emph{
 			\subsubsection{Point d'entrée par \texttt{callgate}}
 
 		Dans l'implémentation de Pip sur l'architecture Intel x86, les services de Pip sont appelables au travers de \emph{callgates} (voir \ref{sec:x86_syscall}). Ces callgates permettent au code non privilégié des partitions d'appeler les services privilégiés de Pip.
-		Pour ce faire, la partition doit pousser les arguments décrits en section \ref{sec:service_usage} sur sa pile, puis utiliser un \emph{farcall}. Cet appel est implémenté au sein de la LibPip, la librairie utilisateur facilitant l'utilisation du noyau.
+		Pour ce faire, la partition doit pousser les arguments décrits en section \ref{sec:service_usage} sur sa pile, puis utiliser un \emph{farcall}. Cet appel est implémenté au sein de la LibPip, la librairie utilisateur facilitant l'utilisation du noyau. Son code est disponible en annexe (voir listing \ref{code:libpip_yield}).
 
-		\begin{listing}[!ht]
-			\ccode{code/libpip_yield.c}
-			\caption{Implémentation de l'appel vers le service en espace utilisateur}
-			\label{code:libpip_yield}
-		\end{listing}
+		Lorsque le processeur exécute l'instruction \texttt{lcall} de la partition, le flôt d'exécution est transféré vers Pip et le processeur passe en mode privilégié, copie les paramètres et pousse partiellement l'état précédent sur la pile (voir \ref{sec:intel_callgate}). Dans le cas de l'appel au service de transfert de flôt d'exécution, le processeur commence par exécuter une routine qui va sauver sur la pile noyau le contexte d'exécution de la partition encore partiellement présent dans les registres. Accessoirement, cette routine réordonne les éléments de la pile afin de regrouper les différentes parties du contexte et de pouvoir utiliser une structure \texttt{gate\_ctx\_t} pour le représenter. Cette routine étant un peu longue, elle est placée en annexe (voir Fragment de code \ref{code:cg_yieldGlue}).
+		La figure \ref{fig:cg_stack} montre l'état de la pile après l'exécution de la routine.
 
-		Lorsque le processeur exécute l'instruction \texttt{lcall} (voir figure \ref{code:libpip_yield}), le flôt d'exécution est transféré vers Pip et le processeur passe en mode privilégié, copie les paramètres et pousse partiellement l'état précédent sur la pile (voir \ref{sec:intel_callgate}). Dans le cas de l'appel au service de transfert de flôt d'exécution, le processeur commence par exécuter une routine qui va sauver sur la pile noyau le contexte d'exécution de la partition encore partiellement présent dans les registres. Accessoirement, cette routine réordonne les éléments de la pile afin de regrouper les différentes parties du contexte et de pouvoir utiliser une structure pour le représenter. Cette routine étant un peu longue, elle est placée en annexe (voir Fragment de code \ref{code:cg_yieldGlue}).
-		La figure \ref{fig:stack_cg_asm} montre l'état de la pile après l'exécution de la routine.
-
-		\textcolor{red}{Schéma de la pile après l'exécution de la routine assembleur}
+		\begin{figure}[!ht]
+			\input{figures/cg_stack.tex}
+			\caption{État de la pile du noyau après la routine assembleur exécutée après l'appel du service au travers d'une callgate}
+			\label{fig:cg_stack}
+		\end{figure}
 	
-		\paragraph{Harmonisation du contexte d'exécution et appel du service prouvé} Avant d'appeler le code prouvé, une dernière transformation est opérée sur le contexte d'exécution. Il est copié en haut de la pile, puis transformé en contexte générique afin d'harmoniser les différentes représentations de contexte entre les différents points d'entrées du service. Le code est disponible en annexe (voir Fragment de code \ref{code:yieldGlue}).
+		\paragraph{Harmonisation du contexte d'exécution et appel du service prouvé} \label{sec:context_harmonisation} Avant d'appeler le code prouvé, une dernière transformation est opérée sur le contexte d'exécution. Il est copié en haut de la pile, puis transformé en contexte générique de type \texttt{user\_ctx\_t} afin d'harmoniser les différentes représentations de contexte entre les différents points d'entrées du service. Le code est disponible en annexe (voir Fragment de code \ref{code:yieldGlue}).
 
-			\subsubsection{Description détaillée du code prouvé du service}
+			\subsubsection{Introduction générale des étapes du service}
 
 			Le service écrit en Gallina permettant de transférer le flôt d'exécution procède en trois étapes.
 
@@ -236,6 +234,40 @@ Plus simplement, les services de chaque partition sont définis dans leur \emph{
 			\caption{Prototype du point d'entrée du service en Gallina}
 			\label{code:getParentPartDescCont}
 		\end{listing}
+
+		Cependant, l'appel de ce bloc de code n'est pas trivial après une faute. Il s'agit d'abord de récupérer le contexte d'exécution de la partition fautive. Comme expliqué précédemment dans la section \ref{sec:faults}, lorsqu'une faute survient, le processeur va chercher la \emph{gate} installée dans l'\emph{IDT} dont le numéro correspond au niveau de la faute. Dans Pip, ces \emph{gates} sont toutes des \emph{interrupt gates}, qui s'exécutent en mode privilégié.
+
+		De ce fait, le processeur change de pile. Il pousse le segment de pile \texttt{SS} ainsi que l'ancien pointeur vers le sommet de la pile \texttt{ESP}. Il pousse ensuite l'état des drapeaux du processeur \texttt{EFLAGS}, puis pousse le segment de code \texttt{CS} et le pointeur d'instruction \texttt{EIP} au moment de la faute. Enfin, en fonction de la faute qui a été déclenchée, le processeur peut éventuellement pousser un entier précisant la cause de la faute. La figure \ref{fig:proc_interrupt_stack} illustre l'état de la pile noyau après qu'une faute soit survenue.
+
+		\begin{figure}[!ht]
+			\input{figures/proc_interrupt_stack.tex}
+			\caption{État de la pile noyau après qu'une faute soit survenue en espace utilisateur\\Reproduction partielle du manuel Intel \cite{intel_interrupt_stack}}
+			\label{fig:proc_interrupt_stack}
+		\end{figure}
+
+		Pour unifier la structure des données sur la pile du noyau entre toutes les fautes et interruptions, le bout d'assembleur s'exécutant en sortie de faute va pousser une valeur de bourrage sur la pile si le processeur n'a pas poussé de code d'erreur. Il va pousser le niveau d'interruption de la faute sur la pile à des fins informatives. La routine assembleur va poursuivre en complétant le contexte d'exécution qui avait été partiellement sauvé par le processeur en poussant les registres généraux sur la pile. Ceci complète la structure \texttt{int\_ctx\_t} représentant le contexte d'exécution de la partition fautive. Enfin, le bout d'assembleur va pousser un pointeur vers cette structure. Cette routine assembleur s'achève en appelant le code C qui sera chargé de récupérer les arguments pour appeler le bloc de code \texttt{getParentPartDescCont}.
+
+		\begin{figure}[!ht]
+			\input{figures/interrupt_stack.tex}
+			\caption{État de la pile noyau après qu'une faute soit survenue en espace utilisateur\\Reproduction partielle du manuel Intel \cite{intel_interrupt_stack}}
+			\label{fig:interrupt_stack}
+		\end{figure}
+
+		Cette fonction s'appelle \texttt{faultInterruptHandler} ; son prototype est donné dans le listing \ref{code:faultInterruptHandler_proto}. Son code est trop long pour être inclus dans ce chapitre mais vous pouvez le retrouver en annexe \ref{code:faultInterruptHandler}.
+
+		\begin{listing}[!ht]
+			\ccode{code/faultInterruptHandler_proto.c}
+			\caption{Prototype de la fonction calculant les arguments du service lors d'une faute}
+			\label{code:faultInterruptHandler_proto}
+		\end{listing}
+
+		Tout comme l'appel du service par la \emph{callgate}, la fonction \texttt{faultInterruptHandler} commence par créer un nouveau contexte générique de type \texttt{user\_ctx\_t} à partir du contexte fautif précédemment créé. Ceci permet d'avoir la même représentation du contexte entre les différents points d'entrée du service, comme évoqué dans la section \ref{sec:context_harmonisation}. Cependant, le niveau de faute sera utilisé par la fonction comme argument \texttt{targetInterrupt}, pour que le parent soit reveillé avec le contexte lié à la faute.
+		La fonction récupère ensuite le descripteur de partition fautive grâce à la variable globale de Pip indiquant la partition s'exécutant en espace utilisateur, qui deviendra l'argument \texttt{sourcePartDesc}. Elle récupère aussi l'état de ses drapeaux, liés aux arguments \texttt{flagsOnYield} et \texttt{flagsOnWake}. La fonction va décider où sauvegarder le contexte de la partition fautive en fonction de ces drapeaux. L'implémentation actuelle considère que si le mot mémoire représentant les drapeaux est égal à zéro, la partition ne souhaitait pas être interrompue (on parle de \emph{Virtual CLI}, en référence à l'instruction assembleur désactivant les interruptions). L'état sera alors sauvegardé dans l'espace mémoire pointé à l'index \texttt{CLI\_SAVE\_INDEX}. Si les drapeaux sont différents de zéro, alors l'autre indice réservé, \texttt{STI\_SAVE\_INDEX} sera utilisé pour l'argument \texttt{sourceContextSaveIndex}.
+		Enfin, la fonction récupère le \emph{Page Directory} de la partition à partir de son descripteur qui servira d'argument \texttt{sourcePageDir}.
+
+		Lorsque tous les arguments ont été récupérés\footnote{l'argument \texttt{nbL} de l'appel a été omis du texte principal car il est peu intéressant. Cet argument est en fait un paramètre de l'implémentation précisant le nombre d'indirections dans les structures de configurations de la MMU, soit 2 dans l'implémentation Intel x86}, la fonction est prête à appeler le bloc de code \texttt{getParentPartDescCont}.
+
+		\paragraph{Cas des doubles fautes}
 
 		\subsubsection{Implémentation des interruptions utilisant le service sur l'architecture x86}
 
