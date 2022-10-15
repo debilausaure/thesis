@@ -267,7 +267,17 @@ Plus simplement, les services de chaque partition sont définis dans leur \emph{
 
 		Lorsque tous les arguments ont été récupérés\footnote{l'argument \texttt{nbL} de l'appel a été omis du texte principal car il est peu intéressant. Cet argument est en fait un paramètre de l'implémentation précisant le nombre d'indirections dans les structures de configurations de la MMU, soit 2 dans l'implémentation Intel x86}, la fonction est prête à appeler le bloc de code \texttt{getParentPartDescCont}.
 
-		\paragraph{Cas des doubles fautes}
+		\paragraph{Cas des doubles fautes} Il est possible que l'appel au service échoue lors des vérifications pour le transfert de flôt d'exécution. Lorsque ce transfert est dû à une faute, la partition l'ayant déclenchée n'est plus en mesure de recevoir le flôt d'exécution : elle déclencherait à nouveau la faute. Ainsi, il faut que le service propose une voie de transfert de flôt d'exécution dont le succès ne dépend que de la bonne configuration de la partition ayant la responsabilité de la partition fautive -- c'est à dire son parent, la partition recevant le flot d'exécution.
+		Dans le cas où le parent ne serait pas non plus en mesure de recevoir le flôt d'exécution, le flôt d'exécution serait redirigé vers le parent de la partition parent et remonterai la chaîne de responsabilité, jusqu'à ce qu'une partition reçoive le flôt d'exécution sans erreur, ou jusqu'à ce que la partition racine elle même échoue à le recevoir.
+
+		C'est pourquoi la fonction récupérant les arguments appelle à son tour une autre fonction appelée \texttt{propagateFault} (cette fonction est disponible en annexe, voir listing \ref{code:faultInterruptHandler}). Cette fonction est chargée de faire l'appel au bloc de code \texttt{getParentPartDescCont} et de gérer les éventuelles erreurs pouvant survenir après un appel à ce bloc. Il y a trois cas d'erreurs distincs gérés par la fonction :
+		\begin{itemize}
+			\item le cas où la fonction ayant réalisé la faute est la partition racine : dans ce cas là, il n'y a plus rien à rattraper, la partition racine étant la base de confiance absolue du système -- si elle échoue le système s'écroule. Le service s'arrête alors sur une boucle infinie.
+			\item le cas où le service n'a pas réussi à récupérer la VIDT de la partition fautive, ou l'espace mémoire permettant de sauvegarder le contexte : dans ce cas, la sauvegarde du contexte de la partition fautive est omise, et l'exécution reprend au bloc de code \texttt{getTargetVidtCont}.
+			\item dans tous les autres cas d'erreur, la partition parent n'est pas correctement configurée et n'est pas en mesure de rattraper la faute. Dans ce cas, la fonction \texttt{propagateFault} fait un appel récursif. La faute est redirigée sur le parent de la cible actuelle, et le niveau d'interruption de la faute est changé au niveau correspondant à la double faute.
+		\end{itemize}
+
+		
 
 		\subsubsection{Implémentation des interruptions utilisant le service sur l'architecture x86}
 
