@@ -439,8 +439,8 @@ Definition loadContext (contextToLoad : contextAddr)
 			\label{code:loadContext}
 		\end{listing}
 
+		Cependant, il n'est pas \emph{nécessaire} que cette fonction ne retourne pas. En effet, dans l'implémentation actuelle sur Intel x86, la fonction copie le contexte sur le dessus de la pile et le charge immédiatement. Il s'avère que ce code de chargement est aussi disponible dans les portions d'assembleur appelant le service, dans le cas où une erreur surviendrait pendant l'exécution du service. Dans ce cas, le service retourne prématurément pour signaler une erreur et la fonction \texttt{loadContext} n'est jamais atteinte. Ces portions de code restaurent le contexte appelant le service, mais il serait possible que la fonction \texttt{loadContext} vienne modifier ce contexte initial pour qu'il corresponde au nouveau contexte à charger. Ainsi, le transfert de flot d'exécution ne s'opérerait pas dans la fonction \texttt{loadContext}, mais dans la portion d'assembleur de retour au contexte initial. Ainsi, il serait possible d'éviter cette dualité entre le monde du modèle qui retourne et renvoie un succès, et le monde réel qui ne retourne pas et charge directement le contexte dans la fonction. Cette approche est néanmoins beaucoup plus compliquée à mettre en place comparée à une simple copie des données sur le sommet de la pile, et n'apporte pour le moment pas d'autre avantage que l'agréable sentiment d'harmonie dans la création.
 
-		Cependant, il n'est pas \emph{nécessaire} que cette fonction ne retourne pas. En effet, dans l'implémentation actuelle sur Intel x86, la fonction copie le contexte sur le dessus de la pile et le charge immédiatement. Il s'avère que ce code de chargement est aussi disponible dans les portions d'assembleur appelant le service, dans le cas où une erreur surviendrait pendant l'exécution du service. Dans ce cas, le service retourne prématurément pour signaler une erreur et la fonction \texttt{loadContext} n'est jamais atteinte. Ces portions de code restaurent le contexte appelant le service, mais il serait possible que la fonction \texttt{loadContext} vienne modifier ce contexte initial pour qu'il corresponde au nouveau contexte à charger. Ainsi, le transfert de flot d'exécution ne s'opérerait pas dans la fonction \texttt{loadContext}, mais dans la portion d'assembleur de retour au contexte initial. Ainsi, il serait possible d'éviter cette dualité entre le monde du modèle qui retourne et renvoie un succès, et le monde réel qui ne retourne pas et charge directement le contexte dans la fonction. Cette approche est néanmoins beaucoup plus compliquée à mettre en place, comparé à une simple copie des données sur le sommet de la pile.
 		\paragraph{\mintinline{c}{void writeContext(contextAddr ctx, vaddr ctxSaveVAddr, interruptMask}}~~\\
 		   \textbf{\mintinline{c}{flagsOnWake);}}~\\
 			Cette fonction écrit le contexte d'exécution pointé par \texttt{ctx} à l'adresse virtuelle \texttt{ctxSaveVAddr}, en y écrivant les drapeaux \texttt{flagsOnWake}. Cette fonction est différente des autres fonctions d'écriture de l'interface avec la monade car elle effectue plusieurs écritures successives en mémoire. De plus, ces écritures sont faites en espace utilisateur. Son modèle se contente d'appeler une fonction récursive qui va itérer sur la taille d'un contexte, et écrire aux adresses virtuelles successives une valeur arbitraire.\\
@@ -478,7 +478,50 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 		Enfin, la fonction \mintinline{c}{void updateMMURoot(page MMURoot)} a été ajoutée. Cette fonction applique un nouvel espace d'adressage décrit par \texttt{MMURoot}. Dans l'implémentation Intel, cette fonctionne écrit le Page Descriptor \texttt{MMURoot} -- structure racine de la configuration de la MMU -- dans le registre \texttt{CR3} du processeur. Cette fonction est spéciale car elle aurait pu être cachée dans l'implémentation, et n'a aucun sens dans le modèle d'isolation de Pip. Elle été ajoutée dans l'optique de produire une preuve fonctionnelle du service.
 
-		\subsection{Rappel? des propriétes d'isolation}
+		C'est sur ces différents modèles de fonction que la preuve d'isolation sera établie. Dans la prochaine section nous préciserons les propriétés d'isolation, avant de procéder à l'explication de l'établissement de la preuve.
+
+		\subsection{Rappel des propriétes d'isolation de Pip}
+
+		Comme exprimé dans la section \textcolor{red}{insérer ref}, la preuve d'isolation de Pip repose sur trois propriétés fondamentales : la propriété d'\emph{isolation horizontale}, la propriété d'\emph{isolation noyau} ainsi que la propriété de \emph{partage verticale}. Ces trois propriétés principales sot accompagnées d'une multitude de propriétés liées à la cohérence du noyau. Certaines de ces propriétés seront mises en avant dans ce document, puisqu'elle seront discutées dans la section suivante traitant de l'établissement de la preuve du service. \textcolor{red}{Est ce vrai ?}.
+
+			\subsubsection{Isolation horizontale}
+
+			La propriété d'isolation horizontale stipule que deux enfants d'une même partition parent ne peuvent partager de page mémoire au travers de leur espace d'adressage ou de leurs pages de configuration. Les deux ensembles des pages concernant l'une et l'autre des partitions enfants doivent être strictement disjoints. Le listing \ref{code:horizontal_isolation} montre comment est exprimée formellement cette propriété dans l'assistant de preuve.
+
+			\begin{listing}[!ht]
+				\coqcode{code/horizontal_isolation.v}
+				\caption{Propriété d'isolation horizontale telle qu'exprimée dans Coq}
+				\label{code:horizontal_isolation}
+			\end{listing}
+
+			La fonction \texttt{getPartitions} récupère les pages contenant les descripteurs de partitions. La fonction \texttt{getChildren} recupère la liste des pages contenant les descripteurs de partitions de tous les enfants de la partition passée en paramètre. La fonction \texttt{getUsedPages} récupère l'ensemble des pages mémoires renseignées dans les structures de données de la partition passée en paramètre. Cela inclus les structures internes de Pip ainsi que la description de l'espace d'adressage de la partition.
+
+			La propriété peut être lue de la sorte :
+			\begin{theorem}
+				Pour toutes pages de mémoire \texttt{parent}, \texttt{child1} et \texttt{child2}. Si \texttt{parent} est dans la liste des descripteurs de partitions, si \texttt{child1} et \texttt{child2} sont tous deux dans la liste des partitions enfant de \texttt{parent}, et si \texttt{child1} et \texttt{child2} sont différents, alors l'ensemble des pages utilisées par la partition \texttt{child1} est disjoint de l'ensemble des pages utilisées par la partition \texttt{child2}.
+			\end{theorem}
+
+			\subsubsection{Isolation noyau}
+
+			La propriété d'isolation du noyau stipule que les pages de configuration d'une partition (c'est à dire les pages réquisitionnées par Pip pour y loger ses structures, notamment les structures relative à l'espace d'adressage de la partition) sont inaccessibles à \emph{n'importe quelle} partition.
+			Cette propriété est exprimée formellement par le code décrit en listing \ref{code:kernel_isolation}.
+
+			\begin{listing}[!ht]
+				\coqcode{code/kernel_isolation.v}
+				\caption{Propriété d'isolation du noyau telle qu'exprimée dans Coq}
+				\label{code:kernel_isolation}
+			\end{listing}
+
+			La fonction \texttt{getAccessibleMappedPages} permet de récupérer les pages de mémoire renseignées comme accessibles sans privilège dans les structures de configuration de la MMU de la partition passée en paramètre. La fonction \texttt{getConfigPages} permet de récupérer l'ensemble des pages de mémoire de la partition passée en paramètre contenant les structures internes à Pip.
+
+			La propriété peut être lue de la sorte :
+			\begin{theorem}
+				Pour toutes pages de mémoire \texttt{partition1} et \texttt{partition2}. Si \texttt{partition1} et \texttt{partition2} sont toutes deux dans la liste des descripteurs de partitions, alors l'ensemble des pages contenant les structures internes de Pip relatives à la \texttt{partition2} est disjoint de l'ensemble des pages accessibles à la \texttt{partition1}.
+			\end{theorem}
+
+			\subsubsection{Partage vertical}
+
+			\subsubsection{Propriétés de cohérence du noyau}
 		
 		\subsection{Déroulement de la preuve}
 			\subsubsection{Validation des paramètres}
