@@ -12,13 +12,19 @@ La dernière section de ce chapitre reviendra sur la conception de ce service d'
 
 	\section{Motivations}
 
+		{\Huge \textcolor{red}{OSCOUR}}
+
 		Point de vue pragmatique :
-			- anciennement deux appels systèmes \texttt{dispatch} et \texttt{resume} disponibles, écrit en C sans documentation, qui ne couvraient pas la totalité des cas d'usage.
+		\begin{itemize}
+			\item anciennement deux appels systèmes \texttt{dispatch} et \texttt{resume} disponibles, écrit en C sans documentation, qui ne couvraient pas la totalité des cas d'usage.
 			  donc nécessité de (re-)conception d'un mécanisme de transfert de flot d'exécution car le changement d'espace d'adressage est une opération privilégiée.
+		\end{itemize}
 
 		Point de vue académique :
-			- compléter la preuve des appels système de Pip pour surenchérir sur la validité de la méthologie de Pip
-			- valeur intrinsèque de l'unification des diférents transferts de flot de controle
+		\begin{itemize}
+			\item compléter la preuve des appels système de Pip pour surenchérir sur la validité de la méthologie de Pip
+			\item valeur intrinsèque de l'unification des diférents transferts de flot de controle
+		\end{itemize}
 		\subsection{Failles de sécurité}
 		\subsection{Changement d'espace d'adressage opération privilégiée}
 		\subsection{Arguments de co-design (minimaliste, générique)}
@@ -220,6 +226,7 @@ Plus simplement, les services de chaque partition sont définis dans leur \emph{
 		\newpage
 
 		\subsection{Généralisation du service aux fautes et aux interruptions}
+		\label{sec:service_generalisation}
 
 		L'idée principale derrière cette unification est qu'il est possible pour Pip de fixer certains paramètres et de commencer l'exécution à un endroit arbitraire du service. Il est notamment possible de commencer l'exécution directement après la validation des paramètres et de la traduction de l'adresse virtuelle de la partition cible. Ceci permet au système de passer en arguments les adresses réelles de partitions qui seront la cible des différents événements. La figure \ref{fig:callgraph} montre comment sont placés les différents points d'entrée du système dans le service.
 
@@ -277,18 +284,200 @@ Plus simplement, les services de chaque partition sont définis dans leur \emph{
 			\item dans tous les autres cas d'erreur, la partition parent n'est pas correctement configurée et n'est pas en mesure de rattraper la faute. Dans ce cas, la fonction \texttt{propagateFault} fait un appel récursif. La faute est redirigée sur le parent de la cible actuelle, et le niveau d'interruption de la faute est changé au niveau correspondant à la double faute.
 		\end{itemize}
 
-		
+		Les différentes étapes logicielles permettant d'utiliser le service pour une faute sont résumés dans la figure \ref{fig:fault_software}.
+
+		\begin{figure}[!ht]
+			\centering
+			\input{figures/fault_software.tex}
+			\caption{Résumé des différents blocs logiciels permettant d'appeler le service après une faute}
+			\label{fig:fault_software}
+		\end{figure}
 
 		\subsubsection{Implémentation des interruptions utilisant le service sur l'architecture x86}
 
-	Par exemple, lors d'une interruption matérielle survenant en espace utilisateur, le processeur va changer de niveau de privilèges et changer de pile, puis sauver quelques registres sur le sommet de la pile (\texttt{SS}, \texttt{ESP}, \texttt{EFLAGS}, \texttt{CS}, \texttt{EIP} - voir sous-section \ref{intel_hard_context}). Le code de gestion d'interruption pousse à son tour les registres généraux sur le sommet de pile, complétant la structure de \emph{contexte}. Ces quelques lignes d'assembleurs seront détaillées dans la sous-section suivante.
-	%Les partitions peuvent \emph{déclarer} qu'elles ne souhaitent pas être interrompues, appelé \emph{état d'interruption} des partitions dans ce paragraphe. Ce mécanisme est analogue aux instructions \texttt{cli} et \texttt{sti} d'Intel ; cependant, les partitions indiquant qu'elles ne souhaitent pas être interrompues \textbf{le seront, peu importe leur état d'interruption}. L'état d'interruption sert uniquement à indiquer à la partition parente qu'il est nécessaire que le contexte courant de son enfant soit restauré en priorité. Il incombe donc au parent de s'assurer de restaurer ce contexte, plutôt qu'un autre. Pour cela, il existe un appel système permettant à un parent de récupérer l'état d'interruption de ses partitions enfants.
+		La même méthode a été employée pour gérer les interruptions matérielles avec le service. Pour rappel, les interruptions matérielles doivent arriver à la partition racine. Il n'y a pas de bloc de code récupérant la partition racine directement, il faut donc commencer à exécuter le service après les blocs de code récupérant le descripteur de partition. Ceci permet d'injecter dans les paramètres le descripteur de la partition racine à la place des partitions initialement prévues par les blocs précédents.
 
+		Le bloc idéal pour devoir récupérer le moins d'arguments possibles est le bloc \texttt{getSourceVidtCont}. Le prototype du bloc est présenté en listing \ref{code:getSourceVidtCont_proto}.
+
+		\begin{listing}[!ht]
+			\coqcode{code/getSourceVidtCont.v}
+			\caption{Prototype du bloc de code \texttt{getSourceVidtCont}, ciblé par les interruptions matérielles.}
+			\label{code:getSourceVidtCont_proto}
+		\end{listing}
+
+		Le cheminement jusqu'à l'exécution du bloc du service est extrêmement similaire à celui concernant les fautes. De la même manière que pour une faute, lorsqu'une interruption matérielle arrive, le processeur va récupérer l'\emph{interrupt gate} correspondante dans l'\emph{IDT} (pour rappel, les niveaux d'interruptions correspondants aux interruptions matérielles vont de 32 à 47). Cette similitude continue jusqu'à la récupération des arguments : le processeur change de pile et pousse les mêmes éléments que ceux présentés précédemment en figure \ref{figure/interrupt_stack}, puis une routine assembleur complète le contexte d'exécution de type \texttt{int\_ctx\_t}, et appelle finalement la fonction de récupération des arguments \texttt{hardwareInterrupthandler}. Les arguments à récupérer par la fonction sont les mêmes que pour le bloc \texttt{getParentPartDescCont} et sont récupérés de la même manière, mis à part l'argument \texttt{targetPartDesc}. Cet argument est l'adresse réelle du descripteur de la partition recevant le flôt d'exécution, qui devra donc être le descripteur de la partition racine. La fonction récupère ce descripteur au travers d'une variable globale de Pip.
+
+		L'appel du bloc de code \texttt{getSourceVidtCont} peut aussi se solder par une erreur : si l'origine de cette erreur est le fait que la VIDT de la partition n'est pas accessible ou que l'emplacement de sauvegarde de son contexte n'est pas accessible, alors la sauvegarde de contexte est omise et la fonction appelle le bloc de code \texttt{getTargetVidtCont}. Une autre erreur indiquerait que la partition racine n'est pas en mesure de récupérer le flôt d'exécution ; dans ce cas la fonction arrête l'exécution en rentrant dans une boucle infinie.
+
+		\begin{figure}[!ht]
+			\centering
+			\input{figures/interrupt_software.tex}
+			\caption{Résumé des différents blocs logiciels permettant d'appeler le service après une interruption matérielle}
+			\label{fig:interrupt_software}
+		\end{figure}
 
 	\section{Preuve d'isolation}
-		\subsection{Définition de l'interface/monade}
-			% choix des types (générique en fonction des architectures - contextes)
-			% limite de la preuve (écritures atomiques / conceptuelles)
+
+		Cette section a pour but de décrire le processus d'établissement de la preuve d'isolation de Pip sur le service. La première sous-section décrira tout d'abord les nouvelles fonctions introduites dans l'interface de la monade d'état ainsi que la raison de leur inclusion. Ces fonctions sont accompagnées de nouveaux types, qui seront aussi explicités. La seconde sous-section fera un rappel des propriétés d'isolation de Pip. La dernière sous-section décrira le processus d'établissement de la preuve.\\
+
+		\textbf{Note importante :} Dans un soucis de transparence et d'intégrité scientifique, je souhaite préciser que la preuve d'isolation reposant sur les modèles présentés dans cette section n'est pas encore complète. En effet, nous avons récemment repéré une modélisation incorrecte de la fonction \texttt{writeContext}. Cette trouvaille a mené à la réécriture du modèle de la fonction et a cassé la preuve d'isolation précédemment établie sur l'ancien modèle. Dans cette section, nous présenterons néanmoins le nouveau modèle qui reflète le comportement attendu de la fonction. Ce nouveau modèle ne change en rien l'implémentation réelle de cette fonction : ces changements sont cantonnés au monde des mathématiques. De plus, ce nouveau modèle n'introduit pas d'obstacle particulier à l'établissement de la preuve d'isolation. Elle n'a pas été établie par manque de temps entre sa découverte et l'écriture de ce document. Nous reviendrons cependant sur cette erreur de modélisation dans la section suivante, qui révèle la subtilité de l'établissement de preuves au travers de modèles.
+
+		\subsection{Définition de l'interface avec la monade}
+
+		Cette sous-section est dédiée à la définition des nouveaux éléments de l'interface avec la monade. Nous discuterons d'abord des nouveaux types et de ce qu'ils représentent, puis nous discuterons des fonctions.
+
+		\subsubsection{Nouveaux types intégrés à la monade}
+
+		\paragraph{\texttt{userValue}} Le type \texttt{userValue} est un type \emph{opaque}, c'est à dire un type dont les valeurs n'ont pas vocation à être manipulées dans le modèle. Le type \texttt{userValue} indique une valeur arbitraire provenant de l'espace utilisateur. Cette valeur doit subir des tests avant de pouvoir être transformée en un type sain et utilisable par le noyau. Prenons par exemple le type \texttt{index}. \texttt{index} est un entier naturel dont la valeur ne peut dépasser le nombre de mots mémoire dans une page. Afin de s'assurer qu'un indice passé en paramètre par l'utilisateur respecte bien ces contraintes, le service va le traiter comme une \texttt{userValue}. Le service vérifie alors que la contrainte est bien respectée, puis raffine le type de la valeur en un \texttt{index}. Pour certains types de valeurs, il n'est pas nécessaire d'utiliser le type \texttt{userValue}. Ceci est vrai pour les types dont l'intégralité des valeurs représentables sont des valeurs valides, comme par exemple les adresses virtuelles.
+
+		Le type \texttt{userValue} étant un type opaque, son modèle importe peu. Il est représenté par un \texttt{nat}.
+
+		\paragraph{\texttt{interruptMask}} Le type \texttt{interruptMask} est un type \emph{opaque} représentant les drapeaux servant aux partitions à indiquer si elles souhaitent être interrompues ou non. Ce type est entouré d'une interface permettant de récupérer ces drapeaux depuis un contexte d'exécution, d'appliquer ces drapeaux à une partition, de sauver ces drapeaux dans un contexte d'exécution, ainsi que d'interprêter ces drapeaux. La mise en place d'un tel mécanisme est fortement lié à la plateforme et a été laissée libre à l'implémentation. Le type est representé comme une liste de booléens dont la longueur est égale au nombre de niveaux d'interruptions, cependant cette information n'est jamais exploitée dans le modèle.
+		\begin{listing}[!ht]
+			\begin{minted}{coq}
+Record interruptMask := {
+    m  :> list bool;
+    Hm :  length m = maxVint+1;
+}.
+			\end{minted}
+			\caption{Représentation du type \texttt{interruptMask} dans le modèle}
+		\end{listing}
+
+		\paragraph{\texttt{contextAddr}} Le type \texttt{contextAddr} est un type \emph{opaque} représentant l'adresse d'un contexte d'exécution. Il est muni de deux fonctions : une permettant d'écrire ce contexte à une adresse donnée, l'autre l'applicant au système qui reprendra le flôt d'exécution lié. Le type est représenté par un \texttt{nat}.
+
+
+		\subsubsection{Nouvelles fonctions de l'interface}
+
+		Certaines de ces nouvelles fonctions font partie de l'interface des nouveaux types présentés dans les paragraphes précédent. Tout d'abord le type \texttt{userValue} a engendré deux nouvelles fonctions :
+		\paragraph{\mintinline{c}{bool checkIndexPropertyLTB(userValue userIndex);}}~\\
+		Cette fonction retourne vrai si la valeur passée en paramètre respecte la contrainte du type \texttt{index} ; la valeur doit être inférieure au nombre de mots mémoire dans une page. Voici son modèle :
+
+		\begin{listing}[!ht]
+			\begin{minted}{coq}
+Definition checkIndexPropertyLTB (userIndex : userValue) : LLI bool :=
+ret (Nat.ltb userIndex tableSize).
+			\end{minted}
+			\caption{Modèle de la fonction \texttt{checkIndexPropertyLTB}}
+		\end{listing}
+		Cette fonction de l'interface a cependant été maladroitement choisie, car le choix de la valeur de la comparaison \texttt{tableSize} relève de la responsabilité de l'implémentation, alors qu'elle aurait pu rester dans le code du service. La fonction pertinente à ajouter dans l'interface au lieu de celle-ci aurait dû être la fonction de comparaison entre une \texttt{userValue} et un \texttt{index}.
+
+		\paragraph{\mintinline{c}{index userValueToIndex(userValue userIndex);}}~\\
+		Cette fonction transforme la valeur de type \texttt{userValue} en fonction de type \texttt{index}. Cette fonction n'a pas d'effet particulier sur la valeur.
+		Son modèle est disponible en listing \ref{code:userValueToIndex}. Ce modèle met en lumière que la valeur \texttt{userIndex} doit être inférieure à la constante \texttt{tableSize}, qu'une preuve en soit établie, et que cette preuve soit passée au constructeur du type \texttt{index} (ici déterminée automatiquement par Coq au travers du symbole \texttt{\_}).
+		\begin{listing}[!ht]
+			\begin{minted}{coq}
+Program Definition userValueToIndex (userIndex : userValue) : LLI index :=
+    if lt_dec userIndex tableSize
+    then
+        ret (Build_index userIndex _ )
+    else undefined 85.
+			\end{minted}
+			\caption{Modèle de la fonction \texttt{userValueToIndex}}
+			\label{code:userValueToIndex}
+		\end{listing}
+
+		\newpage
+		Le service a ajouté quatre fonctions dans l'interface qui intéragissent avec le type \texttt{interruptMask}.
+
+		\mintinline{c}{interruptMask getInterruptMaskFromCtx(contextAddr context)} est la première fonction permettant de récupérer les drapeaux présents dans un contexte d'exécution. La seconde fonction~ \mintinline{c}{bool noInterruptRequest(interruptMask flagsOnWake)} permet d'interpréter les drapeaux passés en paramètres pour renvoyer si la partition ne souhaite pas être interrompue. La troisième fonction en rapport avec le type \texttt{interruptMask} est la fonction \mintinline{c}{void setInterruptMask(uint32_t interrupt_state)} qui permet d'appliquer les masques à la partition courante. La dernière fonction ajoutée,~~\mintinline{c}{uint32_t}\\ \mintinline{c}{get_self_int_state()}, permet de récupérer les drapeaux de la partition courante.
+
+		Du point de vue du modèle, ces fonctions sont peu intéressantes. Elles n'ont pas été intégrées car la position des drapeaux n'a pas été définie dans l'interface et peut donc être placée arbitrairement par l'implémentation. L'implémentation Intel x86, place ces drapeaux dans le descripteur de la partition, afin que leur écriture soit atomique. Ainsi, ces fonctions renvoient soit une valeur arbitraire, soit n'ont aucun effet sur le modèle. La fonction \mintinline{c}{uint32_t get_self_int_state()} n'a pas été modélisée car elle n'apparait pas dans le service, mais dans les fonctions de récupération des arguments discutés en section \ref{sec:service_generalisation}.\\
+
+%		\paragraph{\mintinline{c}{interruptMask getInterruptMaskFromCtx(contextAddr context);}}
+%			Cette fonction récupère les drapeaux enregistrés dans un contexte d'exécution. Son modèle retourne des drapeaux arbitraires.
+%			\begin{listing}[!ht]
+%				\begin{minted}{coq}
+%Definition getInterruptMaskFromCtx (context : contextAddr) :
+%LLI interruptMask := ret int_mask_d.
+%				\end{minted}
+%				\caption{Modèle de la fonction \texttt{getInterruptMaskFromCtx}}
+%				\label{code:getInterruptMaskFromCtx}
+%			\end{listing}
+%
+%		\paragraph{\mintinline{c}{bool noInterruptRequest(interruptMask flagsOnWake);}}
+%			Cette fonction renvoie vrai si les drapeaux passés en paramètres indiquent que la partition ne souhaite pas se faire interrompre. Le modèle de cette fonction renvoie une valeur arbitraire.
+%			\begin{listing}[!ht]
+%				\begin{minted}{coq}
+%Definition noInterruptRequest (flags : interruptMask) : LLI bool :=
+%    ret true.
+%				\end{minted}
+%				\caption{Modèle de la fonction \texttt{noInterruptRequest}}
+%				\label{code:noInterruptRequest}
+%			\end{listing}
+%
+%		\paragraph{\mintinline{c}{void setInterruptMask(uint32_t interrupt_state);}}
+%			Cette fonction applique les drapeaux à la partition courante. Cette fonction n'a aucun effet dans le modèle.
+%			\begin{listing}[!ht]
+%				\begin{minted}{coq}
+%Definition setInterruptMask (mask : interruptMask) : LLI unit :=
+%    ret tt.
+%				\end{minted}
+%				\caption{Modèle de la fonction \texttt{setInterruptRequest}}
+%				\label{code:setInterruptRequest}
+%			\end{listing}
+%
+%		\paragraph{\mintinline{c}{uint32_t get_self_int_state();}}
+%			Cette fonction permet de récupérer les drapeaux de la partition courante. Cette fonction n'a pas de modèle car elle n'est utilisée que dans les routines de récupération des arguments pour le transfert de flôt d'exécution lors de fautes ou d'interruptions.
+
+		Les fonctions les plus intéressantes de cet ajout à l'interface sont celles qui manipulent le type \texttt{contextAddr}.
+
+		\paragraph{\mintinline{c}{contextAddr vaddrToContextAddr(vaddr contextVAddr);}}~\\
+		Cette fonction convertit une adresse virtuelle en pointeur vers un contexte d'exécution. Le modèle de cette fonction renvoie une valeur arbitraire.
+
+		\paragraph{\mintinline{c}{void loadContext(contextAddr ctx, bool enforce_interrupts);}}~\\
+		Cette fonction charge le contexte d'exécution pointé par \texttt{ctx}, en s'assurant que le futur flôt d'exécution sera interruptible si \texttt{enforce\_interrupts} est vrai.
+
+		Cette fonction est intéressante car elle ne peut être écrite en Gallina, le langage de Coq. En effet, Coq s'assure que tous les programmes écrits en Gallina terminent, ce qui n'est pas le cas de cette fonction. Par exemple, dans l'implémentation Intel x86, cette fonction charge tout les registres généraux puis pousse une petite partie du contexte sur pile, et exécute l'instruction assembleur \texttt{iret}. À partir du moment où cette instruction a été exécutée, le flôt d'exécution a déjà changé : la pile et le pointeur d'instruction ne sont plus les mêmes. De ce fait cette fonction n'a aucun effet dans le modèle.
+
+		\begin{listing}[!ht]
+			\begin{minted}{coq}
+Definition loadContext (contextToLoad : contextAddr)
+                       (enforce_interrupt : bool) : LLI unit :=
+    ret tt.
+			\end{minted}
+			\caption{Modèle de la fonction \texttt{loadContext}}
+			\label{code:loadContext}
+		\end{listing}
+
+
+		Cependant, il n'est pas \emph{nécessaire} que cette fonction ne retourne pas. En effet, dans l'implémentation actuelle sur Intel x86, la fonction copie le contexte sur le dessus de la pile et le charge immédiatement. Il s'avère que ce code de chargement est aussi disponible dans les portions d'assembleur appelant le service, dans le cas où une erreur surviendrait pendant l'exécution du service. Dans ce cas, le service retourne prématurément pour signaler une erreur et la fonction \texttt{loadContext} n'est jamais atteinte. Ces portions de code restaurent le contexte appelant le service, mais il serait possible que la fonction \texttt{loadContext} vienne modifier ce contexte initial pour qu'il corresponde au nouveau contexte à charger. Ainsi, le transfert de flot d'exécution ne s'opérerait pas dans la fonction \texttt{loadContext}, mais dans la portion d'assembleur de retour au contexte initial. Ainsi, il serait possible d'éviter cette dualité entre le monde du modèle qui retourne et renvoie un succès, et le monde réel qui ne retourne pas et charge directement le contexte dans la fonction. Cette approche est néanmoins beaucoup plus compliquée à mettre en place, comparé à une simple copie des données sur le sommet de la pile.
+		\paragraph{\mintinline{c}{void writeContext(contextAddr ctx, vaddr ctxSaveVAddr, interruptMask}}~~\\
+		   \textbf{\mintinline{c}{flagsOnWake);}}~\\
+			Cette fonction écrit le contexte d'exécution pointé par \texttt{ctx} à l'adresse virtuelle \texttt{ctxSaveVAddr}, en y écrivant les drapeaux \texttt{flagsOnWake}. Cette fonction est différente des autres fonctions d'écriture de l'interface avec la monade car elle effectue plusieurs écritures successives en mémoire. De plus, ces écritures sont faites en espace utilisateur. Son modèle se contente d'appeler une fonction récursive qui va itérer sur la taille d'un contexte, et écrire aux adresses virtuelles successives une valeur arbitraire.\\
+
+		\begin{listing}[!ht]
+			\begin{minted}{coq}
+Definition writeContext (callingContextAddr : contextAddr)
+                        (contextSaveAddr : vaddr)
+                        (flagsOnWake : interruptMask) : LLI unit :=
+    perform maxIdx := getMaxIndex in
+    perform idxContextInPage := ret (List.last contextSaveAddr index_d) in
+    writeContextAux contextSaveAddr idxContextInPage maxIdx contextSize.
+
+Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
+                         (maxIdx : index) (bound : nat) : LLI unit :=
+  match bound with
+  | 0 => ret tt
+  | S dec_bound =>
+    storeVirtual contextSaveAddr currIdx vaddrDefault ;;
+    if idxEq currIdx maxIdx then
+      writeContextAux (getNextVaddr contextSaveAddr) idx0 maxIdx dec_bound
+    else
+      perform nextIdx := idxSuccM currIdx in
+      writeContextAux (getNextVaddr contextSaveAddr) nextIdx maxIdx dec_bound
+  end.
+			\end{minted}
+			\caption{Modèle de la fonction \texttt{writeContext} et sa fonction auxiliaire récursive}
+			\label{code:loadContext}
+		\end{listing}
+
+		Les écritures multiples de la fonction \texttt{writeContext} ont mené à des vérifications supplémentaires qui ont nécessité l'ajout de deux fonctions dans l'interface. La première est \mintinline{c}{vaddr getNthVAddrFrom(vaddr base, uint32_t size)}. Cette fonction retourne l'adresse virtuelle se trouvant à l'adresse de base plus une certain nombre d'octets \texttt{size}. Cette fonction permet notamment de récupérer la dernière adresse d'un contexte d'exécution, afin de vérifier qu'elle est bien valide avant d'entamer l'écriture.\\
+		La seconde est \mintinline{c}{bool firstVAddrGreaterThanSecond(vaddr vaddr1, vaddr vaddr2)}, qui retourne si une adresse virtuelle est plus grande que la seconde. Cela permet au service de vérifier qu'un overflow n'a pas eu lieu lors du calcul de la dernière adresse du contexte.
+
+		La fonction \mintinline{c}{vaddr getVaddrVIDT()} fait aussi partie des nouveaux ajouts à l'interface, et retourne l'adresse fixe de la VIDT. Cette valeur est définie comme la dernière page de l'espace d'adressage virtuel.
+
+		Enfin, la fonction \mintinline{c}{void updateMMURoot(page MMURoot)} a été ajoutée. Cette fonction applique un nouvel espace d'adressage décrit par \texttt{MMURoot}. Dans l'implémentation Intel, cette fonctionne écrit le Page Descriptor \texttt{MMURoot} -- structure racine de la configuration de la MMU -- dans le registre \texttt{CR3} du processeur. Cette fonction est spéciale car elle aurait pu être cachée dans l'implémentation, et n'a aucun sens dans le modèle d'isolation de Pip. Elle été ajoutée dans l'optique de produire une preuve fonctionnelle du service.
+
 		\subsection{Rappel? des propriétes d'isolation}
 		
 		\subsection{Déroulement de la preuve}

@@ -1,0 +1,26 @@
+\begin{tikzpicture}[>=triangle 45,font=\sffamily, every text node part/.style={align=center}, scale=1, every node/.style={transform shape}] {
+
+	\node[draw, fill=white, ultra thin, drop shadow, minimum height=1cm] (assembly) at (9,5.5) {Complétion du contexte d'exécution};
+	\node[draw, fill=white, ultra thin, drop shadow, minimum height=1cm] (args) at (7.5,4.25) {Récupération des arguments};
+	\node[draw, fill=white, ultra thin, drop shadow, minimum height=1.5cm, align=center] (call) at (6,2.75) {Appel au service\\Gestion des erreurs};
+	\node[draw, fill=white, ultra thin, drop shadow, minimum height=1cm] (parents_checks) at (0.5,2.75) {Récupération VIDT appelant};
+	\node[draw, fill=white, ultra thin, drop shadow, minimum height=1cm] (callee_vidt) at (0.5,1) {Récupération VIDT appelé};
+
+	\node[draw, fill=white, ultra thin, drop shadow={shadow xshift=0.07cm,shadow yshift=-0.07cm}, minimum height=1cm, circle] (guru_meditation) at (10.5,1.5) {$\infty$};
+
+	\node[above=0.2cm of assembly, fill=red!30, drop shadow={shadow xshift=0.05cm,shadow yshift=-0.05cm}] (interruptgate) {\small{\texttt{Interruption matérielle - Interrupt gate}}};
+
+	\draw[->] (assembly.345) to[in=0, out=270] (args);
+	\draw[->] (args.340) to[in=0, out=270] (call);
+
+	\draw[->] (call.173) to[in=0, out=180] (parents_checks.5);
+	\draw[->, dashed, gray] (parents_checks.355) to[in=180, out=0] (call.187);
+	\draw[->, dashed, gray] (call.220) to[in=0, out=270] (callee_vidt);
+	\draw[->, dashed, gray] (call) -- (guru_meditation);
+
+	\node (separation) at (3.625,6) {};
+	\draw[semithick, dotted] (separation) -- (3.625, 0.5);
+	\node[below left=0.4cm of separation, fill=gray!30, drop shadow={shadow xshift=0.05cm,shadow yshift=-0.05cm}] (service) {\small{\texttt{Blocs du service}}};
+}
+
+\end{tikzpicture}

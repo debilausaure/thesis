@@ -6,11 +6,17 @@
 	\section{Transfert de flôt d'exécution}
 	\label{control_flow_transfer}
 
-		Cette section va détailler les différents transferts de flot d'exécution mis à disposition dans les cpus modernes.
-		Dans cette section, nous détaillerons les transferts de flot d'exécution qui impliquent une reconfiguration explicite de l'état de la machine ayant un impact sur les droits d'accès aux ressources. Les appels d'une fonction d'un programme vers une autre fonction ne seront pas considérés dans cette section, même s'ils pourraient être considérés comme un transfert de flôt d'exécution.
+		\subsection{Définitions}
+
+		\paragraph{Flôt d'exécution}
+
+			Un flôt d'exécution est une trame de modifications successives de l'état de la machine, animée par la récupération et l'exécution machinale d'instructions assembleur contigües par le processeur. Cette trame est l'oeuvre d'une entité qui a conçu le code et les conditions d'exécution permettant d'aboutir à un résultat. Ces conditions d'exécution (ou \emph{contexte d'exécution}) peuvent comprendre n'importe quel sous-ensemble de l'état de la machine, comme l'état de certains registres du processeur ou l'état d'une partie la mémoire par exemple.
+
+		\paragraph{Transfert de flôt d'exécution}
+
+			Le transfert de flôt d'exécution est le fait de faire diverger un flôt d'exécution vers un autre. Il existe de nombreuses utilisations du transfert de flôt d'exécution. Le premier, le plus simple, est le saut : il permet de définir de manière arbitraire l'adresse de la prochaine instruction à exécuter. Similairement, le saut conditionnel permet d'effectuer un saut en fonction du résultat d'une instruction assembleur, divisant le flot d'exécution en deux fils possibles. Ensuite viennent les appels de fonctions : ces transferts de flôt d'exécutions sont spéciaux car ils nécessitent de revenir au flot d'exécution initial. 
 
 
-		\subsection{Définition}
 			Flot d'exécution / état de la machine / transfert de flot d'exécution internes et externes
 			 ceux qui définissent un cadre d'exécution
 
@@ -19,6 +25,9 @@
 			Deux types d'attaques visant à compromettre le flot d'exécution :
 				- Les attaques visant à compromettre les éléments fondamentaux de la sécurité
 				- Les attaques exploitant un flot d'exécution
+		Cette section va détailler les différents transferts de flot d'exécution mis à disposition dans les processeurs modernes.
+		Nous détaillerons les transferts de flot d'exécution qui impliquent une reconfiguration explicite de l'état de la machine ayant un impact sur les droits d'accès aux ressources. Les appels d'une fonction d'un programme vers une autre fonction ne seront pas considérés dans cette section, même s'ils pourraient être considérés comme un transfert de flôt d'exécution.
+
 
 		\subsection{Hardware}
 
