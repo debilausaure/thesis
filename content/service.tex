@@ -549,7 +549,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 				\label{code:currentPartitionInPartitionsList}
 			\end{listing}
 
-			Cette propriété assure que la variable globale contenant la partition courante contiendra toujours un descripteur de partition valide
+			Cette propriété assure que la variable globale contenant la partition courante contiendra toujours un descripteur de partition valide provenant de la liste des partitions.
 
 			La seconde propriété de cohérence à laquelle nous nous intéresserons est la propriété \texttt{currentPartitionIsNotDefaultPage}.
 
@@ -558,12 +558,27 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 				\caption{Propriété de cohérence indiquant que la partition courante ne doit pas être la page par défaut}
 				\label{code:currentPartitionIsNotDefaultPage}
 			\end{listing}
+
+			Cette propriété assure que la variable reflétant la partition courante soit différente de la page par défaut.
 		
-			
 		\subsection{Déroulement de la preuve}
 			\subsubsection{Validation des paramètres}
-			\subsubsection{Modification de l'état}
-			\subsubsection{Transfert de flot d'exécution}
+			\subsubsection{Sauvegarde du contexte d'exécution de la partition appelante}
+			\subsubsection{Modification de la partition courante}
+
+			
+			\begin{listing}[!ht]
+				\coqcode{code/partitionTreeRemains.v}
+				\caption{Preuve que la fonction \texttt{getPartitions} effectue les mêmes calculs peu importe la partition courante}
+				\label{code:partitionTreeRemains}
+			\end{listing}
+
+			\begin{listing}[!ht]
+				\coqcode{code/currentPartitionInPartitionsListActivate.v}
+				\caption{Preuve de la propriété de cohérence \texttt{currentPartitionInPartitionsList}}
+				\label{code:currentPartitionInPartitionsListActivate}
+			\end{listing}
+
 
 	\section{Retour d'expérience}
 	% Remarques pragmatiques sur cette contribution
