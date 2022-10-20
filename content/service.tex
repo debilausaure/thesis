@@ -482,7 +482,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 		\subsection{Rappel des propriétes d'isolation de Pip}
 
-		Comme exprimé dans la section \textcolor{red}{insérer ref}, la preuve d'isolation de Pip repose sur trois propriétés fondamentales : la propriété d'\emph{isolation horizontale}, la propriété d'\emph{isolation noyau} ainsi que la propriété de \emph{partage verticale}. Ces trois propriétés principales sot accompagnées d'une multitude de propriétés liées à la cohérence du noyau. Certaines de ces propriétés seront mises en avant dans ce document, puisqu'elle seront discutées dans la section suivante traitant de l'établissement de la preuve du service. \textcolor{red}{Est ce vrai ?}.
+		Comme exprimé dans la section \textcolor{red}{insérer ref}, la preuve d'isolation de Pip repose sur trois propriétés fondamentales : la propriété d'\emph{isolation horizontale}, la propriété d'\emph{isolation noyau} ainsi que la propriété de \emph{partage verticale}. Ces trois propriétés principales sont accompagnées d'une multitude de propriétés liées à la cohérence du noyau. Certaines de ces propriétés seront mises en avant dans ce document, puisqu'elle seront discutées dans la section suivante traitant de l'établissement de la preuve du service. \textcolor{red}{Est ce vrai ?}.
 
 			\subsubsection{Isolation horizontale}
 
@@ -512,7 +512,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 				\label{code:kernel_isolation}
 			\end{listing}
 
-			La fonction \texttt{getAccessibleMappedPages} permet de récupérer les pages de mémoire renseignées comme accessibles sans privilège dans les structures de configuration de la MMU de la partition passée en paramètre. La fonction \texttt{getConfigPages} permet de récupérer l'ensemble des pages de mémoire de la partition passée en paramètre contenant les structures internes à Pip.
+			La fonction \texttt{getAccessibleMappedPages} permet de récupérer les pages de mémoire renseignées comme accessibles sans privilège dans l'espace d'adressage de la partition passée en paramètre. La fonction \texttt{getConfigPages} permet de récupérer l'ensemble des pages de mémoire de la partition passée en paramètre contenant les structures internes à Pip.
 
 			La propriété peut être lue de la sorte :
 			\begin{theorem}
@@ -521,8 +521,45 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 			\subsubsection{Partage vertical}
 
+			La dernière propriété fondamentale d'isolation de Pip, appelée propriété de partage vertical, stipule que chaque page relative à une partition enfant fait partie de l'espace d'adressage de son parent. Ces pages concernent aussi bien les pages de configuration de la partition enfant reservées à Pip que les pages disponibles dans son espace d'adressage. Certaines pages ne sont cependant pas accessibles à la partition parent bien qu'elles soient mappées, en particulier les pages de configuration de la partition enfant réquisitionnées par Pip.
+
+			\begin{listing}[!ht]
+				\coqcode{code/vertical_sharing.v}
+				\caption{Propriété de partage vertical de la mémoire telle qu'exprimée dans Coq}
+				\label{code:vertical_sharing}
+			\end{listing}
+
+			La fonction \texttt{getMappedPages} permet de récupérer toutes les pages de mémoire mappées dans la partition passée en paramètre.
+
+			La propriété peut être lue de la manière suivante :
+
+			\begin{theorem}
+				Pour toutes pages mémoire \texttt{parent} et \texttt{child}, si \texttt{parent} fait partie de la liste des descripteurs de partitions et que \texttt{child} est dans la liste des descripteurs de partitions enfant de \texttt{parent}, alors l'ensemble des pages relatives à \texttt{child} est inclus dans l'ensemble des pages mappées dans l'espace d'adressage de la partition \texttt{parent}.
+			\end{theorem}
+
 			\subsubsection{Propriétés de cohérence du noyau}
+
+			Dans Pip, il y a 25 propriétés annexes, qui décrivent comment sont organisées les structures de données internes de Pip. Ces propriétés sont appelées les propriétés de cohérence du noyau. Nous n'allons pas passer en revue l'ensemble des propriétés de cohérence dans ce document, mais seulement celles liées aux données modifiées par le service.
+
+			La première propriété de cohérence à laquelle nous nous intéresserons est la propriété \texttt{currentPartitionInPartitionsList}.
+
+			\begin{listing}[!ht]
+				\coqcode{code/currentPartitionInPartitionsList.v}
+				\caption{Propriété de cohérence indiquant que la partition courante doit faire partie de la liste des partitions}
+				\label{code:currentPartitionInPartitionsList}
+			\end{listing}
+
+			Cette propriété assure que la variable globale contenant la partition courante contiendra toujours un descripteur de partition valide
+
+			La seconde propriété de cohérence à laquelle nous nous intéresserons est la propriété \texttt{currentPartitionIsNotDefaultPage}.
+
+			\begin{listing}[!ht]
+				\coqcode{code/currentPartitionIsNotDefaultPage.v}
+				\caption{Propriété de cohérence indiquant que la partition courante ne doit pas être la page par défaut}
+				\label{code:currentPartitionIsNotDefaultPage}
+			\end{listing}
 		
+			
 		\subsection{Déroulement de la preuve}
 			\subsubsection{Validation des paramètres}
 			\subsubsection{Modification de l'état}
