@@ -254,7 +254,7 @@ Tout d'abord, le processeur change de pile, en sauvant temporairement les valeur
 
 	\section{Preuve de code}
 
-	Cette section va décrire les notions et travaux nécessaires à la compréhension des contributions sur la preuve formelle sur du code décrits dans les chapitres suivants. La première sous-section décrira le processus de vérification automatique de preuves, en décrivant d'abord le processus de raisonnement automatique et introduisant les notions d'axiomes, d'hypothèses, ainsi que le déroulement de la preuve avec les règles d'inférence. Cette description sera ensuite illustrée par l'exemple de l'assistant de preuve Coq, outil de l'état de l'art que j'ai utilisé pour mes contributions. Enfin, la sous-section décrira les deux méthodes principales de raisonnement : la preuve directe et la preuve par raffinement.
+	Cette section va décrire les notions et travaux nécessaires à la compréhension des contributions sur la preuve formelle de code décrits dans les chapitres suivants. La première sous-section décrira le processus de vérification automatique de preuves, en décrivant d'abord le processus de raisonnement automatique et introduisant les notions d'axiomes, d'hypothèses, ainsi que le déroulement de la preuve avec les règles d'inférence. Cette description sera ensuite illustrée par l'exemple de l'assistant de preuve Coq, outil de l'état de l'art que j'ai utilisé pour mes contributions. Enfin, la sous-section décrira les deux méthodes principales de raisonnement : la preuve directe et la preuve par raffinement.
 
 	La seconde sous-section décrira plus spécifiquement le processus de raisonnement formel sur du code. Elle commencera par discuter du raisonnement sur des programmes impératifs, et en particulier de la \emph{logique de Hoare}. En seconde partie de cette sous section seront décrits les aspects concernant la représentation du programme dans l'assistant de preuve, ainsi que le principe des \emph{monades}, permettant de capturer les effets de bords des programmes impératifs dans les langages fonctionnels des assistants de preuve.
 
@@ -265,9 +265,9 @@ Tout d'abord, le processeur change de pile, en sauvant temporairement les valeur
 			\subsubsection{Qu'est ce qu'une preuve formelle?}
 			Une preuve ou une démonstration formelle se place dans le cadre d'un système formel, qui définit les règles permettant de formuler des propositions mathématiques valides ainsi que les règles de transformations pouvant s'appliquer aux propositions. Une démonstration est l'ensemble des transformations effectuées sur une proposition initiale pour la transformer en une proposition finale. Cette proposition finale peut porter plusieurs noms suivant l'importance du résultat obtenu : \emph{proposition}, \emph{lemme}, ou encore \emph{théorème}. Une preuve est correcte si chaque transformation fait parti des règles de transformation (ou \emph{règles d'inférence}) du système formel dans lequel se place la démonstration. L'utilisation d'un système formel permet la vérification automatique des preuves par un ordinateur.
 
-			\paragraph{Axiomes} Le système formel peut parfois inclure des \emph{axiomes} qui sont des propositions qui ne peuvent pas être prouvées, et qui servent de point de départ au raisonnement au sein de ce système formel. Pour qu'un système formel soit intéressant, il faut que ses axiomes n'amènent pas à une \emph{contradiction}.
+			\paragraph{Axiomes} Tout système formel inclus des \emph{axiomes} qui sont des propositions qui ne peuvent pas être prouvées, et qui servent de point de départ au raisonnement au sein de ce système formel. Pour qu'un système formel soit pertinent, il faut que ses axiomes n'amènent pas à une \emph{contradiction}.
 
-			\paragraph{Hypothèses} Les hypothèses sont des propositions qui n'ont pas été prouvées. Les hypothèses peuvent servir à établir des preuves d'autres propositions. Cependant, toute démonstration utilisant une hypothèse n'est pas complète tant que l'hypothèse elle même n'a pas été prouvée, contrairement aux axiomes qui n'ont pas vocation à être prouvés. Les hypothèses peuvent par exemple servir à structurer les longues preuves.
+			\paragraph{Hypothèses} Les hypothèses sont des propositions qui n'ont pas été prouvées. Certaines pourraient être prouvées, et d'autres sont synonymes d'axiomes. Les hypothèses peuvent servir à établir des preuves d'autres propositions. Cependant, toute démonstration utilisant une hypothèse n'est pas complète tant que l'hypothèse elle même n'a pas été prouvée, contrairement aux axiomes qui n'ont pas vocation à être prouvés. Les hypothèses peuvent par exemple servir à structurer les longues preuves.
 
 			\paragraph{Raisonnement}
 			Le raisonnement au sein d'une preuve est déroulée grâce à l'application de \emph{règles d'inférence}. Une règle d'inférence s'applique sur une ou plusieurs propositions initiales appelées \emph{prémisses} et crée une nouvelle proposition en retour qu'on appelle la \emph{conclusion}.
@@ -276,36 +276,45 @@ Tout d'abord, le processeur change de pile, en sauvant temporairement les valeur
 
 			\paragraph{Lien entre preuve et véracité de la proposition finale} Il est important de distinguer le fait qu'une preuve soit correcte et la valeur de vérité de la proposition finale. En effet, la valeur de vérité d'une proposition résultant d'une démonstration est liée à la valeur de vérité des prémisses. Entre d'autres termes, toutes les hypothèses utilisées dans la démonstration doivent être valides pour que la proposition finale soit valide.
 
-			\subsubsection{Exemple de Coq}
-			L'assistant de preuve Coq est un logiciel open-source français initiallement développé à l'INRIA permettant de vérifier automatiquement des preuves. Le langage de Coq est Gallina, un langage fonctionnel proche d'OCaml permettant de décrire à la fois preuves, programmes, et prédicats. En effet, Coq repose sur le calcul des constructions : un système formel dérivé du lambda calcul et utilisant l'isomorphisme de Curry-Howard pour établir un lien entre les démonstrations et les programmes. Ainsi, le calcul des constructions s'inscrit dans la lignée des logiques intuitionnistes formant des preuves \emph{constructives}. 
+			\subsubsection{Assistants de preuve}
 
-			\paragraph{Logique intuitionniste et preuves constructives} La logique intuitionniste et des preuves constructives rejettent le principe de \emph{tiers exclu} qui stipule que soit une proposition est vraie, soit sa négation est vraie. En particulier, il n'est pas possible d'établir une preuve d'une proposition par l'absurde, c'est à dire en montrant que la négation d'une proposition aboutie à une contradiction ($ \neg P \implies \bot \vdash P$). Cette règle, uniquement valide en logique classique est à distinguer de la règle de réfutation ($P \implies \bot \vdash \neg P$). Cette règle, valide à la fois en logique classique et en logique intuitionniste, peut par exemple être utilisée pour prouver $\sqrt{2}$ n'est pas rationnel.
+			Les assistants de preuve sont des logiciels conçus sur un système formel permettant de décrire propositions et raisonnements mathématiques. Ces propositions et raisonnements sont établis \emph{manuellement} au travers d'un langage propre à l'assistant de preuve. La fonction principale de l'assistant de preuve est de \emph{vérifier} le déroulé de la preuve depuis les prémisses du raisonnement jusqu'à sa conclusion. En d'autres termes, il va vérifier que l'application successive des règles d'inférence sur les prémisses conduit en effet à la conclusion décrite par l'utilisateur.
+
+			Néanmoins, certains assistants de preuve sont parfois capables de trouver automatiquement les termes de preuve permettant d'arriver à la conclusion. Les termes de preuve capables d'être déterminées automatiquement varient entre les différents assistants de preuve. Certains assistants de preuve proposent par exemple des heuristiques permettant de trouver des termes ; certains pouvant même aller jusqu'à trouver certains termes de preuve de manière systématique par construction du langage.
+
+			Il existe de nombreux assistants de preuve basés sur des systèmes formels différents. On pourra par exemple citer Coq, Isabelle/HOL, F*, Agda ou encore Lean.
+
+			\paragraph{L'assistant de preuve Coq} L'assistant de preuve Coq \textcolor{red}{REF} est un logiciel open-source français initialement développé à l'INRIA permettant de vérifier automatiquement des preuves. Le langage de Coq est Gallina, un langage fonctionnel proche d'OCaml permettant de décrire à la fois preuves, programmes, et prédicats. En effet, Coq repose sur le calcul des constructions : un système formel dérivé du lambda calcul et utilisant l'isomorphisme de Curry-Howard \textcolor{red}{REF} pour établir un lien entre les démonstrations et les programmes. Ainsi, le calcul des constructions s'inscrit dans la lignée des logiques intuitionnistes formant des preuves \emph{constructives}. 
+
+			\paragraph{Logique intuitionniste et preuves constructives} La logique intuitionniste et les preuves constructives rejettent le principe de \emph{tiers exclu} qui stipule que soit une proposition est vraie, soit sa négation est vraie. En particulier, il n'est pas possible d'établir une preuve d'une proposition par l'absurde, c'est à dire en montrant que la négation d'une proposition aboutie à une contradiction ($ \neg P \implies \bot \vdash P$). Cette règle, uniquement valide en logique classique est à distinguer de la règle de réfutation ($P \implies \bot \vdash \neg P$). Cette règle, valide à la fois en logique classique et en logique intuitionniste, peut par exemple être utilisée pour prouver que $\sqrt{2}$ n'est pas rationnel.
 			Pour en faciliter la compréhension, certaines propositions en logique intuitionniste peuvent être interprétées d'une manière différente de la logique classique, par exemple:
 			\begin{itemize}
-				\item{$A$ se lit << $A$ est prouvable >>}
+				\item{$A$ se lit << $A$ est prouvable >> en logique intuitionniste}
 				\item{$\neg A$ se lit << $A$ est contradictoire >>}
 				\item{$\exists x, A(x)$ se lit << On peut exhiber un élément $x$ tel que $A(x)$ est prouvable >>}
 				\item{$\forall x, A(x)$ se lit << Pour n'importe quel élément $x$, $A(x)$ est prouvable >>}
 			\end{itemize}
 
-			\paragraph{Autres assistants de preuve} D'autre assistants de preuve existent tels que Isabelle/HOL, F*, Agda, Lean... \textcolor{red}{Que dois-je détailler ici ?}
+
 
 			\subsubsection{Stratégie de conduite de preuve}
 			Tout comme la conception de logiciel, la conduite de preuve nécessite parfois un effort d'ingénierie pour structurer la preuve. Savoir si une preuve mérite d'être structurée relève  de l'expertise : on parle alors de génie de la preuve. Il existe deux méthodes principales permettant de compléter la preuve d'une proposition : la preuve directe et la preuve par raffinement.
 
-			\paragraph{Preuve directe} La méthode de preuve directe est à opposer à la méthode de preuve par raffinement. Elle consiste à utiliser les éléments directement fournis par le langage et éventuellement quelques \emph{lemmes} ou \emph{théorèmes} intermédiaires pour arriver à la preuve finale. La méthode de preuve directe est utilisée pour la majorité des preuves concernant le noyau Pip développé dans l'équipe. La principale force de la preuve directe est qu'elle se contente de prouver uniquement la propriété finale ; chaque proposition intermédiaire ne dépasse pas le cadre de la preuve initiale. La contrepartie d'une telle approche est qu'il est fastidieux de modifier une preuve si des modifications mineures venaient à être apportées aux prémisses.
+			\paragraph{Preuve directe} La méthode de preuve directe est à opposer à la méthode de preuve par raffinement. Elle consiste à utiliser les lemmes et théorèmes directement fournis dans et par le langage pour arriver à la preuve finale. Néanmoins, la preuve directe permet de structurer la preuve au travers de \emph{lemmes} ou \emph{théorèmes} intermédiaires pour factoriser et rendre plus accessible les éléments de preuve redondants. La méthode de preuve directe est utilisée pour la majorité des preuves concernant le noyau Pip développé dans l'équipe. La principale force de la preuve directe est qu'elle se contente de prouver uniquement la propriété finale ; chaque proposition intermédiaire ne dépasse pas le cadre de la preuve initiale. La contrepartie d'une telle approche est qu'il est fastidieux de réutiliser des portions de cette preuve pour l'appliquer à une autre conclusion.
 			
-			\paragraph{Preuve par raffinement} La preuve par raffinement est plutôt employée lorsque les étapes de la preuve à conduire ne sont pas immédiates, souvent de par la complexité de la preuve. La méthode de preuve par raffinement consiste à appliquer la stratégie << diviser pour régner >> en trouvant des abstractions intermédiaires permettant de découper la preuve en morceaux indépendants, ce qui permet par ailleurs de rendre la preuve modulaire. Ces avantages viennent au prix d'un effort d'abstraction supplémentaire non requis par la preuve directe. Certaines de ces abstractions intermédiaires peuvent néanmoins avoir été définies par des travaux préliminaires, réduisant le coût de recherche des abstractions. Par ailleurs, nous défendons la thèse que la preuve par raffinement et l'utilisation d'abstractions de manière générale éloigne la preuve conduite de l'objet d'étude initial, et mène plus facilement à l'oubli de certaines contraintes. On pourrait notamment citer le paradoxe du raffinement\textcolor{red}{C'est une opinion, a-t'elle sa place dans l'état de l'art ?}
+			\paragraph{Preuve par raffinement} La preuve par raffinement \textcolor{red}{Source} est plutôt employée lorsque les étapes de la preuve à conduire ne sont pas immédiates, souvent de par la complexité de la preuve. La méthode de preuve par raffinement consiste à appliquer la stratégie << diviser pour régner >> en trouvant des abstractions intermédiaires permettant de découper la preuve en morceaux indépendants, ce qui permet par ailleurs de rendre la preuve modulaire. Ces avantages viennent au prix d'un effort d'abstraction supplémentaire non requis par la preuve directe. Certaines de ces abstractions intermédiaires peuvent néanmoins avoir été définies par des travaux préliminaires, réduisant le coût de recherche des abstractions. Par ailleurs, nous défendons la thèse que la preuve par raffinement et l'utilisation d'abstractions de manière générale éloigne la preuve conduite de l'objet d'étude initial, et mène plus facilement à l'oubli de certaines contraintes. On pourrait notamment citer le paradoxe du raffinement \textcolor{red}{Source}.
 
 			De nombreux travaux munis de preuves formelles sur les systèmes d'exploitation utilisent le raffinement. CertikOS et seL4 en sont les exemples les plus connus. Le projet CompCert, compilateur de code source C garantissant la préservation de la sémantique lors de la compilation, utilise aussi le raffinement pour montrer que le processus de compilation est correct.
 
 		\subsection{Preuve de programme}
+
+			\textcolor{red}{Lier les deux sans faire une intro du plan}
 			
 			Cette sous-section traite de la manière de raisonner sur les programmes, en particulier sur les programmes impératifs dont le paradigme est à priori incompatible avec les langages fonctionnels des assistants de preuves tels que Coq et son langage Gallina. La première partie de la sous-section décrira la logique de Hoare : un système formel permettant de raisonner sur les programmes séquentiels. La seconde sous-section décrira les méthodes de représentation du programme à prouver dans l'assistant de preuve, ainsi que des monades d'état, permettant de représenter les effets de bords dans les langages fonctionnels, et servant d'interface entre le monde mathématique et le monde réel. La dernière partie de la sous-section présentera la problématique de la préservation de la preuve lors du processus de compilation du code source prouvé. 
 
 			\subsubsection{Logique de Hoare}
 
-			La logique de Hoare est un système formel permettant de raisonner sur les programmes séquentiels non-interruptibles.
+			La logique de Hoare est un système formel permettant de raisonner sur les programmes séquentiels.
 			La logique de Hoare raisonne sur des \emph{triplets de Hoare} qui sont définis comme suit :
 			
 			\begin{subequations}
@@ -314,6 +323,7 @@ Tout d'abord, le processeur change de pile, en sauvant temporairement les valeur
 			\end{gather}
 			
 			où :
+			\textcolor{red}{virer les "on"}
 			\begin{itemize}
 				\item $P$ représente les \emph{préconditions} qui sont les propriétés sur l'état de la machine supposées prouvables \emph{avant} l'exécution du programme à vérifier - ses \emph{prémisses}.
 			    \item $c$ représente le code du programme à exécuter sur la machine et qu'on souhaite vérifier.
@@ -349,22 +359,26 @@ Tout d'abord, le processeur change de pile, en sauvant temporairement les valeur
 
 			\paragraph{Modèle de la machine et sémantique opérationnelle} Pour pouvoir raisonner grâce à la logique de Hoare, un modèle de la machine et des instructions élémentaires doit être établi. Ces modèles permettent de décrire un système de transition d'état, donnant une signification formelle au programme. Cette sémantique du programme, décrivant des états successifs de la machine, est appelée \emph{sémantique opérationnelle}.
 
-			Par ailleurs, il est important de garder à l'esprit que ces modèles sont \textbf{arbitraires}, et qu'ils ne sont pas intrinséquement équivalents à la machine et aux instructions modélisées. Chaque choix de modèle pour l'étude d'un objet réel vient avec sa part d'incertitude, quelles que soient les précautions prises lors de ce choix.	La preuve d'un programme n'échappe pas à cette règle : elle est aussi contestable que les modèles sur lesquels elle repose.
+			Ces modèles sont des \emph{axiomes} de la logique de Hoare. Par ailleurs, il est important de garder à l'esprit que ces modèles -- que l'homme de l'art tient pour vrai -- sont \textbf{arbitraires}. Ces modèles ne sont donc pas intrinséquement équivalents instructions exécutées par la machine. Chaque choix de modèle pour l'étude d'un objet réel vient avec sa part d'incertitude, quelles que soient les précautions prises lors de ce choix.	La preuve d'un programme n'échappe pas à cette règle : elle est aussi contestable que les modèles sur lesquels elle repose.
 
 			\subsubsection{Langage}
-			L'assistant de preuve Coq utilise un langage de programmation fonctionnel nommé Gallina. Étant un langage fonctionnel, il est peu adapté à l'écriture de certains programmes tels que les systèmes d'exploitation qui sont des programmes impératifs séquentiels. La sous-section précédente a introduit la logique de Hoare, permettant de raisonner sur de tels programmes. Il faut alors réussir à représenter les programmes séquentiels dans un langage fonctionnel. \textcolor{red}{J'arrive pas à introduire le concept} Deux méthodes existent : le \emph{shallow embedding} et le \emph{deep embedding}.
+			L'assistant de preuve Coq utilise un langage de programmation fonctionnel nommé Gallina. Étant un langage fonctionnel, il est peu adapté à l'écriture de certains programmes tels que les systèmes d'exploitation qui sont des programmes impératifs séquentiels. La sous-section précédente a introduit la logique de Hoare, permettant de raisonner sur de tels programmes. Il faut alors réussir à représenter les programmes séquentiels dans un langage fonctionnel.
 
-				\paragraph{Deep embedding} Le deep embedding permet de représenter un langage cible en modélisant la syntaxe (et plus particulièrement l'\emph{AST} du langage cible ainsi que sa sémantique. Il permet de ce fait d'exprimer des propriétés sur la structure du programme. Ces propriétés sont parfois intéressantes, notamment pour procéder à la preuve de propriétés concernant la compilation du langage ciblé. Le projet CompCert utilise un deep embedding de C pour garantir la préservation de la sémantique lors de la compilation vers l'assembleur Intel.
+			Il existe deux méthodes pour y parvenir. La première consiste à représenter le langage impératif sous forme de structures de données dans le langage de l'assistant de preuve. Cette méthode est appelée le \emph{deep embedding}. La seconde méthode consiste à utiliser le langage de l'assistant de preuve pour implémenter directement les élements logiciels à prouver ; on parle alors de \emph{shallow embedding}.
+
+				\paragraph{Deep embedding} Le deep embedding permet de représenter un langage cible en modélisant la syntaxe -- et plus particulièrement l'\emph{AST} -- du langage cible ainsi que sa sémantique. Il permet de ce fait d'exprimer des propriétés sur la structure du programme. Ces propriétés sont parfois intéressantes, notamment pour procéder à la preuve de propriétés concernant la compilation du langage ciblé. Le projet CompCert utilise un deep embedding de C pour garantir la préservation de la sémantique lors de la compilation vers l'assembleur Intel.
 				\paragraph{Shallow embedding} Le shallow embedding au contraire ne définit pas la syntaxe du langage cible, et se contente de ne définir que la sémantique des programmes à prouver. Cette approche est plus légère, mais ne permet cependant pas de prouver de propriétés relatives à la structure du programme. Un shallow embedding se sert de la syntaxe du langage hôte.
 
 				\label{monad}
-				\paragraph{Monade d'état} Les langages purement fonctionnels n'ont pas de notion d'état. Ainsi pour modéliser fidèlement des programmes impératifs et leurs effets de bords sur l'état de la machine, on peut le simuler. Dans le cas de Pip, une monade d'état est toute indiquée : elle permet en quelque sorte d'<< enrober >> des valeurs avec un état. Pip utilise des fonctions manipulant ces valeurs et qui sont des fonctions partielles sur l'état, indiquant comment produire la valeur de retour mais aussi quelles modifications éventuelles sont apportées à l'état. Ces fonctions sont dites \emph{monadiques}. Cette construction explicite l'état implicite des programmes impératifs qui transite de fonction en fonction grâce à la fonction \texttt{bind}. Le passage d'état est transparent dans le code grâce à du sucre syntaxique. En plus de la fonction \texttt{bind}, chaque monade nécessite un élément neutre (ou \emph{unit}). Les effets des deux fonctions sont expliqués ci-après.
+				\paragraph{Monade d'état} Les langages purement fonctionnels n'ont pas de notion d'état. Ainsi pour modéliser fidèlement des programmes impératifs et leurs effets de bords sur l'état de la machine, on peut le simuler. Une monade d'état est toute indiquée pour implémenter des procédures impératives dans un langage fonctionnel : elle permet en quelque sorte d'<< enrober >> des valeurs avec un état. Les fonctions ainsi créées, imitant les procédures impératives, manipulent ces valeurs << enrobées >>. Elles sont conçues comme des fonctions partielles sur l'état, indiquant comment produire la valeur de retour mais aussi quelles modifications éventuelles sont apportées à l'état. Ces fonctions sont dites \emph{monadiques}. 
 
-				Voyons comment la monade d'état a été définie dans Pip. Tout d'abord, Pip définit un type \texttt{state} représentant l'état de la machine qui transitera de fonction en fonction. Pip définit aussi un type \texttt{result} représentant soit une valeur \texttt{val} soit un comportement indéfini \texttt{undef}.
+				Cette construction explicite l'état implicite des programmes impératifs qui transite de fonction en fonction grâce à la fonction \texttt{bind}. Le passage d'état est transparent dans le code grâce à du sucre syntaxique. En plus de la fonction \texttt{bind}, chaque monade nécessite un élément neutre (ou \emph{unit}). Les effets des deux fonctions sont expliqués ci-après.
+
+				Il est ainsi possible de définir une monade d'état. Tout d'abord, elle comprend un type \texttt{state} représentant l'état de la machine qui transitera de fonction en fonction. Elle définit aussi un type \texttt{result} représentant soit une valeur \texttt{val} soit un comportement indéfini \texttt{undef}.
 
 \begin{figure}[!h]
 	\coqcode{code/monad.v}
-	\caption{Définition de la monade d'état avec ses fonctions \texttt{bind} et \texttt{ret}}
+	\caption{Définition de la monade d'état avec ses fonctions \texttt{bind} et \texttt{ret} en Coq}
 	\label{code:monad}
 \end{figure}
 
@@ -372,17 +386,15 @@ Ces types sont utilisés pour définir la monade d'état \texttt{LLI}, présent�
 
 Lorsqu'on lui donne une fonction monadique \texttt{f} de \texttt{A} vers \texttt{LLI B} et une valeur monadique de type \texttt{LLI A}, la fonction \texttt{bind} permet de récupérer la valeur << enrobée >> \texttt{A} et de lui appliquer la fonction \texttt{f}, produisant une valeur monadique \texttt{LLI B}. La fonction \texttt{ret} sert d'élément neutre, qui à partir d'un état et d'une valeur, renvoie cette même valeur << enrobée >> avec l'état.
 
-Peut être devrais-je donner une définition plus formelle d'une monade qui pourrait s'avérer beaucoup plus parlante. La définition repose sur la théorie des catégories et est attribuée à Saunders Mac Lane \cite[134]{mac2013categories} que l'on pourrait traduire de la sorte :
+La littérature scientifique propose des définitions plus formelles des monades. Celle de Saunders Mac Lane \cite[134]{mac2013categories}, associée à la théorie des catégories pourrait être traduite comme suit :
 
-\blockquote{Une monade dans $X$ est juste un monoïde dans la catégorie des endofoncteurs de $X$, ayant pour produit $\times$ la composition d'endofoncteurs et pour élément neutre l'endofoncteur identité.}
+\blockquote{Une monade dans $X$ est un simple monoïde dans la catégorie des endofoncteurs de $X$, ayant pour produit $\times$ la composition d'endofoncteurs et pour élément neutre l'endofoncteur identité.}
 
 			\subsubsection{Compilation et préservation de la sémantique}
 			\label{compilation}
-				Une problématique subsiste lorsque des propriétés formelles ont été prouvées sur du code source. Comment peut-on s'assurer que ces propriétés resteront prouvables une fois que le code source aura été compilé ?
+				Une problématique subsiste lorsque des propriétés formelles ont été prouvées sur du code source. Une fois compilé, il reste à établir que les propriétés resteront valables sur le code produit. La recherche dans ce domaine a mené au projet CompCert\cite{Leroy-backend}, un compilateur de code source C dont la préservation de la sémantique est garantie formellement jusqu'au code assembleur.
 
-				\paragraph{CompCert} La recherche dans ce domaine a mené au projet CompCert\cite{Leroy-backend}, un compilateur de code source C dont la préservation de la sémantique est garantie formellement jusqu'au code assembleur.
-
-	La propriété de préservation de la sémantique est enoncée comme suit :
+	La propriété de préservation de la sémantique est énoncée comme suit :
 
 \begin{theorem}	
 	Pour tout programme source $S$ et pour tout code $C$ généré par le compilateur, si le compilateur a produit le code $C$ à partir du programme source $S$ sans remonter d'erreur de compilation, alors le comportement observable de $C$ est l'un des comportements observables possibles de $S$.
@@ -392,13 +404,11 @@ CompCert compile le programme source $S$ à partir de son \emph{Abstract Syntax 
 
 À ce jour, le projet CompCert a prouvé 90\% de la chaîne de compilation, notamment les algorithmes d'optimisation et de génération de code assembleur. Les 10\% restants à prouver incluent l'assemblage et la phase d'édition des liens \cite{compcert_online}.
 
-Les projets ayant recourt à la vérification de programme par \emph{deep embedding} ont l'avantage de pouvoir aisément reconstruire l'\emph{AST} du programme et de le compiler grâce à CompCert. Cependant, pour les projets comme Pip utilisant un \emph{shallow embedding} et n'explicitant pas l'\emph{AST} du programme vérifié, l'étape de reconstruction du programme n'est pas triviale.
+Les projets ayant recourt à la vérification de programme par \emph{deep embedding} ont l'avantage de pouvoir aisément reconstruire l'\emph{AST} du programme et de le compiler grâce à CompCert. Cependant, pour les projets utilisant un \emph{shallow embedding} et n'explicitant pas l'\emph{AST} du programme vérifié, l'étape de reconstruction du programme n'est pas triviale.
 
-Auparavant, la chaîne de compilation de Pip utilisait \emph{Digger}~\cite{digger}, un outil écrit en Haskell qui transforme le code C shallow embedded écrit en Gallina en code C. Digger n'est pas muni de preuve formelle de préservation de la sémantique. Ainsi, l'argument de la préservation de la sémantique de Pip résidait dans l'extrême simplicité apparente de la conversion.
+\emph{Digger}~\cite{digger} est un outil écrit en Haskell qui transforme le code shallow embedded écrit en Gallina en code source C. Digger n'est pas muni de preuve formelle de préservation de la sémantique. Cet outil ne permet pas de prouver l'équivalence entre le code shallow embedded et le code finalement exécuté.
 
-		\paragraph{$\partial x$} $\partial x$ est le remplaçant de \emph{Digger} dans la chaîne de compilation de Pip. Comme \emph{Digger}, il permet de transformer le code C écrit en Gallina vers un code source C, sous une forme attendue par CompCert.
-
-		$\partial x$ comporte deux phases de fonctionnement : la première phase consiste à extraire l'\emph{AST} du programme écrit en Gallina sous la forme d'une représentation intermédiaire ; la seconde transforme cet \emph{AST} en \emph{AST} CompCert \texttt{Csyntax}. La première phase est écrite en Elpi~\cite{elpi} car Coq ne propose pas nativement de mécanisme de \emph{réflexion}. La seconde phase est écrite directement dans Coq. Il est de ce fait désormais possible de raisonner sur la phase de transformation de l'\emph{AST}.~~$\partial x$ permet en outre d'afficher le code source C produit, en utilisant le \emph{pretty-printer} de CompCert.
+$\partial x$ \textcolor{red}{REF}, un autre outil récemment paru, permet de transformer le code shallow embedded écrit en Gallina en un AST attendu par CompCert. $\partial x$ comporte deux phases de fonctionnement : la première phase consiste à extraire l'\emph{AST} du programme écrit en Gallina sous la forme d'une représentation intermédiaire ; la seconde transforme cet \emph{AST} en \emph{AST} CompCert \texttt{Csyntax}. La première phase est écrite en Elpi~\cite{elpi} car Coq ne propose pas nativement de mécanisme de \emph{réflexion}. La seconde phase est écrite directement dans Coq. Il est de ce fait désormais possible de raisonner sur la phase de transformation de l'\emph{AST}.~~$\partial x$ permet en outre d'afficher le code source C produit, en utilisant le \emph{pretty-printer} de CompCert.
 
 		\subsection{Illustration système}	
 
@@ -435,8 +445,8 @@ Auparavant, la chaîne de compilation de Pip utilisait \emph{Digger}~\cite{digge
 	\centering{
 		\input{figures/partition_tree.tex}
 		\caption{Exemple d'arbre de partition dans Pip}
-	}
 		\label{fig:partition_tree}
+	}
 	\end{figure}
 
 	
@@ -445,11 +455,15 @@ Auparavant, la chaîne de compilation de Pip utilisait \emph{Digger}~\cite{digge
 	\begin{itemize}
 		\item La première, la propriété de \textbf{partage vertical}, stipule que la mémoire partagée par une partition parent avec ses enfants reste accessible au parent par conception.
 
-		\item La seconde, la propriété d'\textbf{isolation horizontale}. Dans Pip, chaque partition peut créer plusieurs partitions enfant ; cependant les portions de mémoire partagées avec chacune doit être strictement disjointe. Autrement dit, une partition ne peut pas partager une même portion de mémoire avec deux partitions enfant simultanément. Ainsi, deux partitions enfant issues d'une même partition parent sont \emph{isolées} : la mémoire accessible dans l'une d'entre elle est nécessairement inaccessible dans l'autre.
+		\item La seconde, la propriété d'\textbf{isolation horizontale}. Dans Pip, chaque partition peut créer plusieurs partitions enfant ; cependant les portions de mémoire partagées avec chacune doivent être strictement disjointe. Autrement dit, une partition ne peut pas partager une même portion de mémoire avec deux partitions enfant simultanément. Ainsi, deux partitions enfant issues d'une même partition parent sont \emph{isolées} : la mémoire accessible dans l'une d'entre elle est nécessairement inaccessible dans l'autre.
 
 		\item La dernière, la propriété d'\textbf{isolation noyau}. À chaque création de partition, Pip réserve une petite portion de mémoire afin d'y stocker les structures nécessaires au contrôle des droits. Ces portions de mémoire deviennent inaccessibles à n'importe quelle partition.
 	\end{itemize}
 
 
 	\paragraph{Méthodologie de preuve} Pip a pris le contrepied des projets majeurs du domaine en utilisant un \emph{shallow embedding} de C plutôt que d'utiliser un \emph{deep embedding}. Ce \emph{shallow embedding} nécessite l'utilisation d'une monade d'état en Coq (voir \ref{monad}) et d'un outil spécifique (voir $\partial x$ \ref{compilation}) pour reconstruire l'AST ou le code source du noyau pour le compiler.
-	Le pari de cette méthodologie est de pouvoir se concentrer sur la sémantique des programmes à prouver afin d'alléger l'effort de preuve général par rapport aux méthodologies utilisant un \emph{deep embedding}. Aussi, les proriétés de préservation de l'isolation de Pip ont été prouvées directement, plutôt qu'en passant par un raffinement.
+	Le pari de cette méthodologie est de pouvoir se concentrer sur la sémantique des programmes à prouver afin d'alléger l'effort de preuve général par rapport aux méthodologies utilisant un \emph{deep embedding}. Par ailleurs les proriétés de préservation de l'isolation de Pip ont été prouvées directement plutôt que par raffinement.
+
+	\section{Conclusion}
+
+	\textcolor{red}{Montrer comment ces notions sont reliées par les travaux présentés par la suite}
