@@ -539,34 +539,49 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 			\subsubsection{Propriétés de cohérence du noyau}
 
-			Dans Pip, il y a 25 propriétés annexes, qui décrivent comment sont organisées les structures de données internes de Pip. Ces propriétés sont appelées les propriétés de cohérence du noyau. Nous n'allons pas passer en revue l'ensemble des propriétés de cohérence dans ce document, mais seulement celles liées aux données modifiées par le service.
+			Dans Pip, il y a 25 propriétés annexes, qui décrivent comment sont organisées les structures de données internes de Pip. Ces propriétés sont appelées les propriétés de cohérence du noyau. Ces propriétés ne seront pas détaillée ici, car seules certaines d'entre elles présentent un intérêt dans la preuve de préservation de l'isolation. Elles seront introduites au fil de l'eau dans les sections suivantes aux endroits pertinents.
 
-			La première propriété de cohérence à laquelle nous nous intéresserons est la propriété \texttt{currentPartitionInPartitionsList}.
+		\subsection{Déroulement de la preuve d'isolation}
 
-			\begin{listing}[!ht]
-				\coqcode{code/currentPartitionInPartitionsList.v}
-				\caption{Propriété de cohérence indiquant que la partition courante doit faire partie de la liste des partitions}
-				\label{code:currentPartitionInPartitionsList}
-			\end{listing}
+		Cette preuve est axée autour de deux points critiques ; la mise à jour de la partition courante, ainsi que l'écriture du contexte de la partition appelante dans son espace d'adressage. Nous commencerons par passer en revue les propriétés souhaitées ainsi que la méthode utilisée pour chacun des deux points critiques de cette preuve, puis nous verrons comment ces propriétés sont récupérées au fur et à mesure de l'exécution des blocs préliminaires du service.
 
-			Cette propriété assure que la variable globale contenant la partition courante contiendra toujours un descripteur de partition valide provenant de la liste des partitions.
-
-			La seconde propriété de cohérence à laquelle nous nous intéresserons est la propriété \texttt{currentPartitionIsNotDefaultPage}.
-
-			\begin{listing}[!ht]
-				\coqcode{code/currentPartitionIsNotDefaultPage.v}
-				\caption{Propriété de cohérence indiquant que la partition courante ne doit pas être la page par défaut}
-				\label{code:currentPartitionIsNotDefaultPage}
-			\end{listing}
-
-			Cette propriété assure que la variable reflétant la partition courante soit différente de la page par défaut.
-		
-		\subsection{Déroulement de la preuve}
-			\subsubsection{Validation des paramètres}
-			\subsubsection{Sauvegarde du contexte d'exécution de la partition appelante}
 			\subsubsection{Modification de la partition courante}
 
-			
+			Comme décrit précédemment, la modification de la partition courante s'effectue dans le bloc \texttt{switchContextCont}. La fonction responsable de cette modification est la fonction \texttt{updateCurPartition}, dont le modèle est présenté en listing \ref{code:updateCurPartition}.
+
+			\begin{listing}[!ht]
+				\coqcode{code/updateCurPartition.v}
+				\caption{Modèle de la fonction \texttt{updateCurPartition} modifiant la variable contenant la partition courante}
+				\label{code:updateCurPartition}
+			\end{listing}
+
+			Cette fonction est \emph{monadique}, ce qui implique qu'elle est une fonction partielle sur l'état. C'est une fonction d'écriture, elle décrit donc comment est modifié l'état lors de son exécution. Cette fonction prend en argument une page mémoire arbitraire \texttt{phyPartition}. Le modèle de cette fonction indique qu'elle remplace la composante \texttt{currentPartition} de l'état par le paramètre \texttt{phyPartition}. Ainsi, après l'exécution de \texttt{updateCurPartition}, si on nomme $s'$ le nouvel état produit à partir de l'état initial $s$, alors : \\
+
+			\mintinline{coq}{s' := {| currentPartition := phyPartition ; memory := (memory s) |}}.\\
+
+			Seules deux propriétés mentionnent directement le champ \texttt{currentPartition} de l'état : \texttt{currentPartitionInPartitionsList} et \texttt{currentPartitionIsNotDefaultPage}.
+
+			\begin{listing}[!ht]
+				\coqcode{code/consistencyCurPart.v}
+				\caption{Propriétés de cohérence directement affectées par le changement du champ \texttt{currentPartition} de l'état}
+				\label{code:consistencyCurPart}
+			\end{listing}
+
+			Ces propriétés assurent respectivement que la variable globale contenant la partition courante contiendra toujours un descripteur de partition provenant de la liste des descripteurs de partitions, et qu'elle ne soit pas égale à la valeur par défaut.
+
+			Ces deux propriétés de cohérence doivent être déduite de propriétés précédemment établies sur la page passée en paramètre. En particulier, on veut donc pouvoir montrer que \texttt{targetPartDesc} représente bien un descripteur de partition et qu'il n'est pas nul. On veut donc avoir les deux propriétés décrites en listing \ref{code:curPartProperties} avant l'appel de la fonction \texttt{updateCurPartition} :
+
+			\begin{listing}[!ht]
+				\coqcode{code/curPartProperties.v}
+				\caption{Propriétés supplémentaires nécessaires pour montrer la préservation de deux propriétés de cohérence du noyau après exécution de la fonction \texttt{updateCurPartition}}
+				\label{code:curPartProperties}
+			\end{listing}
+
+			Le reste des propriétés d'isolation et de cohérence sur le nouvel état $s'$ peuvent être déduites des propriétés sur l'état $s$. Pour les déduire, il faut montrer qu'elles ne portent que sur la portion de l'état \texttt{memory} qui reste inchangée entre $s$ et $s'$. Cela nécessite de déplier la définition de \emph{chaque propriété} (y compris les propriétés intermédiaires) afin de constater que les termes entre les propriétés sur l'état $s$ et celles qu'on souhaite prouver sur $s'$ sont identiques.
+
+			Illustrons par exemple la preuve de la propriété d'isolation 
+
+
 			\begin{listing}[!ht]
 				\coqcode{code/partitionTreeRemains.v}
 				\caption{Preuve que la fonction \texttt{getPartitions} effectue les mêmes calculs peu importe la partition courante}
@@ -578,6 +593,17 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 				\caption{Preuve de la propriété de cohérence \texttt{currentPartitionInPartitionsList}}
 				\label{code:currentPartitionInPartitionsListActivate}
 			\end{listing}
+			\subsubsection{Validation des paramètres}
+			Pour parvenir à prouver la préservation des propriétés d'isolation et de cohérence lors des différentes instructions de modification de l'état du service, il est nécessaire d'amener des propriétés sur les paramètres fournis par l'utilisateur ainsi que sur les valeurs intermédiaires calculées pendant l'exécution du service.
+
+			\subsubsection{Sauvegarde du contexte d'exécution de la partition appelante}
+
+			\begin{listing}[!ht]
+				\coqcode{code/writeContextPreconditions.v}
+				\caption{Préconditions de la fonction \texttt{writeContext}}
+				\label{code:writeContextPreconditions}
+			\end{listing}
+
 
 
 	\section{Retour d'expérience}

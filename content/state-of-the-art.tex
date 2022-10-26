@@ -16,7 +16,6 @@
 
 			Le transfert de flôt d'exécution est le fait de faire diverger un flôt d'exécution vers un autre. Il existe de nombreuses utilisations du transfert de flôt d'exécution. Le premier, le plus simple, est le saut : il permet de définir de manière arbitraire l'adresse de la prochaine instruction à exécuter. Similairement, le saut conditionnel permet d'effectuer un saut en fonction du résultat d'une instruction assembleur, divisant le flot d'exécution en deux fils possibles. Ensuite viennent les appels de fonctions : ces transferts de flôt d'exécutions sont spéciaux car ils nécessitent de revenir au flot d'exécution initial. 
 
-
 			Flot d'exécution / état de la machine / transfert de flot d'exécution internes et externes
 			 ceux qui définissent un cadre d'exécution
 
@@ -28,63 +27,13 @@
 		Cette section va détailler les différents transferts de flot d'exécution mis à disposition dans les processeurs modernes.
 		Nous détaillerons les transferts de flot d'exécution qui impliquent une reconfiguration explicite de l'état de la machine ayant un impact sur les droits d'accès aux ressources. Les appels d'une fonction d'un programme vers une autre fonction ne seront pas considérés dans cette section, même s'ils pourraient être considérés comme un transfert de flôt d'exécution.
 
-
-		\subsection{Hardware}
+		\subsection{Transferts de flôt d'exécution au sein d'un système}
 
 			\subsubsection{Appels explicites}
 			Les transferts les plus courants sont les transferts de flot d'exécution explicites, c'est-à-dire dont la cible est explicitement fournie lors de l’appel, ou clairement établie dans la documentation.
 
-Par exemple, dans Linux, un processus peut demander l’ouverture d’un fichier avec l’appel système open(). Cet appel transfère le flot d’exécution d’un processus non privilégié vers le noyau Linux disposant du plus haut niveau de privilèges. Les fonctions appelables par des transferts explicites servent d’interface entre des logiciels disposant de droits distincts.
+Par exemple, dans Linux, un processus peut demander l’ouverture d’un fichier avec l’appel système \texttt{open()}. Cet appel transfère le flot d’exécution d’un processus non privilégié vers le noyau Linux disposant du plus haut niveau de privilèges. Les fonctions appelables par des transferts explicites servent d’interface entre des logiciels disposant de droits distincts.
 
-
-
-Ce type de transfert de flôt d'exécution, d'apparence assez anodine, est pourtant l'objet d'attaques multiples, dont le but est de faire dévier l'exécution (de préférence en mode privilégié) vers du code choisi par l'attaquant. Pour y arriver, un attaquant doit exploiter une vulnérabilité dans une portion de code, qui lui donnera le contrôle d'une zone de mémoire d'intérêt (la pile, le tas, ou même le code). Une fois qu'il contrôle cette zone mémoire, il lui suffit d'écrire un \emph{shellcode}, et d'exploiter une vulnérabilité dans du code privilégié pour que l'exécution du \texttt{return} de la fonction compromise saute dans le shellcode. L'attaquant gagne à ce moment le contrôle de la machine.
-
-Commence alors un jeu du chat et de la souris pour essayer de mitiger l'impact de ces vulnérabilités. Pour compliquer la vie de l'attaquant, et qu'il lui soit plus difficile d'exécuter son shellcode, de nombreuses stratégies ont été entreprises par les fabriquant de matériels ainsi que par les développeurs de systèmes d'exploitation. 
-
-\paragraph{Canaries}
-Une première statégie est l'ajout de \emph{canary} qui visent à détecter les corruptions mémoires. Les canaries sont des valeurs écrites dans la pile ou le tas et qui sont générées aléatoirement à chaque exécution. Lors de la sortie de la frame protégée par le canary, le code vérifie que la valeur du canary correspond bien à celle qui avait été écrite initialement ; si ce n'est pas le cas, c'est qu'une corruption mémoire a eu lieu et une faute est levée.
-
-Une des techniques permettant de vaincre les canaries est de lire la valeur initiale du canary avant de corrompre la mémoire. En effet, la canary \textbf{reste la même pour l'intégralité de l'exécution}. Une fois cette valeur récupérée, il suffit de corrompre la mémoire en réécrivant cette valeur au bon endroit pour échapper à la détection. De plus, si l'exploitation de la vulnérabilité permet de corrompre la mémoire de manière fine, il suffit d'éviter d'écrire sur la canary.
-
-\paragraph{Droits fins pour les zones mémoires}
-\label{memory_rights}
-Une autre stratégie a été de définir des droits fins concernant l'accès aux différentes zones mémoires de l'espace d'adressage des processus. Le mécanisme de mémoire virtuelle permet de définir des droits d'accès propres à chaque page mémoire configurée (lecture, écriture, éxecution, accessible en mode non privilégié). Par exemple, les pages mémoire contenant du code sont typiquement configurées pour des accès en lecture et exécution, alors que les pages contenant des données (pour la pile, le tas, les sections de données d'un binaire) sont configurées pour des accès en lecture/écriture.
-
-Cette stratégie de défense empêche un attaquant d'exploiter une vulnérabilité pour écrire un shellcode code dans la mémoire si on considère que chaque page de mémoire est soit exécutable, soit accessible en écriture. Cependant, il existe des cas d'usage légitimes qui violent cette contrainte, par exemple lors de compilation à la volée (ou JIT, pour Just-In-Time). Fatalement, de tels logiciels sont devenus la cible privilégiée des attaquants, on pourra par exemple citer Webkit \cite{webkitexploit}.
-Heureusement, il est peu probable que de tels logiciels aient besoin de s'exécuter en mode privilégié. 
-
-Pour affaiblir ce vecteur d'attaque, cette stratégie de défense est renforcée par des mécanismes de sécurité supplémentaires tels que le \emph{Supervisor Mode Access Prevention} (SMAP) et le \emph{Supervisor Mode Execution Prevention} (SMEP). SMAP permet au processeur de lever une faute lorsque qu'il exécute du code privilégié et qu'il essaie d'accéder (en lecture ou en écriture) à des données présentes dans l'espace utilisateur. SMEP permet en complément de lever une faute lorsque le processeur essaie d'exécuter du code dans l'espace utilisateur alors qu'il se trouve dans un mode d'exécution privilégié.
-
-Ces mécanismes permettent d'isoler le code privilégié de potentiels shellcodes écrit en espace utilisateur. Ainsi, pour compromettre intégralement un système, l'attaquant doit à présent exploiter une vulnérabilité dans le code privilégié, ayant à sa disposition des pages mémoire soit accessibles en écriture soit exécutables et qui, de surcrois, ne font pas partie de l'espace utilisateur.
-Nait alors une nouvelle technique d'exploitation de vulnérabilité. 
-
-\paragraph{Return Oriented Programming}
-\label{ROP}
-Le ROP (pour \emph{Return Oriented Programming}) consiste à attaquer du code vulnérable en n'utilisant que le code déjà accessible dans l'environnement d'origine, mais en exécutant des portions arbitraires de celui-ci. L'attaque consiste à repérer des \emph{gadgets} : de brèves portions de code ayant un effet spécifique sur la mémoire ou les registres, suivi d'une instruction \texttt{return}. Pour l'attaquant, il suffit de dévier le flot d'exécution sur l'un de ces gadgets et de manipuler la mémoire, de manière à ce que l'exécution du gadget entraine l'exécution du suivant. L'attaquant parvient au final à exécuter son shellcode constitué d'une succession de gadgets, contournant les mécanismes de sécurité mentionnés dans le paragraphe précédent.\\
-
-Plusieurs contre-mesures ont émergé pour rendre plus difficile le ROP.
-
-\paragraph{Address Space Layout Randomization}
-\label{aslr}
-L'ASLR (pour \emph{Address Space Layout Randomization}) rend imprédictible l'adresse des différentes zones de mémoire au sein d'un espace d'adressage virtuel. Les adresses du binaire, de la pile, du tas, des librairies, du noyau, etc. sont rendus aléatoires à chaque nouvelle exécution. L'ASLR est de ce fait un frein considérable au développement d'un shellcode en ROP, puisqu'il est impossible de prédire où se situeront les gadgets lors de la prochaine exécution.
-
-L'ASLR n'est cependant pas parfait. Les adresses des zones mémoire restantes peuvent être révélées par des pointeurs dans les zones mémoires controlées par l'attaquant \cite{bypasskaslr}, ou grâce à des attaques micro-architecturales \cite{microarchitecturalbypass}.
-
-\paragraph{Vérification de l'intégrité du flôt d'exécution}
-\label{cfi}
-Une autre approche permettant de réduire la marge de manoeuvre de l'attaquant et de vérifier que le flot d'exécution est conforme à celui attendu. À chaque appel et à chaque retour de fonction, le processeur vérifie si la cible du saut est valide. Plusieurs implémentations existent, notamment des implémentations matérielles au sein des processeurs \cite{intelpointerauth, armpointerauth}, mais aussi certaines implémentations logicielles notamment provenant de compilateurs \cite{compilerpointerauth}. Windows, macOS, Android, iOS utilisent déjà un mécanisme de vérification du flot d'exécution.
-
-\paragraph{eXecute Only Memory}
-\label{execute_only_memory}
-Le XOM (pour \emph{eXecute Only Memory}), est une fonctionnalité de certain processeurs permettant de déclencher une faute lorsqu'un accès en lecture est fait sur les pages mémoires configurées comme étant exécutables. Avant cette fonctionnalité, aucune distinction n'était faite entre le processus de récupération des instructions par le processeur et la lecture de données par l'utilisateur. Cette fonctionnalité rend considérablement pour difficile la recherche de gadgets, puisqu'il est impossible pour l'attaquant de lire le code qu'il souhaite compromettre directement sur la cible.
-Il est parfois reproché à cette fonctionnalité qu'elle relève de la sécurité par l'obscurité, et qu'elle n'est pas réellement efficace.
-
-\paragraph{\blockquote{Mieux vaut prévenir que guérir}}
-
-Ces contre-mesures, sans cesse contournées par de nouvelles méthodes d'attaque, supposent qu'il existera toujours des vulnérabilités dans le logiciel comme dans le matériel et tentent donc de limiter au maximum leur impact sur les systèmes affectés. Une toute autre classe de mesures essaie de régler le problème en s'attaquant à l'existence même des vulnérabilités, plutôt que d'essayer minimiser leurs conséquences.
-
-On pourrait citer les méthodes d’analyse statique, les méthodes d’exécution symbolique, de fuzzing, et plus particulièrement le langage Rust conçu pour éradiquer ces vulnérabilités par conception. Par ailleurs, des travaux ont été entamés pour prouver formellement les fonctionnalités de Rust.
 
 
 			\subsubsection{Fautes}
@@ -99,21 +48,12 @@ Les différentes formes de fautes logicielles constituent aussi une forme de tra
 Dans ces différentes situations il s'agit de transferts implicites depuis le logiciel en faute vers une fonction d'un logiciel en charge du traitement de cette faute. Les différentes fonctions de gestion des fautes sont généralement définies par des éléments de configuration du matériel, et, le plus souvent, par l'intermédiaire d'une table (ou vecteur) dont le nom change d'une architecture de microprocesseur à l'autre. Ce vecteur précise généralement le niveau d'élévation de privilèges associé à l'exécution de la fonction de traitement de la faute. Sur les architectures Intel cette table est appelée \emph{IDT} (pour \emph{Interrupt Descriptor Table}).
 \label{IDT}
 
-\subsubsection{Interruptions matérielles}
-Les interruptions matérielles sont des transferts non explicites \textit{a priori} non contrôlés par le code non privilégié. Elles sont déclenchées par le matériel, signalant un événement important à traiter, tel que l'arrivée d'un paquet réseau par exemple. Les fonctions de traitement des interruptions matérielles ainsi que leur niveau de privilèges sont aussi définis dans l'\emph{IDT}.
+			\subsubsection{Interruptions matérielles}
+			Les interruptions matérielles sont des transferts non explicites \textit{a priori} non contrôlés par le code non privilégié. Elles sont déclenchées par le matériel, signalant un événement important à traiter, tel que l'arrivée d'un paquet réseau par exemple. Les fonctions de traitement des interruptions matérielles ainsi que leur niveau de privilèges sont aussi définis dans l'\emph{IDT}.
 
-Puisque les fautes et interruptions déclenchent un changement de privilèges, elles sont un vecteur d'attaque supplémentaire d'intérêt pour un attaquant cherchant à s'octroyer de nouveaux droits. En effet, les mêmes types de failles peuvent résider dans les routines de gestion de ces portions de logiciel. De plus, les interruptions et fautes brisent le flot d'exécution et modifient potentiellement l'environnement d'exécution du code interrompu. Cela les rends d'autant plus susceptibles de contenir des vulnérabilités, qui tombent alors dans la catégorie des vulnérabilités de \emph{concurrence critique}.
 
-Même en ayant pleinement conscience des différentes interactions et dépendances entre les différents composants d'un système, les vulnérabilités de concurrence critique sont \textbf{notoirement difficiles à cerner}, principalement à cause d'un phénomène d'explosion combinatoire. Il peut s'avérer difficile de détecter une telle vulnérabilité par les tests, puisqu'ils sont souvent effectués dans des environnement très controlés où les mêmes conditions d'exécution sont artificiellement répétées, occultant d'autres fils d'exécution possibles. Malgré cela, si le développeur parvient à exhiber un fil d'exécution contenant un comportement anormal, il peut alors être délicat de reproduire le fil d'exécution ayant conduit à ce comportement. En effet, le fil d'exécution peut etre le résultat de nombreuses interactions -- parfois non-déterministes -- du programme avec son environnement. De plus, attacher un debuggueur tel que \texttt{gdb} peut modifier subtilement ces interactions, de manière telle qu'il soit impossible d'exhiber à nouveau le comportement anormal : on parle alors d'Heisenbug.
 
-Pour illustrer la difficulté à cerner cette catégorie de bugs, on pourrait citer un problème d'incohérence de cache dans le noyau de système d'exploitation de la Nintendo Switch après une interruption matérielle ayant mené à un changement de coeur. Les effets de ce bug avaient été observés dès la sortie de la console ; il n'a cependant été trouvé et corrigé qu'à la sortie du firmware 14.0.0 de la console, soit plus de 5 ans après les premiers rapports \cite{switchbug}.
-On pourrait aussi citer une vulnérabilité exploitée dans la pile IPV6 du noyau FreeBSD de la console Playstation 4 de Sony, profitant d'une situation de concurrence critique pour déclecher un Use-After-Free et compromettant le système d'exploitation. Cette faille présente sur tous les firmwares de la console depuis son lancement en 2013 a été découverte en 2018 puis divulguée et patchée en 2020, soit 7 ans après sa mise sur le marché \cite{ps4bug}. La même vulnérabilité était présente jusqu'à la version 5.00 du firmware de la Playstation 5, soit plus de deux ans après le rapport de bug concernant l'ancienne console \cite{ps5bug}.
-
-Certains débuggers (notamment \texttt{rr}~\cite{mozRR}) ont implémenté une fonctionnalité "\emph{record and replay}" (enregistre et rejoue), permettant de capturer une trace du programme inspecté, puis de rejouer dynamiquement cette même trace à la demande. Cette fonctionnalité résoud le problème de la reproductibilité des comportement anormaux des programmes, et permet de surcrois de revenir à un état précédent de l'exécution lors d'une session de débuggage, ce qui est impossible avec les débuggers classiques. Certains émulateurs tels que Xen ou Qemu proposent des fonctionnalités "record and replay" sur les machines virtualisées. Malheureusement, les fonctionnalités "record and replay" pour des programmes sur plusieurs coeurs sont actuellement extrêmement lents, et profiteraient grandement d'implémentation matérielles si elles venaient à exister \cite{mozRR}.
-
-De nombreux travaux ont été menés afin de détecter les situations de concurrence critique, par exemple par analyse statique~\cite{racerX}. D'autres travaux ont développés des méthodes plus particulières permettant de découvrir des situations de concurrence critique liées aux interruptions matérielles~\cite{sdracer}. Parallèlement, dans le monde de la preuve formelle, on pourrait citer les travaux ayant abouti à la logique de séparation~\cite{separationlogic}.
-
-		\subsection{Software}
+		\subsection{Implications logicielles d'un transfert de flot d'exécution}
 
 			\subsubsection{Changement de droits}
 
@@ -197,19 +137,77 @@ Lors d'une faute, d'une interruption ou d'un appel à \texttt{int}, le processeu
 
 Tout d'abord, le processeur change de pile, en sauvant temporairement les valeurs utilisateurs du segment de pile \texttt{SS} et de la pile \texttt{ESP}, et en les écrivants sur la pile renseignée dans la nouvelle pile renseignée dans la \emph{TSS}. Le processeur sauve ensuite l'état des registres \texttt{EFLAGS}, du segment de code \texttt{CS} et du pointeur d'instruction \texttt{EIP}. EFLAGS contient entre autres l'état des drapeaux d'overflow, de retenue, de parité, de conditions, mais aussi d'activation des interruptions. Le processeur peut pousser un code d'erreur supplémentaire sur la pile dans le cas de déclenchement de certaines fautes afin de préciser leur cause.
 
-		\subsection{Failles de sécurités associées}
-			%https://google.github.io/security-research/pocs/linux/bleedingtooth/writeup.html#achieving-rip-control
-			%https://google.github.io/security-research/pocs/linux/cve-2021-22555/writeup.html
-			%https://github.com/Bonfee/CVE-2022-0995
-			CVE historiques ? :D
+		\subsection{Sécurité liée aux transferts de flôt d'exécution}
 
-			%https://pointer-authentication.github.io/
+		\subsubsection{Appels explicites}
+Ce type de transfert de flôt d'exécution, d'apparence assez anodine, est pourtant l'objet d'attaques multiples, dont le but est de faire dévier l'exécution (de préférence en mode privilégié) vers du code choisi par l'attaquant. Pour y arriver, un attaquant doit exploiter une vulnérabilité dans une portion de code, qui lui donnera le contrôle d'une zone de mémoire d'intérêt (la pile, le tas, ou même le code). Une fois qu'il contrôle cette zone mémoire, il lui suffit d'écrire un \emph{shellcode}, et d'exploiter une vulnérabilité dans du code privilégié pour que l'exécution du \texttt{return} de la fonction compromise saute dans le shellcode. L'attaquant gagne à ce moment le contrôle de la machine.
 
-		\subsection{Ordonnancement}
+Commence alors un jeu du chat et de la souris pour essayer de mitiger l'impact de ces vulnérabilités. Pour compliquer la vie de l'attaquant, et qu'il lui soit plus difficile d'exécuter son shellcode, de nombreuses stratégies ont été entreprises par les fabriquant de matériels ainsi que par les développeurs de systèmes d'exploitation. 
+
+\paragraph{Canaries}
+Une première statégie est l'ajout de \emph{canary} qui visent à détecter les corruptions mémoires. Les canaries sont des valeurs écrites dans la pile ou le tas et qui sont générées aléatoirement à chaque exécution. Lors de la sortie de la frame protégée par le canary, le code vérifie que la valeur du canary correspond bien à celle qui avait été écrite initialement ; si ce n'est pas le cas, c'est qu'une corruption mémoire a eu lieu et une faute est levée.
+
+Une des techniques permettant de vaincre les canaries est de lire la valeur initiale du canary avant de corrompre la mémoire. En effet, la canary \textbf{reste la même pour l'intégralité de l'exécution}. Une fois cette valeur récupérée, il suffit de corrompre la mémoire en réécrivant cette valeur au bon endroit pour échapper à la détection. De plus, si l'exploitation de la vulnérabilité permet de corrompre la mémoire de manière fine, il suffit d'éviter d'écrire sur la canary.
+
+\paragraph{Droits fins pour les zones mémoires}
+\label{memory_rights}
+Une autre stratégie a été de définir des droits fins concernant l'accès aux différentes zones mémoires de l'espace d'adressage des processus. Le mécanisme de mémoire virtuelle permet de définir des droits d'accès propres à chaque page mémoire configurée (lecture, écriture, éxecution, accessible en mode non privilégié). Par exemple, les pages mémoire contenant du code sont typiquement configurées pour des accès en lecture et exécution, alors que les pages contenant des données (pour la pile, le tas, les sections de données d'un binaire) sont configurées pour des accès en lecture/écriture.
+
+Cette stratégie de défense empêche un attaquant d'exploiter une vulnérabilité pour écrire un shellcode code dans la mémoire si on considère que chaque page de mémoire est soit exécutable, soit accessible en écriture. Cependant, il existe des cas d'usage légitimes qui violent cette contrainte, par exemple lors de compilation à la volée (ou JIT, pour Just-In-Time). Fatalement, de tels logiciels sont devenus la cible privilégiée des attaquants, on pourra par exemple citer Webkit \cite{webkitexploit}.
+Heureusement, il est peu probable que de tels logiciels aient besoin de s'exécuter en mode privilégié. 
+
+Pour affaiblir ce vecteur d'attaque, cette stratégie de défense est renforcée par des mécanismes de sécurité supplémentaires tels que le \emph{Supervisor Mode Access Prevention} (SMAP) et le \emph{Supervisor Mode Execution Prevention} (SMEP). SMAP permet au processeur de lever une faute lorsque qu'il exécute du code privilégié et qu'il essaie d'accéder (en lecture ou en écriture) à des données présentes dans l'espace utilisateur. SMEP permet en complément de lever une faute lorsque le processeur essaie d'exécuter du code dans l'espace utilisateur alors qu'il se trouve dans un mode d'exécution privilégié.
+
+Ces mécanismes permettent d'isoler le code privilégié de potentiels shellcodes écrit en espace utilisateur. Ainsi, pour compromettre intégralement un système, l'attaquant doit à présent exploiter une vulnérabilité dans le code privilégié, ayant à sa disposition des pages mémoire soit accessibles en écriture soit exécutables et qui, de surcrois, ne font pas partie de l'espace utilisateur.
+Nait alors une nouvelle technique d'exploitation de vulnérabilité. 
+
+\paragraph{Return Oriented Programming}
+\label{ROP}
+Le ROP (pour \emph{Return Oriented Programming}) consiste à attaquer du code vulnérable en n'utilisant que le code déjà accessible dans l'environnement d'origine, mais en exécutant des portions arbitraires de celui-ci. L'attaque consiste à repérer des \emph{gadgets} : de brèves portions de code ayant un effet spécifique sur la mémoire ou les registres, suivi d'une instruction \texttt{return}. Pour l'attaquant, il suffit de dévier le flot d'exécution sur l'un de ces gadgets et de manipuler la mémoire, de manière à ce que l'exécution du gadget entraine l'exécution du suivant. L'attaquant parvient au final à exécuter son shellcode constitué d'une succession de gadgets, contournant les mécanismes de sécurité mentionnés dans le paragraphe précédent.\\
+
+Plusieurs contre-mesures ont émergé pour rendre plus difficile le ROP.
+
+\paragraph{Address Space Layout Randomization}
+\label{aslr}
+L'ASLR (pour \emph{Address Space Layout Randomization}) rend imprédictible l'adresse des différentes zones de mémoire au sein d'un espace d'adressage virtuel. Les adresses du binaire, de la pile, du tas, des librairies, du noyau, etc. sont rendus aléatoires à chaque nouvelle exécution. L'ASLR est de ce fait un frein considérable au développement d'un shellcode en ROP, puisqu'il est impossible de prédire où se situeront les gadgets lors de la prochaine exécution.
+
+L'ASLR n'est cependant pas parfait. Les adresses des zones mémoire restantes peuvent être révélées par des pointeurs dans les zones mémoires controlées par l'attaquant \cite{bypasskaslr}, ou grâce à des attaques micro-architecturales \cite{microarchitecturalbypass}.
+
+\paragraph{Vérification de l'intégrité du flôt d'exécution}
+\label{cfi}
+Une autre approche permettant de réduire la marge de manoeuvre de l'attaquant et de vérifier que le flot d'exécution est conforme à celui attendu. À chaque appel et à chaque retour de fonction, le processeur vérifie si la cible du saut est valide. Plusieurs implémentations existent, notamment des implémentations matérielles au sein des processeurs \cite{intelpointerauth, armpointerauth}, mais aussi certaines implémentations logicielles notamment provenant de compilateurs \cite{compilerpointerauth}. Windows, macOS, Android, iOS utilisent déjà un mécanisme de vérification du flot d'exécution.
+
+\paragraph{eXecute Only Memory}
+\label{execute_only_memory}
+Le XOM (pour \emph{eXecute Only Memory}), est une fonctionnalité de certain processeurs permettant de déclencher une faute lorsqu'un accès en lecture est fait sur les pages mémoires configurées comme étant exécutables. Avant cette fonctionnalité, aucune distinction n'était faite entre le processus de récupération des instructions par le processeur et la lecture de données par l'utilisateur. Cette fonctionnalité rend considérablement pour difficile la recherche de gadgets, puisqu'il est impossible pour l'attaquant de lire le code qu'il souhaite compromettre directement sur la cible.
+Il est parfois reproché à cette fonctionnalité qu'elle relève de la sécurité par l'obscurité, et qu'elle n'est pas réellement efficace.
+
+\paragraph{\blockquote{Mieux vaut prévenir que guérir}}
+
+Ces contre-mesures, sans cesse contournées par de nouvelles méthodes d'attaque, supposent qu'il existera toujours des vulnérabilités dans le logiciel comme dans le matériel et tentent donc de limiter au maximum leur impact sur les systèmes affectés. Une toute autre classe de mesures essaie de régler le problème en s'attaquant à l'existence même des vulnérabilités, plutôt que d'essayer minimiser leurs conséquences.
+
+On pourrait citer les méthodes d’analyse statique, les méthodes d’exécution symbolique, de fuzzing, et plus particulièrement le langage Rust conçu pour éradiquer ces vulnérabilités par conception. Par ailleurs, des travaux ont été entamés pour prouver formellement les fonctionnalités de Rust.
+
+
+		\subsubsection{Interruptions matérielles}
+
+Puisque les fautes et interruptions déclenchent un changement de privilèges, elles sont un vecteur d'attaque supplémentaire d'intérêt pour un attaquant cherchant à s'octroyer de nouveaux droits. En effet, les mêmes types de failles peuvent résider dans les routines de gestion de ces portions de logiciel. De plus, les interruptions et fautes brisent le flot d'exécution et modifient potentiellement l'environnement d'exécution du code interrompu. Cela les rends d'autant plus susceptibles de contenir des vulnérabilités, qui tombent alors dans la catégorie des vulnérabilités de \emph{concurrence critique}.
+
+Même en ayant pleinement conscience des différentes interactions et dépendances entre les différents composants d'un système, les vulnérabilités de concurrence critique sont \textbf{notoirement difficiles à cerner}, principalement à cause d'un phénomène d'explosion combinatoire. Il peut s'avérer difficile de détecter une telle vulnérabilité par les tests, puisqu'ils sont souvent effectués dans des environnement très controlés où les mêmes conditions d'exécution sont artificiellement répétées, occultant d'autres fils d'exécution possibles. Malgré cela, si le développeur parvient à exhiber un fil d'exécution contenant un comportement anormal, il peut alors être délicat de reproduire le fil d'exécution ayant conduit à ce comportement. En effet, le fil d'exécution peut etre le résultat de nombreuses interactions -- parfois non-déterministes -- du programme avec son environnement. De plus, attacher un debuggueur tel que \texttt{gdb} peut modifier subtilement ces interactions, de manière telle qu'il soit impossible d'exhiber à nouveau le comportement anormal : on parle alors d'Heisenbug.
+
+Pour illustrer la difficulté à cerner cette catégorie de bugs, on pourrait citer un problème d'incohérence de cache dans le noyau de système d'exploitation de la Nintendo Switch après une interruption matérielle ayant mené à un changement de coeur. Les effets de ce bug avaient été observés dès la sortie de la console ; il n'a cependant été trouvé et corrigé qu'à la sortie du firmware 14.0.0 de la console, soit plus de 5 ans après les premiers rapports \cite{switchbug}.
+On pourrait aussi citer une vulnérabilité exploitée dans la pile IPV6 du noyau FreeBSD de la console Playstation 4 de Sony, profitant d'une situation de concurrence critique pour déclecher un Use-After-Free et compromettant le système d'exploitation. Cette faille présente sur tous les firmwares de la console depuis son lancement en 2013 a été découverte en 2018 puis divulguée et patchée en 2020, soit 7 ans après sa mise sur le marché \cite{ps4bug}. La même vulnérabilité était présente jusqu'à la version 5.00 du firmware de la Playstation 5, soit plus de deux ans après le rapport de bug concernant l'ancienne console \cite{ps5bug}.
+
+Certains débuggers (notamment \texttt{rr}~\cite{mozRR}) ont implémenté une fonctionnalité "\emph{record and replay}" (enregistre et rejoue), permettant de capturer une trace du programme inspecté, puis de rejouer dynamiquement cette même trace à la demande. Cette fonctionnalité résoud le problème de la reproductibilité des comportement anormaux des programmes, et permet de surcrois de revenir à un état précédent de l'exécution lors d'une session de débuggage, ce qui est impossible avec les débuggers classiques. Certains émulateurs tels que Xen ou Qemu proposent des fonctionnalités "record and replay" sur les machines virtualisées. Malheureusement, les fonctionnalités "record and replay" pour des programmes sur plusieurs coeurs sont actuellement extrêmement lents, et profiteraient grandement d'implémentation matérielles si elles venaient à exister \cite{mozRR}.
+
+De nombreux travaux ont été menés afin de détecter les situations de concurrence critique, par exemple par analyse statique~\cite{racerX}. D'autres travaux ont développés des méthodes plus particulières permettant de découvrir des situations de concurrence critique liées aux interruptions matérielles~\cite{sdracer}. Parallèlement, dans le monde de la preuve formelle, on pourrait citer les travaux ayant abouti à la logique de séparation~\cite{separationlogic}.
+
+
+		\section{Ordonnancement}
 
 		Le transfert de flôt d'exécution est au coeur du fonctionnement de systèmes complexes, par exemple lors de l'ordonnancement au sein d'un système informatique. L'ordonnancement dans un système d'exploitation permet à plusieurs programmes de s'exécuter de manière concurrentielle sur le même processeur, en alternant leur exécution. L'ordonnanceur décide quel programme sera le prochain à s'exécuter sur une unité de calcul donnée, qu'il décide selon une \emph{politique d'ordonnancement}. Ces politiques sont multiples et visent à satisfaire des contraintes diverses, pouvant par exemple viser à exécuter les programmes interactifs de manière prioritaire, ou plus simplement à exécuter chaque programme l'un après l'autre. L'ordonnancement permet ainsi d'optimiser l'utilisation du processeur pour un objectif particulier. 
 
-			\subsubsection{Partage équitable du CPU}
+			\subsection{Partage équitable du CPU}
 		Une des fonctions principales de l'ordonnancement est le partage du temps CPU. En effet, les programmes s'exécutant à sur un système ne collaborent pas forcément avec le système pour permettre aux autres programmes de s'exécuter. Il revient alors au système d'exploitation d'interrompre les programmes à intervalles réguliers, grâce aux interruptions déclenchées par l'horloge par exemple, pour ne pas créer de situation de \emph{famine}. Lorsque le programme est interrompu, le système appelle l'ordonnanceur, qui choisira le meilleur programme à exécuter selon sa politique.
 		Plusieurs indicateurs permettent d'évaluer les politiques d'ordonnancement dans les systèmes classiques, notamment :
 		\begin{itemize}
@@ -219,23 +217,23 @@ Tout d'abord, le processeur change de pile, en sauvant temporairement les valeur
 			\item{la latence, mesurant le temps d'attente moyen entre la soumission de la tache et la production des premières sorties par la tache}
 		\end{itemize}
 
-			\subsubsection{Respect des contraintes de temps}
+			\subsection{Respect des contraintes de temps}
 
 		L'ordonnancement est un élément clé des systèmes temps réel. Les systèmes temps réel ont des contraintes de temps associées à chaque unité de travail. Les systèmes temps réel \emph{souples} sont munis de contraintes de temps indicatives, le non respect des contraintes temporelles pouvant mener à une dégradation de la qualité des résultats produits par le système, par exemple dans le cas d'applications multimédia (audio, vidéo, etc.) ou dans le cas de systèmes de surveillance collectant des données (par exemple météorologiques). Nous nous attarderons sur les systèmes temps réel \emph{stricts}, qui doivent impérativement compléter chaque unité de travail demandée avant leur expiration sous peine de dysfonctionnement critique du système. Ces systèmes s'appuient sur des modèles mathématiques décrivant les actions à accomplir par le système.
 
-		\paragraph{Tâches et jobs}
+		\subsubsection{Tâches et jobs}
 		Les systèmes temps réel sont conçus pour réaliser des actions dans certaines limites temporelles. En toute généricité, ces actions sont uniques au sein des systèmes, et sont désignées en anglais par le terme \emph{job} (utilisé dans la suite du document faute d'un équivalent français adéquat). Les \emph{jobs} ont au minimum une action qui leur est associée, une date à partir de laquelle il est possible de commencer à réaliser l'action (appelée \emph{release date}), une durée (appelée \emph{duration}), et une échéance (appelée \emph{deadline}.
 		Cependant, les actions à réaliser par les systèmes temps réels sont rarement unique en pratique : les systèmes peuvent être amenés à répéter certaines actions (ou \emph{job}) tout au long de leur fonctionnement. On parle alors d'une \emph{tâche} (ou \emph{task} en anglais), produisant un nouveau job unique à chaque fois que l'action doit être répétée. Par exemple, un système temps réel pourrait être amené à vérifier périodiquement la valeur produite par une sonde pour vérifier son bon fonctionnement : on parlerait alors de tâche de vérification des valeurs de la sonde ; chaque vérification indépendante de la valeur produisant un \emph{job}.
 
-		\paragraph{Modèles de tâches}
+		\subsubsection{Modèles de tâches}
 		Les tâches d'un système temps réel sont traditionnellement par trois modèles mathématiques différents. Les tâches \emph{périodiques} permettent de représenter les tâches qui doivent produire un nouveau job après chaque période qui leur est propre. Les tâches \emph{sporadiques} permettent de représenter les tâches qui peuvent produire un nouveau job à un moment aléatoire, mais qui ne peuvent produire un nouveau job tant qu'après un certain délai d'attente. Les tâches \emph{apériodiques} sont des tâches qui peuvent produire un nouveau job à un moment aléatoire, sans délai particulier.
 
-		\paragraph{Vérification du respect des échéances}
+		\subsubsection{Vérification du respect des échéances}
 		La vérification du respect des contraintes temporelles s'effectue \emph{avant} la mise en fonctionnement du système temps réel. Lors de la conception du système, un modèle du fonctionnement du système doit être créé, associant une durée (ou une borne supérieure associée à la durée) à chaque action réalisée par le système, ainsi qu'un modèle spécifiant à quel moment chaque action doit être effectuée. Une fois ce modèle créé, il doit faire l'objet d'une \emph{analyse d'ordonnançabilité}, vérifiant que chaque action entreprise pourra se terminer dans le temps imparti.
 
 		Lorsque l'analyse d'ordonnançabilité a été effectuée, et qu'elle atteste qu'il sera toujours possible d'ordonnancer les différents jobs du système en respectant les échéances, il existe deux méthodes permettant d'ordonnancer les jobs. La première méthode consiste à précalculer l'ordonnancement des jobs, et à l'inclure de manière statique dans le système. Cette méthode de calcul hors ligne (ou \emph{offline} en anglais) du plan d'ordonnancement, a pour avantages d'affranchir le système temps réel du coût de l'ordonnancement "en direct". Le système n'aura pas à choisir lui même la prochaine tâche à effectuer ; elle lui a été précalculée. Cependant, il n'est pas toujours possible de savoir à chaque instant du fonctionnement d'un système temps réel quels seront les jobs à exécuter par exemple dans le cas de tâches sporadiques ou apériodiques. En effet, certaines actions des sytèmes temps réels peuvent être liées à des stimuli externes, comme par exemple l'action de maintenir l'assiette d'un avion en vol lorsqu'il tangue sous l'effet de turbulences. Dans ce genre de cas, le système temps réel doit pouvoir s'accomoder de telles variations, et en conséquence le plan d'ordonnancement doit pouvoir être modifié pendant le fonctionnement du système. Il n'est alors plus possible de précalculer le plan d'ordonnancement ; le système temps réel doit intégrer un ordonnanceur pour faire face à ces aléas.
 
-		\paragraph{Vérification des résultats produits par l'ordonnanceur}
+		\subsubsection{Vérification des résultats produits par l'ordonnanceur}
 		plasticité des politiques et comment on ne peut savoir ce qu'on devra prouver sur notre politique
 
 		Une ou deux phrases sur les politiques d'ordonnancement, certaines doivent respecter des contraintes temps réels, d'autres doivent maximiser des objectifs. 
@@ -411,7 +409,7 @@ Les projets ayant recourt à la vérification de programme par \emph{deep embedd
 
 \emph{Digger}~\cite{digger} est un outil écrit en Haskell qui transforme le code shallow embedded écrit en Gallina en code source C. Digger n'est pas muni de preuve formelle de préservation de la sémantique. Cet outil ne permet pas de prouver l'équivalence entre le code shallow embedded et le code finalement exécuté.
 
-$\partial x$ \textcolor{red}{REF}, un autre outil récemment paru, permet de transformer le code shallow embedded écrit en Gallina en un AST attendu par CompCert. $\partial x$ comporte deux phases de fonctionnement : la première phase consiste à extraire l'\emph{AST} du programme écrit en Gallina sous la forme d'une représentation intermédiaire ; la seconde transforme cet \emph{AST} en \emph{AST} CompCert \texttt{Csyntax}. La première phase est écrite en Elpi~\cite{elpi} car Coq ne propose pas nativement de mécanisme de \emph{réflexion}. La seconde phase est écrite directement dans Coq. Il est de ce fait désormais possible de raisonner sur la phase de transformation de l'\emph{AST}.~~$\partial x$ permet en outre d'afficher le code source C produit, en utilisant le \emph{pretty-printer} de CompCert.
+$\partial x$ \cite{partialx, partialxrepo}, un autre outil récemment paru, permet de transformer le code shallow embedded écrit en Gallina en un AST attendu par CompCert. $\partial x$ comporte deux phases de fonctionnement : la première phase consiste à extraire l'\emph{AST} du programme écrit en Gallina sous la forme d'une représentation intermédiaire ; la seconde transforme cet \emph{AST} en \emph{AST} CompCert \texttt{Csyntax}. La première phase est écrite en Elpi~\cite{elpi} car Coq ne propose pas nativement de mécanisme de \emph{réflexion}. La seconde phase est écrite directement dans Coq. Il est de ce fait désormais possible de raisonner sur la phase de transformation de l'\emph{AST}.~~$\partial x$ permet en outre d'afficher le code source C produit, en utilisant le \emph{pretty-printer} de CompCert.
 
 		\subsection{Illustration système}	
 
