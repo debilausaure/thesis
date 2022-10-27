@@ -502,6 +502,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 			\end{theorem}
 
 			\subsubsection{Isolation noyau}
+			\label{sec:kernel_isolation}
 
 			La propriété d'isolation du noyau stipule que les pages de configuration d'une partition (c'est à dire les pages réquisitionnées par Pip pour y loger ses structures, notamment les structures relative à l'espace d'adressage de la partition) sont inaccessibles à \emph{n'importe quelle} partition.
 			Cette propriété est exprimée formellement par le code décrit en listing \ref{code:kernel_isolation}.
@@ -555,11 +556,11 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 				\label{code:updateCurPartition}
 			\end{listing}
 
-			Cette fonction est \emph{monadique}, ce qui implique qu'elle est une fonction partielle sur l'état. C'est une fonction d'écriture, elle décrit donc comment est modifié l'état lors de son exécution. Cette fonction prend en argument une page mémoire arbitraire \texttt{phyPartition}. Le modèle de cette fonction indique qu'elle remplace la composante \texttt{currentPartition} de l'état par le paramètre \texttt{phyPartition}. Ainsi, après l'exécution de \texttt{updateCurPartition}, si on nomme $s'$ le nouvel état produit à partir de l'état initial $s$, alors : \\
+			Cette fonction est \emph{monadique}, ce qui implique qu'elle est une fonction partielle sur l'état. C'est une fonction d'écriture, elle décrit donc comment est modifié l'état lors de son exécution. Cette fonction prend en argument une page mémoire arbitraire \texttt{phyPartition} et remplace la composante \texttt{currentPartition} de l'état par le paramètre \texttt{phyPartition}. Ainsi, après l'exécution de \texttt{updateCurPartition}, si on nomme $s'$ le nouvel état produit à partir de l'état initial $s$, alors : \\
 
 			\mintinline{coq}{s' := {| currentPartition := phyPartition ; memory := (memory s) |}}.\\
 
-			Seules deux propriétés mentionnent directement le champ \texttt{currentPartition} de l'état : \texttt{currentPartitionInPartitionsList} et \texttt{currentPartitionIsNotDefaultPage}.
+			Seules deux propriétés mentionnent directement le champ \texttt{currentPartition} de l'état : \texttt{currentPartitionInPartitionsList} et \texttt{currentPartitionIsNotDefaultPage}. Ces deux propriétés sont des propriétés de cohérence.
 
 			\begin{listing}[!ht]
 				\coqcode{code/consistencyCurPart.v}
@@ -569,7 +570,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 			Ces propriétés assurent respectivement que la variable globale contenant la partition courante contiendra toujours un descripteur de partition provenant de la liste des descripteurs de partitions, et qu'elle ne soit pas égale à la valeur par défaut.
 
-			Ces deux propriétés de cohérence doivent être déduite de propriétés précédemment établies sur la page passée en paramètre. En particulier, on veut donc pouvoir montrer que \texttt{targetPartDesc} représente bien un descripteur de partition et qu'il n'est pas nul. On veut donc avoir les deux propriétés décrites en listing \ref{code:curPartProperties} avant l'appel de la fonction \texttt{updateCurPartition} :
+			Elles doivent être déduite de propriétés précédemment établies sur la page passée en paramètre. En particulier, on veut donc pouvoir montrer que \texttt{targetPartDesc} représente bien un descripteur de partition et qu'il n'est pas nul. Ces deux propriétés, décrites en listing \ref{code:curPartProperties}, doivent avoir été établies \emph{avant} l'appel à la fonction \texttt{updateCurPartition}, durant la phase de validation des paramètres.
 
 			\begin{listing}[!ht]
 				\coqcode{code/curPartProperties.v}
@@ -577,24 +578,35 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 				\label{code:curPartProperties}
 			\end{listing}
 
-			Le reste des propriétés d'isolation et de cohérence sur le nouvel état $s'$ peuvent être déduites des propriétés sur l'état $s$. Pour les déduire, il faut montrer qu'elles ne portent que sur la portion de l'état \texttt{memory} qui reste inchangée entre $s$ et $s'$. Cela nécessite de déplier la définition de \emph{chaque propriété} (y compris les propriétés intermédiaires) afin de constater que les termes entre les propriétés sur l'état $s$ et celles qu'on souhaite prouver sur $s'$ sont identiques.
+			Le reste des propriétés d'isolation et de cohérence sur le nouvel état $s'$ peuvent être déduites des propriétés sur l'état $s$. Pour les déduire, il faut montrer qu'elles ne portent que sur la portion \texttt{memory} de l'état qui reste inchangée entre $s$ et $s'$. Cela nécessite de déplier la définition de \emph{chaque propriété} (y compris celle des fonctions et propriétés intermédiaires) afin de constater que les termes entre les propriétés sur l'état $s$ et celles qu'on souhaite prouver sur $s'$ sont identiques.
 
-			Illustrons par exemple la preuve de la propriété d'isolation 
+			Illustrons par l'exemple avec la preuve de conservation de la propriété d'isolation noyau. On souhaite prouver la propriété suivante (décrite en listing \ref{code:kernelIsolationUpdateCurPart}) : 
 
+			\begin{listing}[!ht]
+				\coqcode{code/kernelIsolationUpdateCurPart.v}
+				\caption{Propriété de conservation de l'isolation noyau entre l'état $s$ et $s'$}
+				\label{code:kernelIsolationUpdateCurPart}
+			\end{listing}
+
+			Il est nécessaire de déplier la définition de l'isolation noyau pour commencer à établir la preuve. La propriété avec la définition dépliée est disponible en listing \ref{code:kernelIsolationUpdateCurPartUnfold}.
+
+			\begin{listing}[!ht]
+				\coqcode{code/kernelIsolationUpdateCurPartUnfold.v}
+				\caption{Propriété de conservation de l'isolation noyau entre l'état $s$ et $s'$, où la définition de l'isolation noyau a été dépliée}
+				\label{code:kernelIsolationUpdateCurPartUnfold}
+			\end{listing}
+
+			Cette propriété utilise trois fonctions sur l'état : \texttt{getPartitions}, \texttt{getAccessibleMappedPages} et \texttt{getConfigPages}. La première étape est de montrer que le résultat produit par ces fonctions ne dépend pas du champ \texttt{currentPartition} de l'état. Par exemple pour la fonction \texttt{getPartitions}, on veut montrer :
 
 			\begin{listing}[!ht]
 				\coqcode{code/partitionTreeRemains.v}
-				\caption{Preuve que la fonction \texttt{getPartitions} effectue les mêmes calculs peu importe la partition courante}
+				\caption{Propriété stipulant que la fonction \texttt{getPartitions} retourne le même résultat pour l'état $s$ ou l'état $s'$, et ce quels que soient l'argument \texttt{root} ou la valeur du champ \texttt{currentPartition} de l'état}
 				\label{code:partitionTreeRemains}
 			\end{listing}
 
-			\begin{listing}[!ht]
-				\coqcode{code/currentPartitionInPartitionsListActivate.v}
-				\caption{Preuve de la propriété de cohérence \texttt{currentPartitionInPartitionsList}}
-				\label{code:currentPartitionInPartitionsListActivate}
-			\end{listing}
-			\subsubsection{Validation des paramètres}
-			Pour parvenir à prouver la préservation des propriétés d'isolation et de cohérence lors des différentes instructions de modification de l'état du service, il est nécessaire d'amener des propriétés sur les paramètres fournis par l'utilisateur ainsi que sur les valeurs intermédiaires calculées pendant l'exécution du service.
+			Une preuve similaire devra être produite pour les fonctions \texttt{getAccessibleMappedPages} et \texttt{getConfigPages}. Dès lors, en substituant les appels aux fonctions sur $s'$ par des appels sur $s$ grâce aux nouvelles propriétés sur les fonctions, les deux cotés de l'implication de la propriété de préservation de l'isolation du noyau deviennent identiques. Le reste de la preuve de la propriété consiste à prouver $A \implies A$.\\
+
+			La méthode de preuve reste la même pour toutes les autres fonctions et propriétés restantes, que nous ne passerons donc pas en revue. Notez néanmoins que ce processus preuve est \emph{extrêmement} fastidieux. En effet, pour repartir de notre exemple, la preuve d'équivalence de \texttt{getPartitions} repose sur la définition de la fonction \texttt{getChildren}. Il faut donc d'abord prouver l'équivalence des résultats de \texttt{getChildren} avant de pouvoir réaliser la preuve concernant \texttt{getPartitions}. Cependant, \texttt{getChildren} repose elle-même sur les fonctions \texttt{getMappedPagesAux}, \texttt{getPd} et \texttt{getPdsVaddr} dont il faudra aussi prouver l'équivalence avant de pouvoir prouver l'équivalence de \texttt{getChildren}, et ainsi de suite jusqu'à arriver aux définitions élémentaires qui pourront être prouvées directement. De plus, cette preuve doit être réalisée sur l'ensemble des propriétés d'isolation et les 23 propriétés de cohérence restantes de Pip. Nous donnerons quelques métriques concernant cette preuve dans la section suivante.
 
 			\subsubsection{Sauvegarde du contexte d'exécution de la partition appelante}
 
@@ -604,6 +616,9 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 				\label{code:writeContextPreconditions}
 			\end{listing}
 
+
+			\subsubsection{Validation des paramètres}
+			Pour parvenir à prouver la préservation des propriétés d'isolation et de cohérence lors des différentes instructions de modification de l'état du service, il est nécessaire d'amener des propriétés sur les paramètres fournis par l'utilisateur ainsi que sur les valeurs intermédiaires calculées pendant l'exécution du service.
 
 
 	\section{Retour d'expérience}
