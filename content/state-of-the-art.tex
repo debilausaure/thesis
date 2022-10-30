@@ -437,6 +437,7 @@ $\partial x$ \cite{partialx, partialxrepo}, un autre outil récemment paru, perm
 	CertiKOS a certifié mCertiKOS, un noyau de système d'exploitation et hyperviseur, capable de faire tourner Linux et divisé en 40 couches d'abstraction \cite{gu2011certikos}. Plus récemment, mC2, un noyau de système d'exploitation concurrent \cite{concurrentcertikos, gu2016certikos} a été présenté à la communauté.
 
 			\subsubsection{Pip}
+	\label{sec:pip}
 
 	Pip est un noyau de système d'exploitation \emph{minimal} dont le seul but est la gestion de portions isolées de mémoire appelées \emph{partitions}, et du transfert de flôt d'exécution entre ces partitions. Pip est muni d'une preuve formelle garantissant que ses appels systèmes ne brisent pas \emph{l'isolation} des partitions. Pip a été initialement conçu pour fonctionner avec de la mémoire virtuelle en manipulant une \emph{MMU}. Cependant, de récents travaux ont fait évoluer Pip pour qu'il supporte la mémoire physique par le biais d'une \emph{MPU}.
 

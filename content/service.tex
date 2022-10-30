@@ -8,27 +8,25 @@ La troisième section expliquera le processus de preuve du service, en commença
 
 La dernière section de ce chapitre reviendra sur la conception de ce service d'un point de vue pragmatique, en s'intéressant à quelques métriques et en revenant sur la pertinence de la preuve.
 
-% Réecrire le modele de writeContext qui devrait écrire dans le modèle si la page donnée est une page noyau
-
 	\section{Motivations}
 
-		{\Huge \textcolor{red}{OSCOUR}}
+		\subsubsection{Changement d'espace d'adressage}
 
-		Point de vue pragmatique :
-		\begin{itemize}
-			\item anciennement deux appels systèmes \texttt{dispatch} et \texttt{resume} disponibles, écrit en C sans documentation, qui ne couvraient pas la totalité des cas d'usage.
-			  donc nécessité de (re-)conception d'un mécanisme de transfert de flot d'exécution car le changement d'espace d'adressage est une opération privilégiée.
-		\end{itemize}
+		Une première motivation concernant ce nouveau service de transfert de flôt d'exécution est de vérifier le changement d'espace d'adressage lorsque le flot d'exécution passe d'une partition à une autre. Le modèle d'isolation de l'état de la machine dans Pip contient une variable globale \texttt{currentPartition} indiquant la partition qui s'exécute à l'intérieur des portions de code non privilégiées. Cette variable permet aussi de déterminer quel espace d'adressage est actuellement en vigueur au sein du modèle de Pip.
 
-		Point de vue académique :
-		\begin{itemize}
-			\item compléter la preuve des appels système de Pip pour surenchérir sur la validité de la méthologie de Pip
-			\item valeur intrinsèque de l'unification des diférents transferts de flot de controle
-		\end{itemize}
-		\subsection{Failles de sécurité}
-		\subsection{Changement d'espace d'adressage opération privilégiée}
-		\subsection{Arguments de co-design (minimaliste, générique)}
-			
+		Lors d'un transfert de flôt d'exécution, cette variable doit être mise à jour, ne serait-ce que pour refléter le nouvel espace d'adressage effectif au sein du modèle. Cependant ce comportement ne peut être reflété qu'en modélisant le service de transfert de flôt d'exécution. Cette modélisation, ainsi que la preuve que la variable \texttt{currentPartition} est correctement mise à jour, viennent compléter la preuve de préservation de l'isolation de Pip.
+
+		\subsubsection{Vérification de lecture ou d'écriture au titre d'une partition arbitraire}
+
+		Un service de transfert de flôt d'exécution doit pouvoir charger un contexte d'exécution d'une quelconque manière, afin d'exécuter le code ciblé. Similairement, il doit être capable de sauvegarder un contexte d'exécution afin de pouvoir reprendre l'exécution du code appelant au besoin. Dans le cadre de transferts de flôt d'exécution entre partitions de Pip, ces contextes d'exécutions sont placés dans l'espace d'adressage des partitions ; les partitions indiquent à Pip l'emplacement de sauvegarde ou de lecture de ces contextes. Or, le service de transfert de flôt d'exécution est un morceau de code du noyau, et s'exécute en mode \emph{privilégié}. Il a donc les droits suffisants pour lire et écrire dans les pages de l'espace d'adressage réservées au noyau.
+
+		De ce fait, ce service doit s'assurer que les lectures et écritures de contextes qu'il entreprend au nom de partitions n'outrepassent pas leurs droits de lecture et d'écriture. De plus, le service doit effectuer ces vérifications en manipulant les espaces d'adressage de partitions qui ne sont pas nécessairement la partition courante. Ces vérifications font de ce service un service particulier, qui est le seul à avoir de telles considérations.
+
+		\subsubsection{Mise à l'épreuve de la méthodologie de Pip}
+		
+		De nombreux modes de transfert de flôt existent au sein d'un système. Un appel système interrompt le flot d'exécution de l'appelant, sauvegarde son contexte, et charge le contexte de la fonction du noyau. Le retour d'un appel système charge le contexte précédemment sauvegardé de l'appelant, en oubliant le contexte d'exécution de la fonction du noyau. Les interruptions matérielles interrompent le flot d'exécution courant, sauvegardant le contexte d'exécution du flot interrompu, et chargeant le contexte de traitement de l'interruption. Les fautes interrompent le flot d'exécution fautif, sauvegardent le contexte d'exécution, et charge le contexte d'exécution de gestion de la faute.
+
+		Ces différents modes de transferts -- à priori différents -- reposent en réalité sur les mêmes abstractions de sauvegarde et de chargement de contextes d'exécutions et peuvent donc être factorisés. Cette factorisation est la dernière motivation majeure, réduisant l'ensemble des transferts de flôt d'exécution à un simple fil d'exécution générique. Elle s'inscrit dans le courant minimaliste de Pip et permet d'éprouver sa méthodologie de co-design -- le but final de cette méthodologie étant de minimiser l'effort de preuve sur les services.
 
 	\section{Description du service}
 
@@ -91,6 +89,8 @@ Plus simplement, les services de chaque partition sont définis dans leur \emph{
 		
 		\subsection{Illustration de mise en place du service sur l'architecture Intel x86 au travers d'un appel explicite}
 
+		On a pris le parti d'illustrer ce service sur l'architecture Intel, cependant il n'est pas spécifique à l'architecture Intel. Le même service a notamment été intégré sur une implémentation Armv7 muni d'une MMU (Raspberry Pi) ainsi que sur un Arm Cortex muni d'une MPU.
+
 			\subsubsection{Point d'entrée par \texttt{callgate}}
 
 		Dans l'implémentation de Pip sur l'architecture Intel x86, les services de Pip sont appelables au travers de \emph{callgates} (voir \ref{sec:x86_syscall}). Ces callgates permettent au code non privilégié des partitions d'appeler les services privilégiés de Pip.
@@ -121,7 +121,7 @@ Plus simplement, les services de chaque partition sont définis dans leur \emph{
 
 		\subsection{Décomposition des opérations}
 
-		Afin de pouvoir accomoder les différents modes de transfert de flôt d'exécution au sein d'un même service, le service est composé de plusieurs blocs de code remplissant leur propre fonction et appelant le bloc de code suivant. Ces blocs pourraient être assimilés à des \emph{continuations}. Les blocs composants le service sont illustrés à la fin de la sous-section sur la figure \ref{fig:callgraph}.
+		Afin de pouvoir accomoder les différents modes de transfert de flôt d'exécution au sein d'un même service, le service est composé de plusieurs blocs de code remplissant leur propre fonction et appelant le bloc de code suivant. Ces blocs pourraient être assimilés à des \emph{continuations}. Les blocs composants le service sont illustrés à la fin de la sous-section sur la figure \ref{fig:callgraph_direct}.
 
 		\paragraph{Vérification du numéro de contexte ciblé}
 
@@ -219,9 +219,9 @@ Plus simplement, les services de chaque partition sont définis dans leur \emph{
 		\newpage
 
 		\begin{figure}[!ht]
-			\input{figures/callgraph.tex}
+			\input{figures/callgraph_direct.tex}
 			\caption{Vue éclatée des blocs constituant le service}
-			\label{fig:callgraph}
+			\label{fig:callgraph_direct}
 		\end{figure}
 		\newpage
 
@@ -248,7 +248,7 @@ Plus simplement, les services de chaque partition sont définis dans leur \emph{
 
 		\begin{figure}[!ht]
 			\input{figures/proc_interrupt_stack.tex}
-			\caption{État de la pile noyau après qu'une faute soit survenue en espace utilisateur\\Reproduction partielle du manuel Intel \cite{intel_interrupt_stack}}
+			\caption{État de la pile noyau après qu'une faute (ou une interruption) soit survenue en espace utilisateur\\Reproduction partielle du manuel Intel \cite{intel_interrupt_stack}}
 			\label{fig:proc_interrupt_stack}
 		\end{figure}
 
@@ -256,7 +256,7 @@ Plus simplement, les services de chaque partition sont définis dans leur \emph{
 
 		\begin{figure}[!ht]
 			\input{figures/interrupt_stack.tex}
-			\caption{État de la pile noyau après qu'une faute soit survenue en espace utilisateur\\Reproduction partielle du manuel Intel \cite{intel_interrupt_stack}}
+			\caption{État de la pile noyau après la routine assembleur complétant la structure \texttt{int\_ctx\_t}}
 			\label{fig:interrupt_stack}
 		\end{figure}
 
@@ -277,14 +277,14 @@ Plus simplement, les services de chaque partition sont définis dans leur \emph{
 		\paragraph{Cas des doubles fautes} Il est possible que l'appel au service échoue lors des vérifications pour le transfert de flôt d'exécution. Lorsque ce transfert est dû à une faute, la partition l'ayant déclenchée n'est plus en mesure de recevoir le flôt d'exécution : elle déclencherait à nouveau la faute. Ainsi, il faut que le service propose une voie de transfert de flôt d'exécution dont le succès ne dépend que de la bonne configuration de la partition ayant la responsabilité de la partition fautive -- c'est à dire son parent, la partition recevant le flot d'exécution.
 		Dans le cas où le parent ne serait pas non plus en mesure de recevoir le flôt d'exécution, le flôt d'exécution serait redirigé vers le parent de la partition parent et remonterai la chaîne de responsabilité, jusqu'à ce qu'une partition reçoive le flôt d'exécution sans erreur, ou jusqu'à ce que la partition racine elle même échoue à le recevoir.
 
-		C'est pourquoi la fonction récupérant les arguments appelle à son tour une autre fonction appelée \texttt{propagateFault} (cette fonction est disponible en annexe, voir listing \ref{code:faultInterruptHandler}). Cette fonction est chargée de faire l'appel au bloc de code \texttt{getParentPartDescCont} et de gérer les éventuelles erreurs pouvant survenir après un appel à ce bloc. Il y a trois cas d'erreurs distincs gérés par la fonction :
+		C'est pourquoi la fonction récupérant les arguments appelle à son tour une autre fonction appelée \texttt{propagateFault} (cette fonction est disponible en annexe, voir listing \ref{code:faultInterruptHandler}). Cette fonction est chargée de faire l'appel au bloc de code \texttt{getParentPartDescCont} et de gérer les éventuelles erreurs pouvant survenir après un appel à ce bloc. 
+		Les différentes étapes logicielles permettant d'utiliser le service pour une faute sont résumés dans la figure \ref{fig:fault_software}. Il y a trois cas d'erreurs distincts gérés par la fonction :
 		\begin{itemize}
 			\item le cas où la fonction ayant réalisé la faute est la partition racine : dans ce cas là, il n'y a plus rien à rattraper, la partition racine étant la base de confiance absolue du système -- si elle échoue le système s'écroule. Le service s'arrête alors sur une boucle infinie.
 			\item le cas où le service n'a pas réussi à récupérer la VIDT de la partition fautive, ou l'espace mémoire permettant de sauvegarder le contexte : dans ce cas, la sauvegarde du contexte de la partition fautive est omise, et l'exécution reprend au bloc de code \texttt{getTargetVidtCont}.
 			\item dans tous les autres cas d'erreur, la partition parent n'est pas correctement configurée et n'est pas en mesure de rattraper la faute. Dans ce cas, la fonction \texttt{propagateFault} fait un appel récursif. La faute est redirigée sur le parent de la cible actuelle, et le niveau d'interruption de la faute est changé au niveau correspondant à la double faute.
 		\end{itemize}
 
-		Les différentes étapes logicielles permettant d'utiliser le service pour une faute sont résumés dans la figure \ref{fig:fault_software}.
 
 		\begin{figure}[!ht]
 			\centering
@@ -305,7 +305,7 @@ Plus simplement, les services de chaque partition sont définis dans leur \emph{
 			\label{code:getSourceVidtCont_proto}
 		\end{listing}
 
-		Le cheminement jusqu'à l'exécution du bloc du service est extrêmement similaire à celui concernant les fautes. De la même manière que pour une faute, lorsqu'une interruption matérielle arrive, le processeur va récupérer l'\emph{interrupt gate} correspondante dans l'\emph{IDT} (pour rappel, les niveaux d'interruptions correspondants aux interruptions matérielles vont de 32 à 47). Cette similitude continue jusqu'à la récupération des arguments : le processeur change de pile et pousse les mêmes éléments que ceux présentés précédemment en figure \ref{figure/interrupt_stack}, puis une routine assembleur complète le contexte d'exécution de type \texttt{int\_ctx\_t}, et appelle finalement la fonction de récupération des arguments \texttt{hardwareInterrupthandler}. Les arguments à récupérer par la fonction sont les mêmes que pour le bloc \texttt{getParentPartDescCont} et sont récupérés de la même manière, mis à part l'argument \texttt{targetPartDesc}. Cet argument est l'adresse réelle du descripteur de la partition recevant le flôt d'exécution, qui devra donc être le descripteur de la partition racine. La fonction récupère ce descripteur au travers d'une variable globale de Pip.
+		Le cheminement jusqu'à l'exécution du bloc du service est extrêmement similaire à celui concernant les fautes. De la même manière que pour une faute, lorsqu'une interruption matérielle arrive, le processeur va récupérer l'\emph{interrupt gate} correspondante dans l'\emph{IDT} (pour rappel, les niveaux d'interruptions correspondants aux interruptions matérielles vont de 32 à 47). Cette similitude continue jusqu'à la récupération des arguments : le processeur change de pile et pousse les mêmes éléments que ceux présentés précédemment en figure \ref{fig:interrupt_stack}, puis une routine assembleur complète le contexte d'exécution de type \texttt{int\_ctx\_t}, et appelle finalement la fonction de récupération des arguments \texttt{hardwareInterrupthandler}. Les arguments à récupérer par la fonction sont les mêmes que pour le bloc \texttt{getParentPartDescCont} et sont récupérés de la même manière, mis à part l'argument \texttt{targetPartDesc}. Cet argument est l'adresse réelle du descripteur de la partition recevant le flôt d'exécution, qui devra donc être le descripteur de la partition racine. La fonction récupère ce descripteur au travers d'une variable globale de Pip.
 
 		L'appel du bloc de code \texttt{getSourceVidtCont} peut aussi se solder par une erreur : si l'origine de cette erreur est le fait que la VIDT de la partition n'est pas accessible ou que l'emplacement de sauvegarde de son contexte n'est pas accessible, alors la sauvegarde de contexte est omise et la fonction appelle le bloc de code \texttt{getTargetVidtCont}. Une autre erreur indiquerait que la partition racine n'est pas en mesure de récupérer le flôt d'exécution ; dans ce cas la fonction arrête l'exécution en rentrant dans une boucle infinie.
 
@@ -316,6 +316,15 @@ Plus simplement, les services de chaque partition sont définis dans leur \emph{
 			\label{fig:interrupt_software}
 		\end{figure}
 
+		À l'exception de l'état des piles lors des différents transferts de flôt d'exécution, le fonctionnement du service et des routines permettant d'y accéder restent rigoureusement les même entre toutes les architectures. 
+		\newpage
+
+		\begin{figure}[!ht]
+			\input{figures/callgraph.tex}
+			\caption{Vue éclatée des blocs constituant le service}
+			\label{fig:callgraph}
+		\end{figure}
+		\newpage
 	\section{Preuve d'isolation}
 
 		Cette section a pour but de décrire le processus d'établissement de la preuve d'isolation de Pip sur le service. La première sous-section décrira tout d'abord les nouvelles fonctions introduites dans l'interface de la monade d'état ainsi que la raison de leur inclusion. Ces fonctions sont accompagnées de nouveaux types, qui seront aussi explicités. La seconde sous-section fera un rappel des propriétés d'isolation de Pip. La dernière sous-section décrira le processus d'établissement de la preuve.\\
@@ -468,7 +477,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
   end.
 			\end{minted}
 			\caption{Modèle de la fonction \texttt{writeContext} et sa fonction auxiliaire récursive}
-			\label{code:loadContext}
+			\label{code:writeContextModel}
 		\end{listing}
 
 		Les écritures multiples de la fonction \texttt{writeContext} ont mené à des vérifications supplémentaires qui ont nécessité l'ajout de deux fonctions dans l'interface. La première est \mintinline{c}{vaddr getNthVAddrFrom(vaddr base, uint32_t size)}. Cette fonction retourne l'adresse virtuelle se trouvant à l'adresse de base plus une certain nombre d'octets \texttt{size}. Cette fonction permet notamment de récupérer la dernière adresse d'un contexte d'exécution, afin de vérifier qu'elle est bien valide avant d'entamer l'écriture.\\
@@ -482,7 +491,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 		\subsection{Rappel des propriétes d'isolation de Pip}
 
-		Comme exprimé dans la section \textcolor{red}{insérer ref}, la preuve d'isolation de Pip repose sur trois propriétés fondamentales : la propriété d'\emph{isolation horizontale}, la propriété d'\emph{isolation noyau} ainsi que la propriété de \emph{partage verticale}. Ces trois propriétés principales sont accompagnées d'une multitude de propriétés liées à la cohérence du noyau. Certaines de ces propriétés seront mises en avant dans ce document, puisqu'elle seront discutées dans la section suivante traitant de l'établissement de la preuve du service. \textcolor{red}{Est ce vrai ?}.
+		Comme exprimé dans la section \ref{sec:pip}, la preuve d'isolation de Pip repose sur trois propriétés fondamentales : la propriété d'\emph{isolation horizontale}, la propriété d'\emph{isolation noyau} ainsi que la propriété de \emph{partage verticale}. Ces trois propriétés principales sont accompagnées d'une multitude de propriétés liées à la cohérence du noyau. Certaines de ces propriétés seront mises en avant dans ce document, puisqu'elle seront discutées dans la section suivante traitant de l'établissement de la preuve du service.
 
 			\subsubsection{Isolation horizontale}
 
@@ -622,8 +631,15 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 
 	\section{Retour d'expérience}
+	Pointeurs sur la base de code.
 	% Remarques pragmatiques sur cette contribution
 		\subsection{Métriques}
+		Nombre de ligne de code Coq, nombre de ligne de code C générées, Nombre de ligne de preuve relativement faible comparé aux 85000 lignes de Narjes, temps passé sur la preuve
+		==> réutilisation de la preuve mais aussi de la méthodologie
 		\subsection{Prise de recul sur la nature de la preuve}
-		\subsection{Limites du service}
-			- parler de la limite de la taille des flags comparé à nombre d'interruptions
+
+		\subsection{Conclusion}
+		- complète le travail de preuve initial
+		- valide l'approche en co-design, pertinence de la factorisation du code
+		- valide la méthodologie de preuve
+		- ce moyen fiable de transférer le flot d'exécution permet de s'intéresser à des problèmes plus complexes
