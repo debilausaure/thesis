@@ -631,15 +631,19 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 
 	\section{Retour d'expérience}
-	Pointeurs sur la base de code.
-	% Remarques pragmatiques sur cette contribution
+	Les travaux exposés dans cette section sont disponibles gratuitement et en accès libre sur \href{https://github.com/2xs/pipcore}{Github}. Ils ont conduits à l'écriture d'un court papier disponible gratuitement et en accès libre sur \href{https://hal.archives-ouvertes.fr/hal-02347481}{HAL}, qui ne détaille cependant pas la preuve décrite dans cette thèse.
+
 		\subsection{Métriques}
-		Nombre de ligne de code Coq, nombre de ligne de code C générées, Nombre de ligne de preuve relativement faible comparé aux 85000 lignes de Narjes, temps passé sur la preuve
-		==> réutilisation de la preuve mais aussi de la méthodologie
+
+		Le nouveau service compte 417 lignes de code Coq, ce code est très peu dense et a été écrit pour maximiser la lisibilité, certains appels de fonction se retrouvent sur plusieurs lignes et des commentaires parsèment le code. À titre de comparaison, le code C généré par Digger comprend \textcolor{red}{ajouter nombre de lignes} ; ce code comprend un appel de fonction ou une instruction C par ligne, sans commentaire. Le nombre de lignes de code permettant de lancer le code du service représente environ 1000 lignes de code C et assembleur sur l'architecture Intel x86 (en incluant les commentaires). Néanmoins, ce code est \emph{particulièrement peu dense} de par sa complexité ; j'estime que pour chaque ligne de code ou instruction assembleur, il y a environ deux lignes de commentaires. 
+		Pour rappel, ce service permet de gérer tous les transferts de flôt d'exécution au sein d'un système. 
+
+		Le nombre de lignes de preuve permettant de prouvant le maintient des propriétés d'isolation sur l'état après exécution du service représente un peu plus de 4000 lignes de preuve en comptant définition des modèles et scripts d'établissement de la preuve. Ce chiffre est dérisoire comparé aux plus de 80 000 lignes relatives à la preuve déjà écrites pour Pip. De plus, l'établissement de la preuve d'isolation de ce service n'a duré "que" quelques semaines, alors que je n'avais aucune expérience dans ce domaine. Ces chiffres semblent montrer que l'effort de preuve diminue avec la proportion de preuve déjà existente, indiquant une forte réutilisation des preuves déjà établies. De plus, le temps que j'ai passé sur cette preuve semble indiquer que la méthodologie de preuve proposée par Pip est efficace et permet aux novices de démarrer rapidement le travail sur la preuve.
+
 		\subsection{Prise de recul sur la nature de la preuve}
 
-		\subsection{Conclusion}
-		- complète le travail de preuve initial
-		- valide l'approche en co-design, pertinence de la factorisation du code
-		- valide la méthodologie de preuve
-		- ce moyen fiable de transférer le flot d'exécution permet de s'intéresser à des problèmes plus complexes
+	\section{Conclusion}
+	- complète le travail de preuve initial
+	- valide l'approche en co-design, pertinence de la factorisation du code
+	- valide la méthodologie de preuve
+	- ce moyen fiable de transférer le flot d'exécution permet de s'intéresser à des problèmes plus complexes
