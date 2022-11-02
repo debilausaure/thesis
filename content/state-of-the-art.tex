@@ -1,4 +1,4 @@
-\chapter{État de l'art (20-30 pages)}
+\chapter{État de l'art}
 
 	Ce chapitre a pour intention de définir et préciser les différentes notions nécessaires à la lecture des travaux de thèses, ainsi que de définir le contexte scientifique du travail. Il portera, dans une première section, sur les détails des différents transferts de flot d'exécution dans les systèmes modernes, ainsi que les changements d'états inhérents à ces transferts de flot d'exécution. Cette section abordera ensuite les problèmes de sécurité liés au transfert de flot d'exécution, ainsi que les techniques de mitigation de ces problèmes. Cette section terminera sur les problématiques temps réel touchant au transfert de flot d'exécution.
 	La seconde section de ce chapitre fera un état des lieux de la preuve de programme. Elle commencera par discuter de ce qu'est une preuve et de leur vérificaton automatique, ainsi que des stratégies de conduite de preuve. Cette section continuera sur la preuve de programme, en particulier comment raisonner sur un programme impératif. Elle abordera aussi les notions de représentation du langage. Enfin, elle terminera sur les exemples de systèmes vérifiés formellement.
@@ -10,48 +10,44 @@
 
 		\paragraph{Flôt d'exécution}
 
-			Un flôt d'exécution est une trame de modifications successives de l'état de la machine, animée par la récupération et l'exécution machinale d'instructions assembleur contigües par le processeur. Cette trame est l'oeuvre d'une entité qui a conçu le code et les conditions d'exécution permettant d'aboutir à un résultat. Ces conditions d'exécution (ou \emph{contexte d'exécution}) peuvent comprendre n'importe quel sous-ensemble de l'état de la machine, comme l'état de certains registres du processeur ou l'état d'une partie la mémoire par exemple.
+\label{context}
+			Un flôt d'exécution est une trame de modifications successives de l'état de la machine, animée par la récupération et l'exécution machinale d'instructions assembleur contigües par le processeur. Cette trame est l'oeuvre d'une entité qui a conçu le code et les conditions d'exécution permettant d'aboutir à un résultat. Ces conditions d'exécution (ou \emph{contexte d'exécution}) peuvent comprendre n'importe quel sous-ensemble de l'état de la machine, comme l'état de certains registres du processeur ou l'état d'une partie la mémoire par exemple. Une certaine notion de confiance est liée à chaque fil d'exécution, qui peut se refléter sur les droits accordés à celui-ci.
 
 		\paragraph{Transfert de flôt d'exécution}
 
-			Le transfert de flôt d'exécution est le fait de faire diverger un flôt d'exécution vers un autre. Il existe de nombreuses utilisations du transfert de flôt d'exécution. Le premier, le plus simple, est le saut : il permet de définir de manière arbitraire l'adresse de la prochaine instruction à exécuter. Similairement, le saut conditionnel permet d'effectuer un saut en fonction du résultat d'une instruction assembleur, divisant le flot d'exécution en deux fils possibles. Ensuite viennent les appels de fonctions : ces transferts de flôt d'exécutions sont spéciaux car ils nécessitent de revenir au flot d'exécution initial. 
+			Le transfert de flôt d'exécution est le fait de faire diverger un flôt d'exécution vers un autre. Il existe de nombreuses utilisations du transfert de flôt d'exécution, mais nous en distinguerons deux types : les transferts de flôt d'exécutions internes et les transferts de flôt d'exécution externes.
 
-			Flot d'exécution / état de la machine / transfert de flot d'exécution internes et externes
-			 ceux qui définissent un cadre d'exécution
+			Seront considérés comme des transferts de flôt d'exécution \emph{internes} les transferts de flôt d'exécution qui ciblent un fil d'exécution conçu par la même entité que le fil d'exécution  initial. Les deux fils d'exécutions sont conçus pour coopérer et ce type de transfert de flôt d'exécution se déroule typiquement sans changement de droits. Un premier exemple d'un tel transfert de flôt d'exécution, le plus simple, est le saut : il permet de définir de manière arbitraire l'adresse de la prochaine instruction à exécuter. Similairement, le saut conditionnel permet d'effectuer un saut en fonction du résultat d'une instruction assembleur, divisant le flot d'exécution en deux fils possibles. Les appels de fonctions sont un exemple plus complexe de transferts internes ; contrairement aux sauts, les appels de fonctions permettent de revenir au flôt d'exécution initial. Dès lors, à chaque appel de fonction, il est nécessaire de sauvegarder la portion de l'état qui sera modifiée par effet de bord lors de l'exécution de la fonction.  La portion de l'état modifié par la fonction est connue par l'entité, qui peut donc réaliser une sauvegarde partielle minimale de l'état sans perte d'information sur l'état.
 
-			Séparer la définition 
+			Les transferts de flôt d'exécution \emph{externes} sont ceux qui -- par opposition aux transferts de flôt d'exécution internes -- impliquent un transfert de flôt d'exécution vers le fil d'exécution d'une autre entité. Ce type de transfert peut se traduire par un changement de droits liés au fil d'exécution, reflétant les droits de la nouvelle entité. Les transferts externes peuvent aussi engendrer une sauvegarde du contexte d'exécution initial ; cependant, à l'instar des transferts internes, il n'est pas possible de savoir quelles portions de l'état sont susceptibles d'être modifiées par l'autre entité. Ainsi, un tel transfert implique une sauvegarde préventive complète du contexte d'exécution susceptible d'être modifié par l'autre entité.
 
-			Deux types d'attaques visant à compromettre le flot d'exécution :
-				- Les attaques visant à compromettre les éléments fondamentaux de la sécurité
-				- Les attaques exploitant un flot d'exécution
-		Cette section va détailler les différents transferts de flot d'exécution mis à disposition dans les processeurs modernes.
-		Nous détaillerons les transferts de flot d'exécution qui impliquent une reconfiguration explicite de l'état de la machine ayant un impact sur les droits d'accès aux ressources. Les appels d'une fonction d'un programme vers une autre fonction ne seront pas considérés dans cette section, même s'ils pourraient être considérés comme un transfert de flôt d'exécution.
+\textcolor{red}{J'ai envie de parler de la limite des contextes d'exécution, notamment avec les attaques micro architecturales mais je n'arrive pas à le formuler} Il est difficile de déterminer ce qui fait partie de l'état d'un programme : le contenu des registres du processeur et de la mémoire, mais aussi l'état des composants logiciels ou matériels intéragissant avec le programme (tels que les périphériques, le cache, etc.).
 
-		\subsection{Transferts de flôt d'exécution au sein d'un système}
+			De plus, chaque fil d'exécution ciblable par un transfert externe doit être muni d'un cadre d'exécution, qui spécifiant le point d'entrée, l'environnement initial, et les droits liés à ce fil d'exécution. Ils servent à s'assurer que le flôt d'exécution ne sera exécuté que dans les conditions prévues par l'entité qui l'a conçu. Cela implique que l'intégrité des cadres d'exécution de chaque entité doit être garanti au sein d'un système ; une entité ne doit pas pouvoir altérer les cadres d'exécution d'une autre entité.
+
+			Ce document discutera principalement des transferts de flôt d'exécution externes. La prochaine sous-section présentera des exemples de transferts de flôt d'exécution externes au sein d'un système. 
+
+		\subsection{Transferts de flôt d'exécution externes au sein d'un système}
 
 			\subsubsection{Appels explicites}
-			Les transferts les plus courants sont les transferts de flot d'exécution explicites, c'est-à-dire dont la cible est explicitement fournie lors de l’appel, ou clairement établie dans la documentation.
+			Les transferts externes les plus courants sont les transferts de flot d'exécution explicites, c'est-à-dire dont la cible est explicitement fournie lors de l’appel, ou clairement établie dans la documentation.
 
-Par exemple, dans Linux, un processus peut demander l’ouverture d’un fichier avec l’appel système \texttt{open()}. Cet appel transfère le flot d’exécution d’un processus non privilégié vers le noyau Linux disposant du plus haut niveau de privilèges. Les fonctions appelables par des transferts explicites servent d’interface entre des logiciels disposant de droits distincts.
-
-
+Par exemple, dans Linux, un processus peut demander l’ouverture d’un fichier avec l’appel système \texttt{open()}. Cet appel transfère le flot d’exécution d’un processus non privilégié vers le noyau Linux disposant du plus haut niveau de privilèges. Les fonctions appelables par des transferts explicites servent d’interface entre des logiciels disposant de droits distincts. Dans le cas de Linux, le cadre d'exécution a été défini par Linux, qui prend les dispositions de sauvegardes nécessaires afin de pouvoir rétablir le contexte d'exécution du processus appelant au moment du retour de l'appel système.
 
 			\subsubsection{Fautes}
 \label{sec:faults}
-Les différentes formes de fautes logicielles constituent aussi une forme de transfert de flot d'exécution avec élévation de privilèges. Les logiciels sont susceptibles de déclencher des fautes logicielles de différentes façons, par exemple :
+Les différentes formes de fautes logicielles constituent aussi une forme de transfert de flot d'exécution externes. Les logiciels sont susceptibles de déclencher des fautes logicielles de différentes façons, par exemple :
 \begin{itemize}
   \item décodage impossible de la prochaine instruction ;
   \item demande d'exécution d'une instruction impossible (division par zéro...) ; 
   \item demande d'accès à une adresse mémoire protégée, résultat de l'activité d'une MMU ou d'un autre dispositif matériel (MPU, Trustzone, SGX) ;  
   \item demande d'exécution d'une instruction privilégiée en mode non-privilégié.
 \end{itemize}
-Dans ces différentes situations il s'agit de transferts implicites depuis le logiciel en faute vers une fonction d'un logiciel en charge du traitement de cette faute. Les différentes fonctions de gestion des fautes sont généralement définies par des éléments de configuration du matériel, et, le plus souvent, par l'intermédiaire d'une table (ou vecteur) dont le nom change d'une architecture de microprocesseur à l'autre. Ce vecteur précise généralement le niveau d'élévation de privilèges associé à l'exécution de la fonction de traitement de la faute. Sur les architectures Intel cette table est appelée \emph{IDT} (pour \emph{Interrupt Descriptor Table}).
+Dans ces différentes situations, il s'agit de transferts implicites depuis le logiciel en faute vers une fonction d'un logiciel en charge du traitement de cette faute. Les différentes fonctions de gestion des fautes sont généralement définies par des éléments de configuration du matériel, et, le plus souvent, par l'intermédiaire d'une table (ou vecteur) dont le nom change d'une architecture de microprocesseur à l'autre. Ce vecteur précise généralement le niveau d'élévation de privilèges associé à l'exécution de la fonction de traitement de la faute. Cette table précise en réalité le cadre d'exécution des fils d'exécutions dédiés à chaque fautes. Sur les architectures Intel cette table est appelée \emph{IDT} (pour \emph{Interrupt Descriptor Table}).
 \label{IDT}
 
 			\subsubsection{Interruptions matérielles}
-			Les interruptions matérielles sont des transferts non explicites \textit{a priori} non contrôlés par le code non privilégié. Elles sont déclenchées par le matériel, signalant un événement important à traiter, tel que l'arrivée d'un paquet réseau par exemple. Les fonctions de traitement des interruptions matérielles ainsi que leur niveau de privilèges sont aussi définis dans l'\emph{IDT}.
-
-
+			Les interruptions matérielles sont des transferts non explicites \textit{a priori} non contrôlés par le code non privilégié. Elles sont déclenchées par le matériel, signalant un événement important à traiter, tel que l'arrivée d'un paquet réseau par exemple. Les fonctions de traitement des interruptions matérielles ainsi que leur cadre d'exécution sont aussi définis dans l'\emph{IDT} dans l'architecture Intel x86.
 
 		\subsection{Implications logicielles d'un transfert de flot d'exécution}
 
@@ -104,24 +100,15 @@ Cependant, d'autres fonctionnalités de contrôle d'accès globaux liées à la 
 Le bit \emph{SMAP} (pour \emph{Supervisor Mode Access Protection} présent dans le registre CR4 permet d'empêcher du code utilisant un segment de données privilégié d'accéder aux pages mémoire annoncées comme étant des pages mémoire utilisateur (bit \texttt{U/S} à 1).
 Le bit \emph{SMEP} pour \emph{Supervisor Mode Execution Protection} présent dans le registre CR4 permet d'empecher la récupération de code lorsque le segment actuel octroie des accès privilégiés et que la page mémoire contenant les instructions est annoncée comme une page mémoire utilisateur (bit \texttt{U/S} à 1).
 
-%				Espace d'adressage, niveau de privilèges
-
 			\subsubsection{Capture de l'état d'exécution}
 
-\label{context}
-\textcolor{red}{J'arrive pas à introduire le concept}
 
-\paragraph{Le contexte d'exécution}
+%Le contexte d'exécution d'un programme est constitué d'informations permettant de reprendre de manière saine l'exécution d'un programme à un moment arbitraire de son exécution après qu'il ait été interrompu. Le contexte d'exécution est donc intimement lié à l'état de la machine lors de l'exécution du programme. 
 
-Le contexte d'exécution d'un programme est constitué d'informations permettant de reprendre de manière saine l'exécution d'un programme à un moment arbitraire de son exécution après qu'il ait été interrompu. Le contexte d'exécution est donc intimement lié à l'état de la machine lors de l'exécution du programme. 
-
-\textcolor{red}{J'ai envie de parler de la limite des contextes d'exécution, notamment avec les attaques micro architecturales mais je n'arrive pas à le formuler} Il est difficile de déterminer ce qui fait partie de l'état d'un programme : le contenu des registres du processeur et de la mémoire, mais aussi l'état des composants logiciels ou matériels intéragissant avec le programme (tels que les périphériques, le cache, etc.).
-
-Le contexte d'exécution d'un programme doit contenir toute partie de l'état du programme susceptible d'être modifiée légitimement par d'autres programmes du système. De ce fait, il n'est pas nécessaire de copier la mémoire utilisée par le programme. Dans les systèmes d'exploitation modernes, chaque programme dispose d'une portion de mémoire qui lui est dédiée. Cela peut être garanti par conception dans le cas de systèmes collaboratif ou plus strictement par des mécanismes de controle d'accès relatifs à une \emph{MMU} ou une \emph{MPU} par exemple. 
-Puisqu'il n'est pas nécessaire de copier le contenu de la mémoire, il suffit donc de copier les registres du processeur susceptibles d'être modifiés. Lors d'appels sans changement de droit, des règles de sauvegarde des registres existent (par exemple \cite{arm32_bit_callconv}). Ces règles décrivent notamment quels sont les registres susceptibles d'être modifiés par l'appelé, et peuvent permettre d'économiser la sauvegarde de certain registres.
-Cependant, puisque les transferts de flot d'exécution avec changement d'espace d'adressage et de droits peuvent être implicites, le système ne peut faire aucune hypothèse sur les registres préalablement sauvegardés par le programme interrompu. De plus, il est courant de continuer l'exécution d'un autre programme susceptible de modifier n'importe quel registre à sa disposition. En toute généricité, il est donc impossible de prévoir quels registres resteront intacts lors d'un tel transfert : il est donc nécessaire de sauvegarder tous les registres modifiables par le programme interrompu.
-
-Le processeur nous assiste dans ce travail. En effet, sans l'aide du processeur, le contenu de certains registres comme le pointeur d'instruction ou le pointeur de pile seraient instantanément perdus au moment du transfert. Voici comment se passe le transfert pour chaque mode de transfert différent sous l'architecture Intel x86 : 
+%Le contexte d'exécution d'un programme doit contenir toute partie de l'état du programme susceptible d'être modifiée légitimement par d'autres programmes du système. De ce fait, il n'est pas nécessaire de copier la mémoire utilisée par le programme. Dans les systèmes d'exploitation modernes, chaque programme dispose d'une portion de mémoire qui lui est dédiée. Cela peut être garanti par conception dans le cas de systèmes collaboratif ou plus strictement par des mécanismes de controle d'accès relatifs à une \emph{MMU} ou une \emph{MPU} par exemple. 
+%Puisqu'il n'est pas nécessaire de copier le contenu de la mémoire, il suffit donc de copier les registres du processeur susceptibles d'être modifiés. Lors d'appels sans changement de droit, des règles de sauvegarde des registres existent (par exemple \cite{arm32_bit_callconv}). Ces règles décrivent notamment quels sont les registres susceptibles d'être modifiés par l'appelé, et peuvent permettre d'économiser la sauvegarde de certain registres.
+%%Cependant, puisque les transferts de flot d'exécution avec changement d'espace d'adressage et de droits peuvent être implicites, le système ne peut faire aucune hypothèse sur les registres préalablement sauvegardés par le programme interrompu. De plus, il est courant de continuer l'exécution d'un autre programme susceptible de modifier n'importe quel registre à sa disposition. En toute généricité, il est donc impossible de prévoir quels registres resteront intacts lors d'un tel transfert : il est donc nécessaire de sauvegarder tous les registres modifiables par le programme interrompu.
+Lorsqu'un transfert de flôt d'exécution externe survient, un changement de contexte d'exécution doit être effectué, assisté par le processeur. En effet, sans l'aide du processeur, le contenu de certains registres comme le pointeur d'instruction ou le pointeur de pile seraient instantanément perdus au moment du transfert. Voici comment se passe le transfert pour chaque mode de transfert différent sous l'architecture Intel x86 : 
 
 
 \paragraph{Changement de pile et registres sauvés lors d'un appel au travers d'une \emph{callgate}}
@@ -139,7 +126,11 @@ Tout d'abord, le processeur change de pile, en sauvant temporairement les valeur
 
 		\subsection{Sécurité liée aux transferts de flôt d'exécution}
 
-		\subsubsection{Appels explicites}
+		Les transferts de flôt d'exécution (internes ou externes) sont un des points clés de la sécurité d'un système. Pour prendre le contrôle d'un système, une entité pourrait essayer de corrompre les transferts de flôt d'exécution se tenant à l'intérieur du système pour réussir à exécuter son propre fil d'exécution dans le système.
+
+		Ainsi, ce document distinguera deux catégories majeures d'attaques : les attaques visant les transferts de flôt d'exécution internes, et les attaques visant les transferts de flôt d'exécution externes.
+
+		\subsubsection{Sécurité relative aux transferts de flôt d'exécutions internes}
 Ce type de transfert de flôt d'exécution, d'apparence assez anodine, est pourtant l'objet d'attaques multiples, dont le but est de faire dévier l'exécution (de préférence en mode privilégié) vers du code choisi par l'attaquant. Pour y arriver, un attaquant doit exploiter une vulnérabilité dans une portion de code, qui lui donnera le contrôle d'une zone de mémoire d'intérêt (la pile, le tas, ou même le code). Une fois qu'il contrôle cette zone mémoire, il lui suffit d'écrire un \emph{shellcode}, et d'exploiter une vulnérabilité dans du code privilégié pour que l'exécution du \texttt{return} de la fonction compromise saute dans le shellcode. L'attaquant gagne à ce moment le contrôle de la machine.
 
 Commence alors un jeu du chat et de la souris pour essayer de mitiger l'impact de ces vulnérabilités. Pour compliquer la vie de l'attaquant, et qu'il lui soit plus difficile d'exécuter son shellcode, de nombreuses stratégies ont été entreprises par les fabriquant de matériels ainsi que par les développeurs de systèmes d'exploitation. 
@@ -186,12 +177,18 @@ Il est parfois reproché à cette fonctionnalité qu'elle relève de la sécurit
 
 Ces contre-mesures, sans cesse contournées par de nouvelles méthodes d'attaque, supposent qu'il existera toujours des vulnérabilités dans le logiciel comme dans le matériel et tentent donc de limiter au maximum leur impact sur les systèmes affectés. Une toute autre classe de mesures essaie de régler le problème en s'attaquant à l'existence même des vulnérabilités, plutôt que d'essayer minimiser leurs conséquences.
 
-On pourrait citer les méthodes d’analyse statique, les méthodes d’exécution symbolique, de fuzzing, et plus particulièrement le langage Rust conçu pour éradiquer ces vulnérabilités par conception. Par ailleurs, des travaux ont été entamés pour prouver formellement les fonctionnalités de Rust.
+On pourrait citer les méthodes d’analyse statique, les méthodes d’exécution symbolique, de fuzzing, et plus particulièrement le langage Rust conçu pour éradiquer ces vulnérabilités par conception. Par ailleurs, de récents travaux ont commencé à s'intéresser formellement aux fonctionnalités de Rust.
 
 
-		\subsubsection{Interruptions matérielles}
+		\subsection{Sécurité relative aux transferts de flôt d'exécution externes}
 
-Puisque les fautes et interruptions déclenchent un changement de privilèges, elles sont un vecteur d'attaque supplémentaire d'intérêt pour un attaquant cherchant à s'octroyer de nouveaux droits. En effet, les mêmes types de failles peuvent résider dans les routines de gestion de ces portions de logiciel. De plus, les interruptions et fautes brisent le flot d'exécution et modifient potentiellement l'environnement d'exécution du code interrompu. Cela les rends d'autant plus susceptibles de contenir des vulnérabilités, qui tombent alors dans la catégorie des vulnérabilités de \emph{concurrence critique}.
+		\textcolor{red}{À compléter}
+
+		\subsubsection{Cas particulier des interruptions matérielles et des fautes}
+
+Puisque les fautes et interruptions déclenchent un changement de privilèges, elles sont un vecteur d'attaque pour un attaquant cherchant à s'octroyer de nouveaux droits par le biais des deux types d'attaques précédemment décrits. En effet, des failles peuvent résider dans les routines de gestion de ces portions de logiciel, mais aussi dans la protection des cadres d'exécution de ces routines. 
+
+Cependant, elle présentent une caractéristique supplémentaire d'intérêt pour un attaquant : les interruptions et fautes brisent le flot d'exécution et modifient potentiellement l'environnement d'exécution du code interrompu. Cela offre aux attaquants de nouvelles perspectives d'attaques sur les fils d'exécution pouvant être interrompus, qui tombent alors dans la catégorie des vulnérabilités de \emph{concurrence critique}.
 
 Même en ayant pleinement conscience des différentes interactions et dépendances entre les différents composants d'un système, les vulnérabilités de concurrence critique sont \textbf{notoirement difficiles à cerner}, principalement à cause d'un phénomène d'explosion combinatoire. Il peut s'avérer difficile de détecter une telle vulnérabilité par les tests, puisqu'ils sont souvent effectués dans des environnement très controlés où les mêmes conditions d'exécution sont artificiellement répétées, occultant d'autres fils d'exécution possibles. Malgré cela, si le développeur parvient à exhiber un fil d'exécution contenant un comportement anormal, il peut alors être délicat de reproduire le fil d'exécution ayant conduit à ce comportement. En effet, le fil d'exécution peut etre le résultat de nombreuses interactions -- parfois non-déterministes -- du programme avec son environnement. De plus, attacher un debuggueur tel que \texttt{gdb} peut modifier subtilement ces interactions, de manière telle qu'il soit impossible d'exhiber à nouveau le comportement anormal : on parle alors d'Heisenbug.
 
@@ -234,9 +231,7 @@ De nombreux travaux ont été menés afin de détecter les situations de concurr
 		Lorsque l'analyse d'ordonnançabilité a été effectuée, et qu'elle atteste qu'il sera toujours possible d'ordonnancer les différents jobs du système en respectant les échéances, il existe deux méthodes permettant d'ordonnancer les jobs. La première méthode consiste à précalculer l'ordonnancement des jobs, et à l'inclure de manière statique dans le système. Cette méthode de calcul hors ligne (ou \emph{offline} en anglais) du plan d'ordonnancement, a pour avantages d'affranchir le système temps réel du coût de l'ordonnancement "en direct". Le système n'aura pas à choisir lui même la prochaine tâche à effectuer ; elle lui a été précalculée. Cependant, il n'est pas toujours possible de savoir à chaque instant du fonctionnement d'un système temps réel quels seront les jobs à exécuter par exemple dans le cas de tâches sporadiques ou apériodiques. En effet, certaines actions des sytèmes temps réels peuvent être liées à des stimuli externes, comme par exemple l'action de maintenir l'assiette d'un avion en vol lorsqu'il tangue sous l'effet de turbulences. Dans ce genre de cas, le système temps réel doit pouvoir s'accomoder de telles variations, et en conséquence le plan d'ordonnancement doit pouvoir être modifié pendant le fonctionnement du système. Il n'est alors plus possible de précalculer le plan d'ordonnancement ; le système temps réel doit intégrer un ordonnanceur pour faire face à ces aléas.
 
 		\subsubsection{Vérification des résultats produits par l'ordonnanceur}
-		plasticité des politiques et comment on ne peut savoir ce qu'on devra prouver sur notre politique
-
-		Une ou deux phrases sur les politiques d'ordonnancement, certaines doivent respecter des contraintes temps réels, d'autres doivent maximiser des objectifs. 
+		\textcolor{red}{plasticité des politiques et comment on ne peut savoir ce qu'on devra prouver sur notre politique. Une ou deux phrases sur les politiques d'ordonnancement, certaines doivent respecter des contraintes temps réels, d'autres doivent maximiser des objectifs.}
 		De nombreuses politiques d'ordonnancement existent :
 		\begin{itemize}
 			\item{tourniquet, fair-share, foreground-background }
@@ -248,7 +243,6 @@ De nombreux travaux ont été menés afin de détecter les situations de concurr
 			\item{Multilevel feedback queue (ancien, prix turing)}
 			\item{YDS (politique visant à minimiser la consommation énergétique, optimal quelques conditions)}
 		\end{itemize}
-		\textcolor{red}{Est ce que je dois détailler ? Est ce que c'est pas hors sujet et qu'on s'en foutrait pas un peu}
 
 	\section{Preuve de code}
 
@@ -310,9 +304,7 @@ De nombreux travaux ont été menés afin de détecter les situations de concurr
 
 		\subsection{Preuve de programme}
 
-			\textcolor{red}{Lier les deux sans faire une intro du plan}
-			
-			Cette sous-section traite de la manière de raisonner sur les programmes, en particulier sur les programmes impératifs dont le paradigme est à priori incompatible avec les langages fonctionnels des assistants de preuves tels que Coq et son langage Gallina. La première partie de la sous-section décrira la logique de Hoare : un système formel permettant de raisonner sur les programmes séquentiels. La seconde sous-section décrira les méthodes de représentation du programme à prouver dans l'assistant de preuve, ainsi que des monades d'état, permettant de représenter les effets de bords dans les langages fonctionnels, et servant d'interface entre le monde mathématique et le monde réel. La dernière partie de la sous-section présentera la problématique de la préservation de la preuve lors du processus de compilation du code source prouvé. 
+			Cette sous-section traite de la manière de raisonner sur les programmes, en particulier sur les programmes impératifs dont le paradigme est à priori incompatible avec les langages fonctionnels des assistants de preuves tels que Coq et son langage Gallina. La logique de Hoare est une réponse classique à ce problème, permettant de raisonner sur les programmes séquentiels. Les monades d'état sont un moyen de représenter des programmes séquentiels dans les langages fonctionnels utilisés par les assistants de preuve, et servent d'interface entre le monde mathématique et le monde réel. Cependant, prouver des propriétés sur du code source ne garantit pas que ces propriétés seront préservées lors de la compilation ; des projets tels que CompCert tentent de répondre à ce problème. 
 
 			\subsubsection{Logique de Hoare}
 
