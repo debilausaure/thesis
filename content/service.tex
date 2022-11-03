@@ -619,6 +619,51 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 			\subsubsection{Sauvegarde du contexte d'exécution de la partition appelante}
 
+			\paragraph{Les pages dans lesquelles le service écrit sont accessibles} $ $\\
+			$\exists p, p \in$ \texttt{partitionTree} $s$,\\
+			\texttt{contextPage} $\in$ \texttt{getAccessibleMappedPages}$~p~s~\wedge$\\
+			\texttt{contextEndPage} $\in$ \texttt{getAccessibleMappedPages}$~p~s$
+
+			Récupéré des préconditions
+
+			\paragraph{Les pages ne font pas partie des pages de configuration de Pip} $ $\\
+			$\forall p, p \in~$\texttt{partitionTree}$~s$,\\
+			\texttt{contextPage} $\notin$ \texttt{getConfigPages}$~p~s~\wedge$\\\texttt{contextEndPage}$~\notin~$\text{getConfigPages}$~p~s$
+
+			Déduit de \texttt{kernelDataIsolation s} et de la propriété précédente.
+
+			\paragraph{Définition de $s'$}$ $\\
+			$\exists~E~:~$\texttt{list}$~($\texttt{paddr}$~*~$\texttt{value)}$,~\text{let}~s'=~$\texttt{\{currentPartition}$~s~;~($\texttt{memory}$~s)~\cup~E$\texttt{\}},\\
+			$\forall~e~:~($\texttt{paddr}$~*~$\texttt{value}$),~e~\in~E~\implies~\forall~i$,\\ 
+			$e~=~($\texttt{contextPage}$~i)~*~$\texttt{defaultVAddr}$~\lor~e~=~($\texttt{contextEndPage}$~i)~*~$\texttt{defaultVAddr}
+
+			On pose $E$ en décrivant les écritures issues de \texttt{writeContext} et on montre que chaque écriture est soit sur \texttt{contextPage} soit sur \texttt{contextEndPage}.
+
+			\paragraph{\texttt{getConfigPages}$~s~=~$\texttt{getConfigPages}$~s'$}$ $\\
+			$\forall~p,~p~\in~$\texttt{partitionTree}$~s,~$\texttt{getConfigPages}$~p~s~=~$\texttt{getConfigPages}$~p~s'$
+
+			On a \texttt{contextPage} et \texttt{contextEndPage} $\notin$ \texttt{getConfigPages}~$s$, or $s' = s +$ écritures sur \texttt{contextPage} et \texttt{contextEndPage}. Donc les écritures ne sont pas dans les pages de configuration, donc \texttt{getConfigPages}~$s'$ = \texttt{getConfigPages}~$s$.
+
+			\paragraph{\texttt{getAccessibleMappedPages}$~s~=~$\texttt{getAccessibleMappedPages}$~s'$}$ $\\
+			$\exists~p,~p~\in~$\texttt{partitionTree}$~s,$\\
+			\texttt{contextPage}$~\in~$\texttt{getAccessibleMappedPages}$~p~s'~\wedge$\\
+			\texttt{contextEndPage}$~\in~$\texttt{getAccessibleMappedPages}$~p~s'$
+
+			
+			\texttt{getConfigPages} définit \texttt{getAccessibleMappedPages}, or\\ \texttt{getConfigPages}~$s~=~$\texttt{getConfigPages}$~s'$.
+
+			\paragraph{Preuve de la propriété d'isolation du noyau}$ $\\
+			\texttt{kernelDataIsolation}$~s~\implies~$\texttt{kernelDataIsolation}$~s'$
+
+			On a \texttt{kernelDataIsolation} $s$, \texttt{getConfigPages}$~s~=~$\texttt{getConfigPages}$~s'$, \texttt{getAccessibleMappedPages}$~s~=~$\texttt{getAccessibleMappedPages}$~s'$, donc on a \texttt{kernelDataIsolation}$~s'$.
+
+			\paragraph{Preuve des autres propriétés d'isolation de Pip}$ $\\
+			$\forall p, p \in \text{partitionTree}~s, \text{getUsedPages}~p~s = \text{getUsedPages}~p~s'$
+
+			Commencer par prouver \texttt{getMappedPages} de la même manière que \texttt{getAccessibleMappedPages}
+
+			La preuve de toutes les autres fonctions et propriétés devraient découler de \texttt{getConfigPages}$~s~=~$\texttt{getConfigPages}$~s'$.
+
 			\begin{listing}[!ht]
 				\coqcode{code/writeContextPreconditions.v}
 				\caption{Préconditions de la fonction \texttt{writeContext}}
@@ -628,6 +673,12 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 			\subsubsection{Validation des paramètres}
 			Pour parvenir à prouver la préservation des propriétés d'isolation et de cohérence lors des différentes instructions de modification de l'état du service, il est nécessaire d'amener des propriétés sur les paramètres fournis par l'utilisateur ainsi que sur les valeurs intermédiaires calculées pendant l'exécution du service.
+
+			\paragraph{Préconditions requises par la preuve du changement de partition courante}
+
+			\paragraph{Préconditions requises par la preuve d'écriture des contextes}
+
+			La preuve d'isolation sur les 
 
 
 	\section{Retour d'expérience}
@@ -641,6 +692,8 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 		La preuve permettant de prouver le maintient des propriétés d'isolation sur l'état après exécution du service représente actuellement un peu plus de 4000 lignes de preuve en comptant les définitions de modèles et les scripts d'établissement de la preuve. Ce chiffre est dérisoire comparé aux plus de 80 000 lignes relatives à la preuve déjà écrites pour Pip. De plus, l'établissement de la preuve d'isolation de ce service n'a duré "que" quelques semaines, alors que je n'avais aucune expérience dans ce domaine. Ces chiffres semblent montrer que l'effort de preuve diminue avec la proportion de preuve déjà existente, indiquant une forte réutilisation des preuves déjà établies. De plus, le temps que j'ai passé sur cette preuve semble indiquer que la méthodologie de preuve proposée par Pip est efficace et permet aux novices de démarrer rapidement le travail sur la preuve.
 
 		\subsection{Modélisation}
+
+		\textcolor{red}{Parler des problèmes de modélisation ?}
 
 		\subsection{Prise de recul sur la nature de la preuve}
 
