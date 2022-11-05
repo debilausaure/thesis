@@ -619,23 +619,70 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 			\subsubsection{Sauvegarde du contexte d'exécution de la partition appelante}
 
-			\paragraph{Les pages dans lesquelles le service écrit sont accessibles} $ $\\
-			$\exists p, p \in$ \texttt{partitionTree} $s$,\\
-			\texttt{contextPage} $\in$ \texttt{getAccessibleMappedPages}$~p~s~\wedge$\\
-			\texttt{contextEndPage} $\in$ \texttt{getAccessibleMappedPages}$~p~s$
+			La preuve de conservation de l'isolation de la fonction \texttt{writeContext} repose sur le fait que les pages de configuration spécifiques à Pip ainsi que celles concernant les espaces d'adressage des partitions restent inchangées. Pour arriver à cette conclusion, on procède de la manière suivante. Tout d'abord, on montre que dans l'état initial $s$, les pages dans lesquelles la fonction \texttt{writeContext} va écrire sont des pages accessibles à \emph{une} partition. Ensuite, on utilise la propriété d'isolation du noyau (démontrable sur l'état initial) pour en déduire que ces pages ne font pas partie de l'ensemble des pages de configuration de Pip. Enfin, on déduit que les pages de configuration restent inchangées entre l'état initial $s$ et le nouvel état $s'$ car $s'$ est le résultat des écritures sur des pages n'appartenant pas aux pages de configuration. De cette manière, on peut montrer que les propriétés prouvables sur l'état $s$ restent prouvables sur l'état suivant $s'$, car la configuration du noyau n'a pas changé.
 
-			Récupéré des préconditions
+			Cette preuve est détaillé dans la suite de cette sous-section. On pose que $s$ représente l'état (tel que définit dans le modèle) juste avant les écritures de la fonction \texttt{writeContext}, et on pose $s'$ comme étant l'état résultant des écritures de \texttt{writeContext}.
 
-			\paragraph{Les pages ne font pas partie des pages de configuration de Pip} $ $\\
-			$\forall p, p \in~$\texttt{partitionTree}$~s$,\\
-			\texttt{contextPage} $\notin$ \texttt{getConfigPages}$~p~s~\wedge$\\\texttt{contextEndPage}$~\notin~$\text{getConfigPages}$~p~s$
+			\paragraph{Préconditions (ou hypothèses) de la preuve}
 
-			Déduit de \texttt{kernelDataIsolation s} et de la propriété précédente.
+			La première étape est de montrer que les pages concernées par les écritures de \texttt{writeContext} sont des pages accessibles à l'espace utilisateur. Les deux pages concernées sont \texttt{contextPage} et \texttt{contextEndPage}. 
 
-			\paragraph{Définition de $s'$}$ $\\
-			$\exists~E~:~$\texttt{list}$~($\texttt{paddr}$~*~$\texttt{value)}$,~\text{let}~s'=~$\texttt{\{currentPartition}$~s~;~($\texttt{memory}$~s)~\cup~E$\texttt{\}},\\
-			$\forall~e~:~($\texttt{paddr}$~*~$\texttt{value}$),~e~\in~E~\implies~\forall~i$,\\ 
-			$e~=~($\texttt{contextPage}$~i)~*~$\texttt{defaultVAddr}$~\lor~e~=~($\texttt{contextEndPage}$~i)~*~$\texttt{defaultVAddr}
+			Ces propriétés proviennent nécessairement des tests effectués sur les paramètres passés à \texttt{writeContext} avant l'appel de la fonction, et sont donc des préconditions à cette preuve. Cette précondition pourrait être énoncée formellement de la sorte :\\
+			\begin{align*}
+				\exists p,~p &\in \mathtt{getPartitions}~s,\\
+				\mathtt{contextPage} &\in \mathtt{getAccessibleMappedPages}~p~s~~~\wedge\\
+				\mathtt{contextEndPage} &\in \mathtt{getAccessibleMappedPages}~p~s
+			\end{align*}
+
+			\begin{theorem}
+				Il existe une partition $p$ valide dans l'état $s$, telle que les pages \texttt{contextPage} et \texttt{contextEndPage} sont dans l'espace d'adressage de $p$ et accessibles sans privilège, comme calculé par la fonction \texttt{getAccessibleMappedPages}.
+			\end{theorem}
+
+			\paragraph{Démonstration que les pages n'appartiennent pas aux pages de configuration}
+
+			L'étape suivante de cette preuve de préservation de l'isolation est de montrer que les pages \texttt{contextPage} et \texttt{contextEndPage} ne sont pas dans l'ensemble des pages de configuration de Pip. Cette propriété peut être formulée formellement comme suit :
+
+			\begin{align*}
+				\forall p,~p~&\in~\mathtt{getPartitions}~s,\\
+				\mathtt{contextPage}~&\notin~\mathtt{getConfigPages}~p~s~~~\wedge\\
+				\mathtt{contextEndPage}~&\notin~\mathtt{getConfigPages}~p~s
+			\end{align*}
+
+			\begin{theorem}
+				Pour toute partition $p$ valide dans l'état $s$, les pages \texttt{contextPage} et \texttt{contextEndPage} ne sont pas dans l'ensemble des pages de configuration de la partition $p$, comme calculé par la fonction \texttt{getConfigPages}.
+			\end{theorem}
+
+			Cette propriété peut être déduite de la propriété d'isolation du noyau \texttt{kernelDataIsolation} que voici :
+
+			\begin{align*}
+				\forall~p_1,~p_1~&\in~\mathtt{getPartitions}~s,\\
+				\forall~p_2,~p_2~&\in~\mathtt{getPartitions}~s,\\
+				(\mathtt{getAccessibleMappedPages}~p_1~s~&\cap~\mathtt{getConfigPages}~p_2~s) = \emptyset
+			\end{align*}
+
+			En prenant $p_1 = p$ dans cette propriété, cela nous donne : 
+			$$\forall~p_2,~\mathtt{getAccessibleMappedPages}~p~s~\cap~\mathtt{getConfigPages}~p_2~s~=~\emptyset$$
+			Or les préconditions nous donnent $\exists~p,~\mathtt{contextPage} \in \mathtt{getAccessibleMappedPages}~p~s$ ainsi que $\exists~p,~\mathtt{contextEndPage} \in \mathtt{getAccessibleMappedPages}~p~s$. Ainsi, on en déduit :
+			$$\forall p_2, \mathtt{contextPage}~\notin~\mathtt{getConfigPages}~p_2~s~~\wedge~~\mathtt{contextEndPage}~\notin~\mathtt{getConfigPages}~p_2~s$$
+
+
+			\paragraph{Définition alternative de $s'$} Cette étape consiste à exprimer l'état $s'$ en fonction de l'état initial $s$, afin de pouvoir appliquer à l'état $s'$ des propriétés prouvables sur $s$. Cette définition consiste à isoler les écritures de la fonction \texttt{writeContext} dans un ensemble $E$ afin de faire apparaître l'état de la mémoire original $(\mathtt{memory}~s)$.
+			On souhaite avoir :
+
+			$$\mathtt{memory}~s'~=~(\mathtt{memory}~s)~~\cup~~E$$
+
+			En particulier, on pourrait montrer la propriété suivante :
+
+			\begin{align*}
+				\exists~E~&:~\mathtt{list}~(\mathtt{paddr}~*~\mathtt{value)},\\
+				      ~s'~&=~\mathtt{\{~currentPartition}~s~;~(\mathtt{memory}~s)~~\cup~~E~\mathtt{\}},\\
+				\forall~e~&:~(\mathtt{paddr}~*~\mathtt{value}),\\
+				        e~&\in~E~\implies\\
+				\exists~i~&: index,\\
+				        e~&=~(\mathtt{contextPage}~i)~*~\mathtt{defaultVAddr}~~\lor\\
+				        e~&=~(\mathtt{contextEndPage}~i)~*~\mathtt{defaultVAddr}
+			\end{align*}
+
 
 			On pose $E$ en décrivant les écritures issues de \texttt{writeContext} et on montre que chaque écriture est soit sur \texttt{contextPage} soit sur \texttt{contextEndPage}.
 
