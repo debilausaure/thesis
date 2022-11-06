@@ -683,8 +683,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 				        e~&=~(\mathtt{contextEndPage}~i)~*~\mathtt{defaultVAddr}
 			\end{align*}
 
-
-			On pose $E$ en décrivant les écritures issues de \texttt{writeContext} et on montre que chaque écriture est soit sur \texttt{contextPage} soit sur \texttt{contextEndPage}.
+			Cette propriété se déduit de l'appel à la fonction \texttt{writeContext} (voir listing \ref{code:writeContextModel}), et plus particulièrement de la fonction \texttt{storeVirtual}. Cette fonction simule l'activité de la MMU en traduisant l'adresse virtuelle passée en paramètre et en écrivant à cette adresse. C'est pourquoi cette preuve requiert des préconditions supplémentaires à celles déjà identifiées. Une première garantit que l'adresse virtuelle de sauvegarde de contexte \texttt{sourceContextSaveVAddr} correspond à la page de mémoire réelle \texttt{contextPage}. La seconde garantit que la dernière adresse virtuelle du contexte \texttt{sourceContextEndSaveVAddr} correspond bien à la page de mémoire réelle \texttt{contextEndPage}.
 
 			\paragraph{\texttt{getConfigPages}$~s~=~$\texttt{getConfigPages}$~s'$}$ $\\
 			$\forall~p,~p~\in~$\texttt{partitionTree}$~s,~$\texttt{getConfigPages}$~p~s~=~$\texttt{getConfigPages}$~p~s'$
