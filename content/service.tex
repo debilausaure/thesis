@@ -623,7 +623,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 			Cette preuve est détaillé dans la suite de cette sous-section. On pose que $s$ représente l'état (tel que définit dans le modèle) juste avant les écritures de la fonction \texttt{writeContext}, et on pose $s'$ comme étant l'état résultant des écritures de \texttt{writeContext}.
 
-			\paragraph{Préconditions (ou hypothèses) de la preuve}
+			\paragraph{Démonstration que les pages appartiennent aux pages accessibles à la partition}
 
 			La première étape est de montrer que les pages concernées par les écritures de \texttt{writeContext} sont des pages accessibles à l'espace utilisateur. Les deux pages concernées sont \texttt{contextPage} et \texttt{contextEndPage}. 
 
@@ -650,6 +650,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 			\begin{theorem}
 				Pour toute partition $p$ valide dans l'état $s$, les pages \texttt{contextPage} et \texttt{contextEndPage} ne sont pas dans l'ensemble des pages de configuration de la partition $p$, comme calculé par la fonction \texttt{getConfigPages}.
+			\label{prop:pagesnotconfig}
 			\end{theorem}
 
 			Cette propriété peut être déduite de la propriété d'isolation du noyau \texttt{kernelDataIsolation} que voici :
@@ -683,12 +684,113 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 				        e~&=~(\mathtt{contextEndPage}~i)~*~\mathtt{defaultVAddr}
 			\end{align*}
 
-			Cette propriété se déduit de l'appel à la fonction \texttt{writeContext} (voir listing \ref{code:writeContextModel}), et plus particulièrement de la fonction \texttt{storeVirtual}. Cette fonction simule l'activité de la MMU en traduisant l'adresse virtuelle passée en paramètre et en écrivant à cette adresse. C'est pourquoi cette preuve requiert des préconditions supplémentaires à celles déjà identifiées. Une première garantit que l'adresse virtuelle de sauvegarde de contexte \texttt{sourceContextSaveVAddr} correspond à la page de mémoire réelle \texttt{contextPage}. La seconde garantit que la dernière adresse virtuelle du contexte \texttt{sourceContextEndSaveVAddr} correspond bien à la page de mémoire réelle \texttt{contextEndPage}.
+			\begin{theorem}
+				Il existe un ensemble $E$ de couples d'adresses et de valeurs, tel que la mémoire de l'état $s'$ peut être représentée par l'union de la mémoire de l'état $s$ avec l'ensemble $E$, et pour toute paire d'adresse et de valeur $e$ appartenant à l'ensemble $E$, alors il existe un indice $i$, tel que $e$ est constitué d'une adresse pointant vers la page \texttt{contextPage} à l'indice $i$ ou la page \texttt{contextEndPage} et l'indice $i$, et dont la valeur à cette adresse est une valeur par défaut.
+			\label{prop:s'redef}
+			\end{theorem}
 
-			\paragraph{\texttt{getConfigPages}$~s~=~$\texttt{getConfigPages}$~s'$}$ $\\
-			$\forall~p,~p~\in~$\texttt{partitionTree}$~s,~$\texttt{getConfigPages}$~p~s~=~$\texttt{getConfigPages}$~p~s'$
+			Cette propriété se déduit de l'appel à la fonction \texttt{writeContext} (voir listing \ref{code:writeContextModel}), et plus particulièrement de la fonction \texttt{storeVirtual}. Cette fonction simule l'activité de la MMU en traduisant l'adresse virtuelle passée en paramètre et en écrivant à cette adresse. C'est pourquoi cette preuve requiert des préconditions supplémentaires à celles déjà identifiées. Une première garantit que l'adresse virtuelle de sauvegarde de contexte \texttt{sourceContextSaveVAddr} passée à la fonction \texttt{writeContext} correspond à la page de mémoire réelle \texttt{contextPage}. La seconde garantit que la dernière adresse virtuelle du contexte \texttt{sourceContextEndSaveVAddr} correspond bien à la page de mémoire réelle \texttt{contextEndPage}, afin de pouvoir fournir la preuve que la page reste accessible même si les écritures de \texttt{writeContext} débordent sur la page suivante. On suppose aussi que la taille d'un contexte d'exécution est inférieure à celle d'une page mémoire, cette propriété est ajoutée en tant qu'axiome.
 
-			On a \texttt{contextPage} et \texttt{contextEndPage} $\notin$ \texttt{getConfigPages}~$s$, or $s' = s +$ écritures sur \texttt{contextPage} et \texttt{contextEndPage}. Donc les écritures ne sont pas dans les pages de configuration, donc \texttt{getConfigPages}~$s'$ = \texttt{getConfigPages}~$s$.
+			\paragraph{Démonstration que les pages de configuration restent inchangées}
+
+			Cette propriété coinsiste à montrer que, quelles que soient les pages de configuration du noyau dans $s$, alors ces pages seront aussi les pages de configuration du noyau dans l'état $s'$. Cette propriété est la propriété clée de la démonstration de la préservation de l'isolation, permettant de prouver toutes les propriétés restantes. Elle est exprimée de la sorte :
+
+			\begin{align*}
+				\forall~p,~p~\in~&\mathtt{partitionTree}~s,\\
+				\mathtt{getConfigPages}~p~s~&=~\mathtt{getConfigPages}~p~s'
+			\end{align*}
+
+			\begin{theorem}
+				Pour toute partition $p$ valide dans l'état $s$, l'ensemble des pages de configuration de la partition $p$ dans l'état $s$ est égal à l'ensemble des pages de configuration de la partition dans l'état $s'$.
+			\end{theorem}
+
+			Cette propriété se déduit de la propriété \ref{prop:s'redef} précédente redéfinissant $s'$ en définissant l'ensemble $E$ contenant toutes les écritures de la fonction \texttt{writeContext}, et de la propriété \ref{prop:pagesnotconfig} indiquant que les pages \texttt{contextPage} et \texttt{contextEndPage} ne font partie des pages de configuration d'aucune partition valide dans l'état $s$.
+			De cette manière, on pourrait réaliser une preuve par récurrence sur l'ensemble E pour raisonner de manière générique sur chaque élément. L'hypothèse de récurrence est la suivante :
+			
+			\begin{subequations}
+			\begin{gather*}
+				\text{let}~E~=~\bigcup_{i~=~1}^{\mathtt{contextSize}} e_i,\\
+				\exists~n,~0~\leq~n~<~\mathtt{contextSize},\\
+				\text{let}~E_n~=~\begin{cases}
+					         ~\emptyset~~~~~~~~~~~~~\text{si}~n~=~0\\
+						 ~\bigcup_{i~=~1}^n e_i~~~\text{si}~n~>~0\\
+				                 \end{cases}\\
+				\text{let}~s_n~=~\{~\mathtt{currentPartition}~s~;~(\mathtt{memory}~s)~\cup~E_n~\},\\
+				\forall~p,~p~\in~\mathtt{getPartitions}~s\\
+				\mathtt{getConfigPages}~p~s~=~\mathtt{getConfigPages}~p~s_n
+			\end{gather*}
+
+			Le cas de base est trivial. Pour $n~=~0$, on a $s_0~=~s$ et on doit prouver :
+			$$\forall~p,~\mathtt{getConfigPages}~p~s~=~\mathtt{getConfigPages}~p~s_0$$
+
+			On suppose que l'hypothèse de récurrence est vraie au rang $n$ (avec $n~<~\mathtt{contextSize}$), on cherche à prouver que cette hypothèse est vraie au rang $n+1$. On cherche donc à prouver :
+			\begin{gather*}
+				\forall~p,~p~\in~\mathtt{getPartitions}~s\\
+				\mathtt{getConfigPages}~p~s~=~\mathtt{getConfigPages}~p~s_{n+1}
+			\end{gather*}
+
+			On peut exprimer $s_{n+1}$ en fonction de $s_n$ et de $s$. En effet, on a :
+
+			\vspace{-0.5cm}
+			\begin{equation}
+				\begin{split}
+					 s_{n+1}~&=~\{~\mathtt{currentPartition}~s~;~(\mathtt{memory}~s)~~\cup~E_{n+1}~\}\\
+				\implies s_{n+1}~&=~\{~\mathtt{currentPartition}~s~;~(\mathtt{memory}~s)~~\cup~E_{n}~\cup~e_{n+1}~\}\\
+				\implies s_{n+1}~&=~\{~\mathtt{currentPartition}~s~;~(\mathtt{memory}~s_n)~\cup~e_{n+1}~\}
+				\end{split}
+			\end{equation}
+
+			Or, d'après la propriété \ref{prop:s'redef}, on a : 
+			\vspace{-0.0cm}
+			\begin{equation}
+				\begin{split}
+				e_{n+1}~&=~(\mathtt{contextPage}~i)~~~~~~~*~\mathtt{defaultVAddr}~~\lor\\
+				e_{n+1}~&=~(\mathtt{contextEndPage}~i)~*~\mathtt{defaultVAddr}
+				\end{split}
+			\end{equation}
+			
+			De plus, d'après la propriété \ref{prop:pagesnotconfig}, on a :
+
+			\vspace{-0.5cm}
+			\begin{equation}
+				\begin{split}
+				\mathtt{contextPage}~&\notin~\mathtt{getConfigPages}~p~s~~\wedge\\
+				\mathtt{contextEndPage}~&\notin~\mathtt{getConfigPages}~p~s
+				\end{split}
+			\end{equation}
+
+			L'hypothèse de récurrence nous permet de déduire que :
+
+			\vspace{-0.5cm}
+			\begin{equation}
+				\begin{split}
+					\mathtt{contextPage}~&\notin~\mathtt{getConfigPages}~p~s_n~~\wedge\\
+					\mathtt{contextEndPage}~&\notin~\mathtt{getConfigPages}~p~s_n
+				\end{split}
+			\end{equation}
+
+			Ainsi, on en déduit que l'écriture $e_{n+1}$ n'a pas d'influence sur la fonction \texttt{getConfigPages}, et donc que :
+
+			\vspace{-0.5cm}
+			\begin{equation}
+				\begin{split}
+					\forall~p,~p~\in~&\mathtt{getPartitions}~s,\\
+					\mathtt{getConfigPages}~p&~s_{n+1}~=~\mathtt{getConfigPages}~p~s_{n}
+				\end{split}
+			\end{equation}
+
+			On applique une nouvelle fois l'hypothèse de récurrence, qui nous permet enfin de conclure que :
+
+			\vspace{-0.5cm}
+			\begin{equation}
+				\begin{split}
+					\forall~p,~p~\in~&\mathtt{getPartitions}~s,\\
+					\mathtt{getConfigPages}~p&~s~=~\mathtt{getConfigPages}~p~s_{n+1}
+				\end{split}
+			\end{equation}
+			\end{subequations}
+			En particulier, lorsque $n$ atteint sa valeur maximale $\mathtt{contextSize} - 1$, on a $s_{n+1}~=~s'$.
+
 
 			\paragraph{\texttt{getAccessibleMappedPages}$~s~=~$\texttt{getAccessibleMappedPages}$~s'$}$ $\\
 			$\exists~p,~p~\in~$\texttt{partitionTree}$~s,$\\
