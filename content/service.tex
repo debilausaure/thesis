@@ -556,6 +556,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 		Cette preuve est axée autour de deux points critiques ; la mise à jour de la partition courante, ainsi que l'écriture du contexte de la partition appelante dans son espace d'adressage. Nous commencerons par passer en revue les propriétés souhaitées ainsi que la méthode utilisée pour chacun des deux points critiques de cette preuve, puis nous verrons comment ces propriétés sont récupérées au fur et à mesure de l'exécution des blocs préliminaires du service.
 
 			\subsubsection{Modification de la partition courante}
+			\label{sec:curPartModif}
 
 			Comme décrit précédemment, la modification de la partition courante s'effectue dans le bloc \texttt{switchContextCont}. La fonction responsable de cette modification est la fonction \texttt{updateCurPartition}, dont le modèle est présenté en listing \ref{code:updateCurPartition}.
 
@@ -596,6 +597,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 				\caption{Propriété de conservation de l'isolation noyau entre l'état $s$ et $s'$}
 				\label{code:kernelIsolationUpdateCurPart}
 			\end{listing}
+			\label{sec:curPartKernelIsolation}
 
 			Il est nécessaire de déplier la définition de l'isolation noyau pour commencer à établir la preuve. La propriété avec la définition dépliée est disponible en listing \ref{code:kernelIsolationUpdateCurPartUnfold}.
 
@@ -621,7 +623,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 			La preuve de conservation de l'isolation de la fonction \texttt{writeContext} repose sur le fait que les pages de configuration spécifiques à Pip ainsi que celles concernant les espaces d'adressage des partitions restent inchangées. Pour arriver à cette conclusion, on procède de la manière suivante. Tout d'abord, on montre que dans l'état initial $s$, les pages dans lesquelles la fonction \texttt{writeContext} va écrire sont des pages accessibles à \emph{une} partition. Ensuite, on utilise la propriété d'isolation du noyau (démontrable sur l'état initial) pour en déduire que ces pages ne font pas partie de l'ensemble des pages de configuration de Pip. Enfin, on déduit que les pages de configuration restent inchangées entre l'état initial $s$ et le nouvel état $s'$ car $s'$ est le résultat des écritures sur des pages n'appartenant pas aux pages de configuration. De cette manière, on peut montrer que les propriétés prouvables sur l'état $s$ restent prouvables sur l'état suivant $s'$, car la configuration du noyau n'a pas changé.
 
-			Cette preuve est détaillé dans la suite de cette sous-section. On pose que $s$ représente l'état (tel que définit dans le modèle) juste avant les écritures de la fonction \texttt{writeContext}, et on pose $s'$ comme étant l'état résultant des écritures de \texttt{writeContext}.
+			Cette preuve est détaillée dans la suite de cette sous-section. On pose que $s$ représente l'état (tel que définit dans le modèle) juste avant les écritures de la fonction \texttt{writeContext}, et on pose $s'$ comme étant l'état résultant des écritures de \texttt{writeContext}.
 
 			\paragraph{Démonstration que les pages appartiennent aux pages accessibles à la partition}
 
@@ -693,7 +695,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 			\paragraph{Démonstration que les pages de configuration restent inchangées}
 
-			Cette propriété coinsiste à montrer que, quelles que soient les pages de configuration du noyau dans $s$, alors ces pages seront aussi les pages de configuration du noyau dans l'état $s'$. Cette propriété est la propriété clée de la démonstration de la préservation de l'isolation, permettant de prouver toutes les propriétés restantes. Elle est exprimée de la sorte :
+			Cette propriété consiste à montrer que, quelles que soient les pages de configuration du noyau dans $s$, alors ces pages seront aussi les pages de configuration du noyau dans l'état $s'$. Cette propriété est la propriété clée de la démonstration de la préservation de l'isolation, permettant de prouver toutes les propriétés restantes. Elle est exprimée de la sorte :
 
 			\begin{align*}
 				\forall~p,~p~\in~&\mathtt{partitionTree}~s,\\
@@ -701,29 +703,38 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 			\end{align*}
 
 			\begin{theorem}
+				\label{prop:sameconfigpages}
 				Pour toute partition $p$ valide dans l'état $s$, l'ensemble des pages de configuration de la partition $p$ dans l'état $s$ est égal à l'ensemble des pages de configuration de la partition dans l'état $s'$.
 			\end{theorem}
 
 			Cette propriété se déduit de la propriété \ref{prop:s'redef} précédente redéfinissant $s'$ en définissant l'ensemble $E$ contenant toutes les écritures de la fonction \texttt{writeContext}, et de la propriété \ref{prop:pagesnotconfig} indiquant que les pages \texttt{contextPage} et \texttt{contextEndPage} ne font partie des pages de configuration d'aucune partition valide dans l'état $s$.
 			De cette manière, on pourrait réaliser une preuve par récurrence sur l'ensemble E pour raisonner de manière générique sur chaque élément. L'hypothèse de récurrence est la suivante :
-			
+
 			\begin{subequations}
-			\begin{gather*}
-				\text{let}~E~=~\bigcup_{i~=~1}^{\mathtt{contextSize}} e_i,\\
-				\exists~n,~0~\leq~n~<~\mathtt{contextSize},\\
-				\text{let}~E_n~=~\begin{cases}
-					         ~\emptyset~~~~~~~~~~~~~\text{si}~n~=~0\\
-						 ~\bigcup_{i~=~1}^n e_i~~~\text{si}~n~>~0\\
-				                 \end{cases}\\
-				\text{let}~s_n~=~\{~\mathtt{currentPartition}~s~;~(\mathtt{memory}~s)~\cup~E_n~\},\\
-				\forall~p,~p~\in~\mathtt{getPartitions}~s\\
-				\mathtt{getConfigPages}~p~s~=~\mathtt{getConfigPages}~p~s_n
-			\end{gather*}
+			\vspace{-0.5cm}
+			\begin{equation}
+			\begin{split}
+				&~~~~~~~~E~=~\bigcup_{i~=~1}^{\mathtt{contextSize}} e_i,\\
+				&~\exists~n,~0~\leq~n~<~\mathtt{contextSize},\\
+				\text{let}~E_n~=~&
+					\begin{cases}
+						~\emptyset~~~~~~~~~~~~~\text{si}~n~=~0\\
+						~\bigcup_{i~=~1}^n e_i~~~\text{si}~0~<~n~\leq~\mathtt{contextSize}\\
+					\end{cases}\\
+				\text{let}~s_n~=~\{~\mathtt{c}&\mathtt{urrentPartition}~s~;~(\mathtt{memory}~s)~\cup~E_n~\},\\
+				&~\forall~p,~p~\in~\mathtt{getPartitions}~s\\
+				\mathtt{getConf}&\mathtt{igPages}~p~s~=~\mathtt{getConfigPages}~p~s_n
+			\end{split}
+			\end{equation}
 
 			Le cas de base est trivial. Pour $n~=~0$, on a $s_0~=~s$ et on doit prouver :
-			$$\forall~p,~\mathtt{getConfigPages}~p~s~=~\mathtt{getConfigPages}~p~s_0$$
+			\begin{align*}
+				          &\forall~p,~\mathtt{getConfigPages}~p~s~=~\mathtt{getConfigPages}~p~s_0\\
+				\implies~~&\forall~p,~\mathtt{getConfigPages}~p~s~=~\mathtt{getConfigPages}~p~s
+			\end{align*}
 
-			On suppose que l'hypothèse de récurrence est vraie au rang $n$ (avec $n~<~\mathtt{contextSize}$), on cherche à prouver que cette hypothèse est vraie au rang $n+1$. On cherche donc à prouver :
+			On suppose que l'hypothèse de récurrence est vraie au rang $n$ (avec $n~<~\mathtt{contextSize}$), et on cherche à prouver que cette hypothèse est vraie au rang $n+1$.
+			On cherche à prouver :
 			\begin{gather*}
 				\forall~p,~p~\in~\mathtt{getPartitions}~s\\
 				\mathtt{getConfigPages}~p~s~=~\mathtt{getConfigPages}~p~s_{n+1}
@@ -731,7 +742,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 			On peut exprimer $s_{n+1}$ en fonction de $s_n$ et de $s$. En effet, on a :
 
-			\vspace{-0.5cm}
+			%\vspace{-0.5cm}
 			\begin{equation}
 				\begin{split}
 					 s_{n+1}~&=~\{~\mathtt{currentPartition}~s~;~(\mathtt{memory}~s)~~\cup~E_{n+1}~\}\\
@@ -741,7 +752,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 			\end{equation}
 
 			Or, d'après la propriété \ref{prop:s'redef}, on a : 
-			\vspace{-0.0cm}
+			%\vspace{-0.0cm}
 			\begin{equation}
 				\begin{split}
 				e_{n+1}~&=~(\mathtt{contextPage}~i)~~~~~~~*~\mathtt{defaultVAddr}~~\lor\\
@@ -751,7 +762,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 			
 			De plus, d'après la propriété \ref{prop:pagesnotconfig}, on a :
 
-			\vspace{-0.5cm}
+			%\vspace{-0.5cm}
 			\begin{equation}
 				\begin{split}
 				\mathtt{contextPage}~&\notin~\mathtt{getConfigPages}~p~s~~\wedge\\
@@ -761,7 +772,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 			L'hypothèse de récurrence nous permet de déduire que :
 
-			\vspace{-0.5cm}
+			%\vspace{-0.5cm}
 			\begin{equation}
 				\begin{split}
 					\mathtt{contextPage}~&\notin~\mathtt{getConfigPages}~p~s_n~~\wedge\\
@@ -769,9 +780,9 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 				\end{split}
 			\end{equation}
 
-			Ainsi, on en déduit que l'écriture $e_{n+1}$ n'a pas d'influence sur la fonction \texttt{getConfigPages}, et donc que :
+			Ainsi, on en déduit que l'écriture de l'élément $e_{n+1}$ dans la mémoire n'a pas d'influence sur la fonction $\mathtt{getConfigPages}~p~s_n$, et donc que :
 
-			\vspace{-0.5cm}
+			%\vspace{-0.5cm}
 			\begin{equation}
 				\begin{split}
 					\forall~p,~p~\in~&\mathtt{getPartitions}~s,\\
@@ -781,7 +792,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 			On applique une nouvelle fois l'hypothèse de récurrence, qui nous permet enfin de conclure que :
 
-			\vspace{-0.5cm}
+			\vspace{-0.25cm}
 			\begin{equation}
 				\begin{split}
 					\forall~p,~p~\in~&\mathtt{getPartitions}~s,\\
@@ -789,44 +800,109 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 				\end{split}
 			\end{equation}
 			\end{subequations}
-			En particulier, lorsque $n$ atteint sa valeur maximale $\mathtt{contextSize} - 1$, on a $s_{n+1}~=~s'$.
+			Cela reste vrai pour $n < \mathtt{contextSize}$. En particulier, si $n = \mathtt{contextSize} - 1$, on a $s_{n+1}~=~s'$. On en déduit alors la propriété \ref{prop:sameconfigpages} :
 
+			\vspace{-0.25cm}
+			\begin{gather*}
+				\forall~p,~p~\in~\mathtt{getPartitions}~s,\\
+				\mathtt{getConfigPages}~p~s~=~\mathtt{getConfigPages}~p~s'
+			\end{gather*}
 
-			\paragraph{\texttt{getAccessibleMappedPages}$~s~=~$\texttt{getAccessibleMappedPages}$~s'$}$ $\\
-			$\exists~p,~p~\in~$\texttt{partitionTree}$~s,$\\
-			\texttt{contextPage}$~\in~$\texttt{getAccessibleMappedPages}$~p~s'~\wedge$\\
-			\texttt{contextEndPage}$~\in~$\texttt{getAccessibleMappedPages}$~p~s'$
+			\paragraph{Exemple de la preuve de la propriété d'isolation du noyau} À partir de la propriété \ref{prop:sameconfigpages}, il est possible de déduire le reste des propriétés nécessaires à la preuve de préservation de l'isolation. Ce paragraphe montre à titre d'exemple comment arriver à la propriété d'isolation pour l'état $s'$. De la même manière que la preuve de la propriété d'isolation noyau a été conduite sur l'état changeant la partition courante dans la section \ref{sec:curPartKernelIsolation}, il s'agit de déplier chaque fonction pour prouver que le résultat des fonctions est égal entre un appel sur l'état $s$ et un appel sur l'état $s'$.
 
-			
-			\texttt{getConfigPages} définit \texttt{getAccessibleMappedPages}, or\\ \texttt{getConfigPages}~$s~=~$\texttt{getConfigPages}$~s'$.
+			$$\mathtt{kernelDataIsolation}~s~\implies~\mathtt{kernelDataIsolation}~s'$$
 
-			\paragraph{Preuve de la propriété d'isolation du noyau}$ $\\
-			\texttt{kernelDataIsolation}$~s~\implies~$\texttt{kernelDataIsolation}$~s'$
+			En dépliant la définition de \texttt{kernelDataIsolation}, on constate qu'il faut prouver l'égalité des appels sur les fonctions \texttt{getConfigPages} et \texttt{getAccessibleMappedPages}. La propriété \ref{prop:sameconfigpages} nous donne l'égalité sur la fonction \texttt{getConfigPages}. On souhaite prouver l'égalité des appels de la fonction \texttt{getAccessibleMappedPages}.
 
-			On a \texttt{kernelDataIsolation} $s$, \texttt{getConfigPages}$~s~=~$\texttt{getConfigPages}$~s'$, \texttt{getAccessibleMappedPages}$~s~=~$\texttt{getAccessibleMappedPages}$~s'$, donc on a \texttt{kernelDataIsolation}$~s'$.
+			$\mathtt{getAccessibleMappedPages}~p~s$ parcourt les pages de configurations de la MMU de la partition $p$ dans l'état $s$ pour récupérer les pages marquées comme présentes et accessibles dans l'espace utilisateur. Or la propriété \ref{prop:sameconfigpages} nous donne que les pages de configuration restent les même et la propriété \ref{prop:s'redef} nous indique que les écritures n'ont pas lieu dans ces pages de configuration. Ainsi, les appels à \texttt{getAccessibleMappedPages} restent égaux entre l'état $s$ et l'état $s'$. On a donc :
 
-			\paragraph{Preuve des autres propriétés d'isolation de Pip}$ $\\
-			$\forall p, p \in \text{partitionTree}~s, \text{getUsedPages}~p~s = \text{getUsedPages}~p~s'$
+			\begin{align*}
+				\forall~p,~p&\in~\mathtt{getPartitions}~s,\\
+				\mathtt{getConfigPages}~p~s~&=~\mathtt{getConfigPages}~p~s'~~\wedge\\
+				\mathtt{getAccessibleMappedPages}~p~s~&=~\mathtt{getAccessibleMappedPages}~p~s'
+			\end{align*}
 
-			Commencer par prouver \texttt{getMappedPages} de la même manière que \texttt{getAccessibleMappedPages}
-
-			La preuve de toutes les autres fonctions et propriétés devraient découler de \texttt{getConfigPages}$~s~=~$\texttt{getConfigPages}$~s'$.
-
-			\begin{listing}[!ht]
-				\coqcode{code/writeContextPreconditions.v}
-				\caption{Préconditions de la fonction \texttt{writeContext}}
-				\label{code:writeContextPreconditions}
-			\end{listing}
-
+			Ce qui nous permet de déduire que la propriété d'isolation du noyau est prouvable sur $s'$. L'ensemble des proprétés restantes sur $s'$ sont prouvables par la même méthode.
 
 			\subsubsection{Validation des paramètres}
 			Pour parvenir à prouver la préservation des propriétés d'isolation et de cohérence lors des différentes instructions de modification de l'état du service, il est nécessaire d'amener des propriétés sur les paramètres fournis par l'utilisateur ainsi que sur les valeurs intermédiaires calculées pendant l'exécution du service.
 
 			\paragraph{Préconditions requises par la preuve du changement de partition courante}
 
-			\paragraph{Préconditions requises par la preuve d'écriture des contextes}
+			Comme indiqué dans la section \ref{sec:curPartModif}, certaines propriétés nécessaires à l'établissement de la preuve doivent être fournies avant l'appel de la fonction \texttt{updateCurPartition}.
+			\begin{gather*}
+				\mathtt{In~targetPartDesc~(getPartitions~pageRootPartition}~s)~~\wedge\\
+				\mathtt{targetPartDesc}~\neq~\mathtt{pageDefault}
+			\end{gather*}
+			Ces propriétés sont récupérées lors des vérifications préalables sur le descripteur de partition qui sont effectuées soit dans le bloc de code \texttt{getChildPartDescCont}, soit dans le bloc \texttt{getParentPartDescCont}.\\
 
-			La preuve d'isolation sur les 
+			Le bloc \texttt{getChildPartDescCont} vérifie d'abord que l'adresse virtuelle passée en argument est effectivement dans l'espace d'adressage de la partition, puis appelle la fonction \texttt{checkChild} sur cette adresse virtuelle pour vérifier que cette adresse correspond bien au descripteur de partition d'une partition enfant. Le bloc traduit ensuite l'adresse virtuelle pour récupérer la page réelle du descripteur de partition.
+
+			La propriété \texttt{childInPartTree}, exprimant que la fonction \texttt{checkChild} renvoie \texttt{true} seulement si l'adresse virtuelle correspond à un descripteur de partition valide, a déjà été prouvée. Elle est décrite dans le listing \ref{code:childInPartTree}.
+
+			\begin{listing}[!ht]
+				\coqcode{code/childInPartTree.v}
+				\caption{Propriété \texttt{childInPartTree} permettant d'affirmer que le descripteur de partition d'une partition enfant est un descripteur de partition valide}
+				\label{code:childInPartTree}
+			\end{listing}
+
+			Cette propriété à l'allure intimidante n'est en fait que l'accumulation des propriétés récupérées lors d'une traduction d'adresse virtuelle et du parcours des tables de la MMU, suivi d'un appel à \texttt{checkChild}. En posant $\mathtt{childPartDesc}~=~\mathtt{targetPartDesc}$, elle permet de récupérer la propriété $\mathtt{In~targetPartDesc~(getPartitions~pageRootPartition}~s)$.
+
+			La seconde propriété à récupérer, $\mathtt{targetPartDesc}~\neq~\mathtt{defaultPage}$ peut être déduite de la propriété de cohérence \texttt{isPresentNotDefaultIff}, décrite en listing \ref{code:isPresentNotDefaultIff}.
+			\begin{listing}[!ht]
+				\coqcode{code/isPresentNotDefaultIff.v}
+				\caption{Propriété de cohérence \texttt{isPresentNotDefaultIff}}
+				\label{code:isPresentNotDefaultIff}
+			\end{listing}
+
+			Cette propriété de cohérence indique que la fonction \texttt{readPresent} retourne \texttt{false} si et seulement si la valeur lue dans la \texttt{table} à l'indice \texttt{idx} est égale à \texttt{pageDefault}.\\
+			Or, la traduction de l'adresse virtuelle du descripteur de partition de la partition enfant nous donne :
+
+			\vspace{-0.5cm}
+			\begin{align*}
+				\mathtt{readPresent~childMMUTable~idxChildPD~(memory~s)}~&=~\mathtt{Some~true}~\implies\\
+				\mathtt{readPhyEntry~childMMUTable~idxChildPD~(memory~s)}~&\neq~\mathtt{Some~pageDefault}
+			\end{align*}
+
+			De plus, la lecture du descripteur de partition nous donne :
+			\begin{align*}
+				\mathtt{readPhyEntry~childMMUTable~idxChildPD~(memory~s)}~&=~\mathtt{Some~targetPartDesc}
+			\end{align*}
+
+			Ainsi, on en déduit que $\mathtt{targetPartDesc}~\neq~\mathtt{defaultPage}$, complétant les préconditions requises par la preuve concernant les partitions enfants.\\
+
+			On considère à présent ce qu'il se passe dans le bloc \texttt{getParentPartDescCont} concernant l'appel à la partition parent. Il vérifie que la partition appelante n'est pas la partition racine, puis récupère le descripteur de partition du parent au travers d'une entrée du descripteur de partition de l'enfant. La définition de cette lecture nous donne la propriété suivante :
+
+			$$\mathtt{nextEntryIsPP~sourcePartDesc~idxParentDesc~targetPartDesc~s}$$
+
+			Cette propriété permet notamment d'utiliser la propriété de consistence \texttt{parentInPartitionList} (présenté en listing \ref{code:parentInPartitionList}) pour récupérer la propriété sur le fait que la partition parent est une partition valide. 
+
+			\begin{listing}[!ht]
+				\coqcode{code/parentInPartitionList.v}
+				\caption{Propriété de cohérence \texttt{parentInPartitionList}}
+				\label{code:parentInPartitionList}
+			\end{listing}
+
+			Cette propriété de cohérence stipule que pour tout descripteur de partition valide, si on lit à l'indice \texttt{idxParentDesc} du descripteur la valeur \texttt{parent}, alors \texttt{parent} est un descripteur de partition valide. Si on prend $\mathtt{parent} = \mathtt{targetPartDesc}$, on déduit de cette propriété que $\mathtt{In~targetPartDesc~(getPartitions~pageRootPartition}~s\mathtt{)}$.
+
+			La seconde propriété à récupérer, $\mathtt{targetPartDesc}~\neq~\mathtt{defaultPage}$, se déduit de la propriété de cohérence \texttt{partitionDescriptorEntry}, présenté en listing \ref{code:partitionDescriptorEntry}.
+			\begin{listing}[!ht]
+				\coqcode{code/partDescEntry.v}
+				\caption{Propriété de cohérence \texttt{partitionDescriptorEntry}}
+				\label{code:partitionDescriptorEntry}
+			\end{listing}
+
+			Cette propriété de cohérence stipule que pour tout descripteur de partition valide, il existe une valeur \texttt{entry} à l'indice \texttt{idxParentDesc} du descripteur, telle que $\mathtt{entry}~\neq~\mathtt{defaultPage}$. Or la propriété issue de la lecture nous donne que \texttt{targetPartDesc} est le candidat idéal pour \texttt{entry}, ce qui permet de déduire que $\mathtt{targetPartDesc}~\neq~\mathtt{defaultPage}$.
+
+			\paragraph{Préconditions requises par la preuve d'écriture des contextes} 
+
+			De la même manière que De la même manière que 
+
+			\begin{listing}[!ht]
+				\coqcode{code/writeContextPreconditions.v}
+				\caption{Préconditions de la fonction \texttt{writeContext}}
+				\label{code:writeContextPreconditions}
+			\end{listing}
 
 
 	\section{Retour d'expérience}
