@@ -846,7 +846,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 				\label{code:childInPartTree}
 			\end{listing}
 
-			Cette propriété à l'allure intimidante n'est en fait que l'accumulation des propriétés récupérées lors d'une traduction d'adresse virtuelle et du parcours des tables de la MMU, suivi d'un appel à \texttt{checkChild}. En posant $\mathtt{childPartDesc}~=~\mathtt{targetPartDesc}$, elle permet de récupérer la propriété $\mathtt{In~targetPartDesc~(getPartitions~pageRootPartition}~s)$.
+			Cette propriété à l'allure intimidante n'est en fait que l'accumulation des propriétés récupérées lors d'une traduction d'adresse virtuelle et du parcours des tables de la MMU, suivi d'un appel à \texttt{checkChild}. De plus amples détails sur des préconditions similaires seront donnés dans la sous-section suivante \ref{sec:writeContextPreconditions}. En posant $\mathtt{childPartDesc}~=~\mathtt{targetPartDesc}$, elle permet de récupérer la propriété $\mathtt{In~targetPartDesc~(getPartitions~pageRootPartition}~s)$. 
 
 			La seconde propriété à récupérer, $\mathtt{targetPartDesc}~\neq~\mathtt{defaultPage}$ peut être déduite de la propriété de cohérence \texttt{isPresentNotDefaultIff}, décrite en listing \ref{code:isPresentNotDefaultIff}.
 			\begin{listing}[!ht]
@@ -894,9 +894,48 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 			Cette propriété de cohérence stipule que pour tout descripteur de partition valide, il existe une valeur \texttt{entry} à l'indice \texttt{idxParentDesc} du descripteur, telle que $\mathtt{entry}~\neq~\mathtt{defaultPage}$. Or la propriété issue de la lecture nous donne que \texttt{targetPartDesc} est le candidat idéal pour \texttt{entry}, ce qui permet de déduire que $\mathtt{targetPartDesc}~\neq~\mathtt{defaultPage}$.
 
-			\paragraph{Préconditions requises par la preuve d'écriture des contextes} 
+			\paragraph{Préconditions requises par la preuve d'écriture des contextes}
+			\label{sec:writeContextPreconditions}
 
-			De la même manière que De la même manière que 
+			Les propriétés requises pour pouvoir prouver la préservation des propriétés d'isolation lors de l'écriture des contextes d'exécution sont relatives aux adresses virtuelles de contexte \texttt{contextSaveAddr} et \texttt{contextEndSaveAddr}. Deux propriétés sont attendues pour chaque adresse virtuelle : la première atteste que l'adresse virtuelle correspond à une page mémoire dans l'espace d'adressage de la partition, la seconde atteste que cette page mémoire est une page mémoire accessible en espace utilisateur. Ces deux préconditions sont récupérées dans le bloc \texttt{saveSourceContextCont} avant l'appel à la fonction \texttt{writeContext}.
+
+			La première propriété est semblable aux premières préconditions requises pour le lemme \texttt{childInPartTree} disponible en listing \ref{code:childInPartTree}. Les propriétés requises pour \texttt{contextSaveAddr} sont décrites en listing \ref{code:writeContextPreconditionsStart}. Ces propriétés sont récupérées lors de la traduction de l'adresse virtuelle. Des préconditions similaires sont requises pour l'adresse \texttt{contextEndSaveAddr}.
+
+			\begin{listing}[!ht]
+				\coqcode{code/writeContextPreconditionsStart.v}
+				\caption{Préconditions requises sur \texttt{contextSaveAddr} pour la preuve de conservation d'isolation de la fonction \texttt{writeContext}}
+				\label{code:writeContextPreconditionsStart}
+			\end{listing}
+
+			Chaque propriété est issue d'une étape spécifique de la traduction d'adresse :
+
+			\begin{gather*}
+				\mathtt{getTableAddrRoot~ctxMMUPage~idxPageDir~sourcePartDesc~contextSaveAddr~s}\\
+				\wedge~~\mathtt{ctxMMUPage~<>~pageDefault}
+			\end{gather*}
+
+			Ces deux premières propriétés indiquent qu'il existe une page \texttt{ctxMMUPage}, récupérée par la fonction \texttt{getTableAddrRoot}, telle que \texttt{ctxMMUPage} n'est pas la page par défaut et qu'elle est la dernière page de configuration de la MMU contenant l'entrée vers la page mémoire vers laquelle pointe l'adresse \texttt{contextSaveAddr}.
+
+			$$\mathtt{getIndexOfAddr~contextSaveAddr~levelMin}~=~\mathtt{idxCtxMMUPage}$$
+
+			Cette propriété indique que la page pointée par \texttt{contextSaveAddr} se situe à l'indice \texttt{idxCtxMMUPage} dans la page \texttt{ctxMMUPage}. Cet indice est récupéré par la fonction \texttt{getIndexOfAddr}.
+
+			$$\mathtt{isPE~ctxMMUPage~idxCtxMMUPage~s}$$
+
+			Cette propriété découle aussi de l'appel à la fonction \texttt{getTableAddr}. \texttt{getTableAddr} garantit que si la page retournée (ici en l'occurence \texttt{ctxMMUPage}) n'est pas la page par défaut, alors chaque valeur dans cette page sera du type attendu. Ici, la fonction \texttt{getTableAddr} a été appelée sur les structures de configuration de la MMU (au travers de l'indice \texttt{idxPageDir}), ce qui garantit que les entrées seront de type \texttt{physicalEntry}.
+
+			$$\mathtt{entryPresentFlag~ctxMMUPage~idxCtxMMUPage~true~s}$$
+
+			Cette propriété est ramenée par l'appel à la fonction \texttt{readPresent} qui détermine si la valeur à l'indice \texttt{idxCtxMMUPage} de la page \texttt{ctxMMUPage} qui représente une page de mémoire est déclarée comme faisant partie l'espace d'adressage de la partition. Sur l'architecture x86, cette fonction vérifie un bit qui détermine si oui ou non cette entrée est considérée comme valide dans l'espace d'adressage.
+
+			$$\mathtt{entryUserFlag~ctxMMUPage~idxCtxMMUPage~true~s}$$
+
+			Cette propriété est ramenée par l'appel à la fonction \texttt{readAccessible} qui détermine si la valeur à l'indice \texttt{idxCtxMMUPage} de la page \texttt{ctxMMUPage} qui représente une page de mémoire est déclarée comme étant accessible sans privilèges particuliers. Sur l'architecture x86, cette fonction vérifie un bit qui détermine si cette entrée peut être utilisée en espace utilisateur.\\
+
+			Comme écrit précédemment, des préconditions similaires sont requises pour l'adresse \texttt{contextEndSaveAddr}. L'ensemble des préconditions pour la fonction \texttt{writeContext} sont décrites dans le listing \ref{code:writeContextPreconditions}.
+
+			
+			\newpage
 
 			\begin{listing}[!ht]
 				\coqcode{code/writeContextPreconditions.v}
@@ -904,13 +943,16 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 				\label{code:writeContextPreconditions}
 			\end{listing}
 
+			\newpage
 
 	\section{Retour d'expérience}
 	Les travaux exposés dans cette section sont disponibles gratuitement et en accès libre sur \href{https://github.com/2xs/pipcore}{Github}. Ils ont conduits à l'écriture d'un court papier disponible gratuitement et en accès libre sur \href{https://hal.archives-ouvertes.fr/hal-02347481}{HAL}, qui ne détaille cependant pas la preuve décrite dans ce document.
 
 		\subsection{Métriques}
 
-		Le nouveau service compte 417 lignes de code Coq, ce code est très peu dense et a été écrit pour maximiser la lisibilité, certains appels de fonction se retrouvent sur plusieurs lignes et des commentaires parsèment le code. À titre de comparaison, le code C généré par Digger comprend 471 lignes ; ce code comprend un appel de fonction, un argument, ou une accolade par ligne, sans commentaire. Le nombre de lignes de code permettant de lancer le code du service représente environ 1000 lignes de code C et assembleur sur l'architecture Intel x86 (en incluant les commentaires). Néanmoins, ce code est \emph{particulièrement peu dense} de par sa complexité ; j'estime que pour chaque ligne de code ou instruction assembleur, il y a environ deux lignes de commentaires. 
+		Le nouveau service compte 417 lignes de code Coq. Ce code est très peu dense, et a été écrit pour maximiser la lisibilité. Par exemple, certains appels de fonction se retrouvent sur plusieurs lignes et des commentaires parsèment le code. À titre de comparaison, le code C généré par Digger comprend 471 lignes ; ce code comprend un appel de fonction, un argument, ou une accolade par ligne, sans commentaire.
+
+		Le nombre de lignes de code permettant d'appeler le code du service représente environ 1000 lignes de code C et assembleur sur l'architecture Intel x86 (en incluant les commentaires). Néanmoins, ce code est \emph{particulièrement peu dense} de par sa complexité ; j'estime que pour chaque ligne de code ou instruction assembleur, il y a environ deux lignes de commentaires. 
 		Pour rappel, ce service permet de gérer tous les transferts de flôt d'exécution au sein d'un système. 
 
 		La preuve permettant de prouver le maintient des propriétés d'isolation sur l'état après exécution du service représente actuellement un peu plus de 4000 lignes de preuve en comptant les définitions de modèles et les scripts d'établissement de la preuve. Ce chiffre est dérisoire comparé aux plus de 80 000 lignes relatives à la preuve déjà écrites pour Pip. De plus, l'établissement de la preuve d'isolation de ce service n'a duré "que" quelques semaines, alors que je n'avais aucune expérience dans ce domaine. Ces chiffres semblent montrer que l'effort de preuve diminue avec la proportion de preuve déjà existente, indiquant une forte réutilisation des preuves déjà établies. De plus, le temps que j'ai passé sur cette preuve semble indiquer que la méthodologie de preuve proposée par Pip est efficace et permet aux novices de démarrer rapidement le travail sur la preuve.

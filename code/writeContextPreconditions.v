@@ -1,35 +1,35 @@
-(sourcePartDesc, sourcePageDir, sourceCtxLastMMUPage, sourceCtxEndLastMMUPage : page)
-(sourceContextSaveVAddr, sourceContextEndSaveVAddr : vaddr)
-(idxSourceCtxInLastMMUPage, idxSourceCtxEndInLastMMUPage : index)
+(sourcePartDesc, ctxMMUPage, ctxEndMMUPage : page)
+(contextSaveAddr, contextEndSaveAddr : vaddr)
+(idxCtxMMUPage, idxCtxEndMMUPage : index)
 
 {{ fun s : state =>
-    (* Propriétés d'isolation sur l'état *)
-    partitionsIsolation s /\
-    kernelDataIsolation s /\
-    verticalSharing s /\
-    consistency s /\
+   (* Propriété d'isolation *)
+   partitionsIsolation s
+/\ kernelDataIsolation s
+/\ verticalSharing s
+/\ consistency s
 
-    (* Propriété validant le descripteur de partition et son espace d'adressage *)
-    In sourcePartDesc (StateLib.getPartitions pageRootPartition s) /\
-    nextEntryIsPP sourcePartDesc idxPageDir sourcePageDir s /\
+   (* Propriété indiquant que la partition est valide *)
+/\ In sourcePartDesc (getPartitions pageRootPartition s)
 
-    (* Propriétés validant la présence et l'accessibilité de la page contenant l'adresse du début du contexte d'exécution *)
-    getTableAddrRoot sourceCtxLastMMUPage idxPageDir sourcePartDesc sourceContextSaveVAddr s /\
-    sourceCtxLastMMUPage <> pageDefault /\
-    (forall idx : index,
-        getIndexOfAddr sourceContextSaveVAddr levelMin = idx ->
-        isPE sourceCtxLastMMUPage idx s) /\
-    getIndexOfAddr sourceContextSaveVAddr levelMin = idxSourceCtxInLastMMUPage /\
-    entryPresentFlag sourceCtxLastMMUPage idxSourceCtxInLastMMUPage true s /\
-    entryUserFlag sourceCtxLastMMUPage idxSourceCtxInLastMMUPage true s /\
+   (* Propriété indiquant que contextSaveAddr est présent *)
+   (* et accessible dans l'espace d'adressage             *)
+/\ getTableAddrRoot ctxMMUPage idxPageDir sourcePartDesc
+                                          contextSaveAddr s
+/\ ctxMMUPage <> pageDefault
+/\ getIndexOfAddr contextSaveAddr levelMin = idxCtxMMUPage
+/\ isPE ctxMMUPage idxCtxMMUPage s
+/\ entryPresentFlag ctxMMUPage idxCtxMMUPage true s
+/\ entryUserFlag ctxMMUPage idxCtxMMUPage true s
 
-    (* Propriétés validant la présence et l'accessibilité de la page contenant l'adresse de fin du contexte d'exécution *)
-    getTableAddrRoot sourceCtxEndLastMMUPage idxPageDir sourcePartDesc  sourceContextEndSaveVAddr s /\
-    sourceCtxEndLastMMUPage <> pageDefault /\
-    (forall idx : index,
-        getIndexOfAddr sourceContextEndSaveVAddr levelMin = idx ->
-        isPE sourceCtxEndLastMMUPage idx s) /\
-    getIndexOfAddr sourceContextEndSaveVAddr levelMin = idxSourceCtxEndInLastMMUPage /\
-    entryPresentFlag sourceCtxEndLastMMUPage idxSourceCtxEndInLastMMUPage true s /\
-    entryUserFlag sourceCtxEndLastMMUPage idxSourceCtxEndInLastMMUPage true s
+   (* Propriété indiquant que contextSaveEndAddr est présent *)
+   (* et accessible dans l'espace d'adressage                *)
+/\ getTableAddrRoot ctxEndMMUPage idxPageDir sourcePartDesc
+                                             contextEndSaveAddr s
+/\ ctxEndMMUPage <> pageDefault
+/\ getIndexOfAddr contextEndSaveAddr levelMin = idxCtxEndMMUPage
+/\ isPE ctxEndMMUPage idxCtxEndMMUPage s
+/\ entryPresentFlag ctxEndMMUPage idxCtxEndMMUPage true s
+/\ entryUserFlag ctxEndMMUPage idxCtxEndMMUPage true s
+
 }}
