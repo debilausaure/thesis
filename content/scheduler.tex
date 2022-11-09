@@ -21,6 +21,12 @@
 				% ordonnanceur et méthodologie sont agnostiques du système d'exploitation
 
 		\subsection{Décomposition des éléments de l'ordonnanceur}
+			\begin{figure*}[!ht]
+			    \centering
+			    \input{figures/scheduler_overview.tex}
+			    \caption{Overview of the scheduler components and their interactions}
+			    \label{fig:project_overview}
+			\end{figure*}
 			\subsubsection{Vue générale}
 			\subsubsection{Fonction d'élection}
 			\subsubsection{État}
@@ -29,14 +35,465 @@
 
 		
 	\section{Conduite de la preuve}
-		% section 5 de l'article
+
+	\label{sec:proof}
+	In this section we outline the proof of correctness of the monadic Gallina program for the EDF scheduler.
+	We first describe our methodology, which is a top-down refinement approach between three abstraction levels. Then we show the abstraction levels and the refinements between them, focusing on why the refinement steps preserve the correctness properties proved at higher levels. Finally we give some details about the Coq implementation of the approach.
+
+
+	\subsection{Methodology}
+
+	We use refinement %\cite{wirth1971program, morris1987theoretical} 
+	as a divide-and-conquer strategy to manage the complexity of our formal proof.
+	We first define the EDF scheduling policy at an abstract level and show that,
+	under appropriate assumptions, formalized below, the policy is \emph{correct},
+	in the sense that any set of schedulable jobs is scheduled so all jobs complete
+	their execution within their deadline. Then we write a functional algorithm and
+	show that it implements the abstract scheduling policy. It follows that the functional
+	algorithm is also correct. The final step is to write a monadic scheduler,
+	detailed enough to be automatically translatable to C, and to show that
+	the monadic scheduler refines the functional one; as a result, the monadic scheduler is correct as well.
+	%The properties proved in our work act as layered invariants that extend from the EDF policy model to the monadic code. To prove a new refinement layer, we start from the invariant of the previous (more abstract) layer and show that the new invariant \emph{refines} the previous one, i.e., the new invariant has a more detailed specification that remains compatible with its more abstract version.
+	%All the proofs that we performed rely on the following assumptions.
+
+	\subsubsection{Job model}
+	\label{sec:jobmodel}
+	Jobs are modelled as tuples $j = (i_j, r_j,d_j,c_j, \delta_j)$  of natural numbers, where $i_j$ is the job's identifier, $r_j$ is its release date (i.e., the date at which it becomes available for scheduling), $d_j$ is the job's deadline, and $c_j$ is the job's budget a.k.a. WCET, which is an over-approximation of the job's actual duration $\delta_j$. The jobs satisfy the following well-formedness constraints:
+	$r_i + c_i \leq d_i$, i.e., the deadline is large enough for the job to complete when executed alone on the processor; and $0 < \delta_j \leq c_j$, i.e., the WCET is indeed an over-approximation of the actual running time, which is itself strictly greater than zero. Moreover, it is assumed that identifiers uniquely determine jobs and that every job is released exactly once.
+
+
+	\subsubsection{Schedulability assumption}
+
+	Given any two moments $t$ and $t'$ such that $t < t'$,
+	let $\Gamma_{t, t'}$ be the set of jobs to schedule in the interval $[t, t']$
+	(i.e. jobs $j$ for which their release time $r_j$ is at least $t$ and their deadline $d_j$ is at most $t'$).
+	The schedulability condition requires that the sum of durations $\delta_j$ of the jobs to schedule in the interval $[t, t']$ is at most the length $t'-t$ of the interval.
+
+	\begin{gather} \label{eq:schedulability}
+    		\forall t, t'. ~t < t' \implies
+    		\sum_{j \in \Gamma_{t, t'}}\delta_j \leq t' - t
+	\end{gather}
+%% \text{with:}
+%% \begin{align*}
+%%               \rho, \delta&\text{, arbitrary time instants},\\
+%%               \Gamma_{\rho, \delta}&\text{, the set of jobs to schedule in the interval $[\rho, \delta]$},\\
+%%               J_i&\text{, a job from }\Gamma_{\rho, \delta},\\
+%%               r_i,~d_i,~C_i &\text{, respectively the release time, the deadline,}\\&\text{~~and the WCET of }J_i
+%% \end{align*}
+	The fact that the schedulability of a given set of jobs implies that the set of jobs is schedulable by EDF on a single processor
+	is a textbook result in schedulability theory (\cite{stankovic2012deadline}, pp. 33-34). It is also known that the schedulability condition has simpler forms in particular cases, e.g.,  for jobs that are instances of periodic tasks~\cite{stankovic2012deadline}; but in this paper we are concerned with an  EDF scheduler  applicable to a general set of jobs, so we shall not consider particular cases of the schedulability condition.
+
+	The study of job schedulability is a separate area of research.
+	In this work we merely use some results from schedulability theory and prove them formally in Coq.
+	Our proof-of-concept scheduler is bundled with a simple schedulable job set for demonstration and reproducibility purposes.
+
+
+	\subsection{Abstraction levels and refinement steps}
+
+	\subsubsection{EDF scheduling policy}
+	\label{sec:policy}
+	The first and most abstract level for proofs is that of the EDF
+	scheduling policy, which can be defined as follows: for any job $j$ and any time instant $t$, if the job $j$ is running at instant $t$,
+	then for any other job $j'$ that is ready to run at the same instant, it holds that $d_j \leq d_{j'}$.
+
+%Formally,
+%% \begin{equation*}
+%%      \forall i, \forall t, [...]~\text{run}~i~t = true \implies
+%%      \forall x,~\text{waiting}~x~t \implies d_i \leq d_x.
+%% \end{equation*}
+%% \text{with:}
+%% \begin{align*}
+%%               i, x&\text{, job identifiers},\\
+%%               t&\text{, an arbitrary time instant},\\
+%%               \text{run}~i~t&\text{, \emph{true} iff $J_i$ is running at instant $t$},\\ 
+%%               \text{waiting}~x~t&\text{, \emph{true} iff $J_x$ is waiting to run at instant $t$}
+%% \end{align*}
+	The \emph{correctness property} for the EDF scheduling policy is stated as follows.
+	Given a set of schedulable jobs, i.e., jobs satisfying the schedulability assumption~(\ref{eq:schedulability}), when the EDF scheduling policy is applied,
+	no job in the set ever exceeds its deadline.
+	
+	\begin{gather*}
+  		\text{schedulable} \implies\\
+  		\forall j, \forall t. ~\text{EdfPolicyUpTo}~t \implies \neg \text{overdue}~j~t.
+	\end{gather*}
+	where {EdfPolicyUpTo}~$t$ means that the EDF policy was  applied up to the instant $t$, and
+	{overdue}~$j$~$t$ = \emph{true} iff the job $j$ missed its deadline at instant $t$.
+
+	\subsubsection{Functional EDF implements EDF policy}
+	\label{sec:functional}
+	The first refinement step is to prove that our functional EDF election function \texttt{functional\_scheduler\_star} implements the EDF policy. The following property states that if the functional election function has been executed up to a certain time instant $t$, then the EDF policy has been applied up to that instant.
+	\begin{gather*}
+		\forall t, \forall o, \forall s.\\ 
+		~\texttt{functional\_scheduler\_star}~(t) = (o,s) \implies\\
+		\text{EdfPolicyUpTo}~(\text{now}~s).
+	\end{gather*}
+	\text{with:}
+	\begin{align*}
+              s&\text{, the state of the program after executing the}\\
+	       &\text{~~functional election function for $t$ time units},\\
+	      %\texttt{functional\_scheduler\_star}~(t)&\text{an execution of the functional election function up to the instant $t$}
+              %\text{EdfPolicyUpTo}~t&\text{, the policy applied up to a given instant $t$},\\ 
+              \text{now}~s&\text{, extracts the current time from the state $s$.}\\
+	      o~&\text{, the id of the chosen job at instant $t$}
+	\end{align*}
+
+From this property one can derive the property expressing the correctness of the functional EDF program:
+given a schedulable job set and any job $j$ from this set, that job will not exceed its deadline at the instant $t$ if the functional EDF algorithm has been applied up to the instant $t$.
+
+	\begin{gather*}
+		\text{schedulable} \implies\\
+		\forall t, \forall o, \forall s.\\
+		\texttt{functional\_scheduler\_star}~(t) = (o,s) \implies\\
+		\forall i.~\neg \text{overdue}~i~(\text{now}~s).
+	\end{gather*}
+
+	\subsubsection{Monadic EDF refines functional EDF}
+	\label{sec:monadic}
+	The next step consists in proving that the monadic scheduler is a refinement of the functional one. We  use Hoare triples \cite{hoare1969axiomatic} for writing this property in a formal manner.
+	A Hoare triple has the following form: $\{ P \}~c~\{ Q \}$. $\{ P \}$ stands for the \emph{preconditions}, the properties of the program state that hold before the program is executed. $c$ represents the program, the sequence of instructions to be executed. $\{Q \}$ stands for the \emph{postconditions}, the properties that hold after the program is executed.
+
+	The preconditions are parameterized by an observable environment \emph{env} and by a mutable state $s$. The postconditions are parameterized by the return value $o$ of the program $c$, and a state $s'$, the result of executing the program $c$ on $s$.
+
+	The refinement step is informally described as follows: for any given moment $t$, if $(o, s')$ is the result of the execution of the monadic EDF election function \texttt{scheduler\_star} on the environment $E$ and the initial state $init$, then $(o, s')$ is also the result of the functional EDF election function \texttt{functional\_scheduler\_star} at the instant $t$. The corresponding Hoare triple is :
+
+	\begin{gather*}
+		\forall t.\\
+		\{
+		~\lambda~\textit{env}~s. ~\textit{env} = E \land s = \textit{init}~
+		\}\\
+		\texttt{scheduler\_star}~(t)\\
+		\{
+		~\lambda~o~s'. ~\texttt{functional\_scheduler\_star}~(t) = (o,s')~
+		\}
+	\end{gather*}
+
+	From this triple, one gets a Hoare triple expressing the monadic program's correctness property.
+
+	\begin{gather*}
+		\textit{schedulable} \implies\\
+		\forall t.\\
+		\{
+		~\lambda~\textit{env}~s. ~\textit{env} = E \land s = \textit{init}~
+		\}\\
+		\texttt{scheduler\_star}~(t)\\
+		\{
+		~\lambda~o~s'. ~\forall i,~\neg \textit{overdue}~i~(\textit{now}~s') ~
+		\}
+	\end{gather*}
+
+
+	\subsection{The proofs in Coq}
+	Our Coq proofs closely follow the top-down refinement approach outlined above. First, the job model, mathematically described in Section~\ref{sec:jobmodel}, is encoded in Coq. The assumptions listed in~\ref{sec:jobmodel} (specifically: each deadline is large enough for a job to complete its execution when running alone on the processor; job durations are greater than zero and are over-approximated by the respective budgets; identifiers uniquely determine jobs; and every job is released exactly once) are global assumptions of the proof. Arguably, the global assumptions are just reasonable well-formedness constraints.
+
+
+
+	At the highest abstraction level (EDF policy) there are additional \emph{local} assumptions.
+	The local assumptions are only used in the proof of correctness of the EDF scheduling policy. When the policy is subsequently
+	refined into an algorithm the local assumptions disappear - they become Coq definitions and lemmas.
+	Two abstract functions are locally assumed: \texttt{run}, which determines which job (if any) is  running at a given moment, and \texttt{rem}, that keeps track of the remaining execution time for any given job and at any given moment.
+	The following facts are also locally assumed about these functions, which model general facts about monoprocessor scheduling:
+	
+	\begin{itemize}
+		\item at any moment in time, at most one job is running;
+		\item up to and including its release time, the remaining execution time of a job equals its duration;
+		\item the remaining execution time of a job decreases when the job is running, and stays constant otherwise;
+		\item whenever there is at least a released job with non-zero remaining execution time, there is one job that is running.
+	\end{itemize}
+
+	Under the said local assumptions the correctness proof of the EDF policy is mostly a matter of algebraic calculations. It is relatively short: $\sim$1000 lines, mostly due to the fact that at this abstraction level one can focus on the essentials, without having to deal with implementation details.
+
+	The first refinement step, from EDF policy to EDF functional scheduler, amounts for the largest part of the proof effort. Essentially, this is because there is a substantial abstraction gap between the EDF policy level, which is written in relatively simple algebraic terms, and the functional-scheduler level, which encodes the policy in terms of a rather detailed list data structure. The refinement consisted in defining concrete versions of the abstract functions locally assumed at the EDF policy level - \emph{run} and \emph{rem} - in terms of the said list structure, and in proving the properties relating these functions, which at the EDF policy level were locally assumed. Once this is done, the correctness of the EDF functional algorithm is a simple conjunction between the correctness of the EDF policy and the fact that the function scheduler implements the policy. Proving an implementation relation instead of the global correctness property on the functional scheduler is easier, since the proof obligations for the implementation relation are more detailed than the global correctness property: there are fewer details that need to be "filled in" by additional proofs.
+
+	All the properties to be proved are invariants - predicates that hold at all states reachable from an initial state, obtained by executing the functional scheduler any finite number of times. The proof required us to discover additional \emph{inductive} invariants, which hold initially and whose truth is preserved by each execution of the scheduler. Such invariants have to be chosen so that together they imply the original invariant. This is where creativity is required from the user. Together with the functional scheduler this step amount to $\sim$1600 lines of code.
+
+	By comparison, the second (and last) refinement step is short ($\sim$500 lines). It amounts to proving that, starting from a given initial state, the reachable states generated by running the monadic EDF scheduler are included in the states generated by running the functional EDF scheduler. This was relatively easy (especially compared to the first refinement step) because the functional and monadic schedulers are relatively close in terms of abstraction level; e.g., they work with the same data structures. The difference lies in the fact that the functional scheduler computes in one large step what the monadic one computes in a sequence of many small steps.  The functional algorithm is not subject to such requirements, thus, it is free to "compact" a long sequence of small steps into a large single step. By doing so the functional scheduler also saves us from the effort of proving even more additional invariants, about intermediary states that the monadic scheduler generates.  
+\indent The global conclusion that the monadic EDF scheduler is correct follows from the correctness of the abstract EDF policy and the correctness of the two successive refinements.
 
 	\section{Mise en oeuvre / Implémentation}
 		\subsection{Dualité implémentation/modélisation}
 			% Méthode générale
 		
 		\subsection{Implémentation vue comme un cas particulier de l'interface abstraite}
-			%section 4 du papier
+	\label{sec:monad}
+
+	In this section we detail how the interface of the verified code - the monad - is designed. The monad is simply a specification of how the interface should behave. We also explain the differences between the monad's model and its actual implementation.
+	The various parts are represented in Figure \ref{fig:project_overview}.
+
+	We start by detailing the verified code's internal state, which is composed of two parts: a read-only part that we call the environment, and a mutable part. Then, we introduce a model-blind software that computes the information held in the environment, that we call the back-end. Next, we  explain how the verified code can retrieve the information from the environment. Finally, we give details about the interface that allows the verified code to interact with the mutable part of the state.
+
+	\subsection{Program state}
+
+	The state model is divided into two parts: a part containing the values over which the algorithm has no control, its \emph{environment}, which is immutable. These values are provided by the back-end. The second part of the model contains the values over which the algorithm has control and which are therefore mutable.
+
+	The environment is defined as a function that, given a certain timestamp, returns a list of jobs to add to the pending jobs list.
+	%\begin{verbatim}
+	\begin{minted}{coq}
+Definition Env : Type := CNat -> list Job.
+	\end{minted}
+	%\end{verbatim}
+
+	The mutable state model consists of structure with two fields. The first is simply a time counter and the other is a list of \emph{entries}. Entries are structures that associate jobs with their remaining time budget and relative deadline. The state is therefore defined as follows:
+	%\begin{verbatim}
+	\begin{minted}{coq}
+Record State := 
+mk_State {
+    now : CNat ;
+    active : list Entry ;
+}.
+	\end{minted}
+	%\end{verbatim}
+
+	The resulting state model, composed of both mutable and immutable parts, has the following type:
+	%\begin{verbatim}
+	\begin{minted}{coq}
+Definition RT (A : Type) : Type :=
+    Env -> State -> A * State.
+	\end{minted}
+	%\end{verbatim}
+
+	We now describe how the state is implemented.
+	The implementation takes advantage of the fact that the election function creates a single structure for each job. Essentially, the implementation reserves additional memory space for each job to be scheduled, which the algorithm uses to store the related Entry structure.
+
+	Thus, there is an array of \texttt{coq\_N} elements (where \texttt{coq\_N} is the static upper bound on the number of jobs to be scheduled) that contains the initial immutable information about the pending jobs, as well as the additional mutable memory that the algorithm needs. The jobs are identified by their own index in this array. Each element of this array also contains two additional memory words. These memory bits are used to maintain the various lists required by the algorithm: the list of newly available jobs to be scheduled from the environment and maintained by the back-end, and the list of jobs pending execution from the internal state of the program, maintained by the algorithm).
+
+	So this large array has elements of type:
+	%\begin{verbatim}
+	\begin{minted}{c}
+typedef struct __internal_s__ {
+    struct __internal_job__   job;
+    struct __internal_entry__ entry;
+    int jobset_next_job_index;
+    int active_next_entry_index;
+} internal_t;
+	\end{minted}
+	%\end{verbatim}
+
+	The overall state of the program consists of this big array, the heads for the two different lists, the clock counter variable from the mutable state, and a variable that indicates whether the last job completed its execution (which is manipulated by the back-end):
+
+	%\begin{verbatim}
+	\begin{minted}{c}
+internal_t INTERNAL_ARRAY[coq_N] = EXAMPLE_JOB_SET;
+
+int JOBS_ARRIVING_HEAD_INDEX = -1;
+int ACTIVE_ENTRIES_HEAD_INDEX = -1;
+
+unsigned int CLOCK = 0;
+coq_CBool  JOB_DONE = false;
+	\end{minted}
+	%\end{verbatim}
+
+	\subsection{Back-ends}
+	\label{sec:back-ends}
+
+	We have seen that the state is partly represented by an immutable part, that we have called its environment. This environment's purpose is to provide access to information that is not part of the algorithm per se, but which is crucial to the proper functioning of the algorithm. This includes announcing the list of newly available jobs to the algorithm, as well as announcing that a job completed its execution. These pieces of information are computed by what we call the back-end. The back-end is also responsible for calling the election function and running the elected job.
+
+	In our work, we provide two back-ends:
+	\begin{itemize}
+	    \item The first one  is a simulation of a scheduler whose main purpose is to provide insight into the inner state of the program. It calls the election function and outputs which job was chosen to execute in that time slot, as well as other relevant information about the inner state of the program. \footnote{The source code of the simulation back-end can be found in the file:\\ \texttt{src/partition\_mockup/partition\_mockup.c}.}
+	    \item The second one is an actual implementation of an EDF scheduler in a partition on top of the Pip kernel \cite{jomaa2018proof}. This implementation executes the election function and passes the execution flow to the elected job (which is in its own address space). Finally, either a clock interrupt occurs (effectively interrupting the job and passing the execution flow back to the scheduler) or the job has signaled its completion to the scheduler, which waits for the next clock interrupt. This back-end uses the method outlined in \cite{vanhems2019proof} to transfer the execution flow.\footnote{The source code of the real scheduler back-end can be found in the \texttt{src/partition} directory.}
+	\end{itemize}
+
+	Informations computed by the back-end are made available to the verified code through oracles.
+
+	\subsection{Oracles}
+
+	There are two oracle primitives that return values managed by the back-end code and abstract to the model. The first, \texttt{jobs\_arriving}, retrieves the new jobs that need to be added to the pending job list; the other, \texttt{job\_terminating}, returns whether the last executed job completed its execution (if such a job exists). \footnote{Their model is available in \texttt{src/coq/model/Interface/Oracles.v}, while their C interface implementation can be found in \texttt{src/interface\_implementation/include/Primitives.h}.}
+
+	The monadic code can retrieve the identifiers of incoming jobs via an oracle that reads the environment. The model imposes a single constraint on the implementation: in the list of job identifiers returned by the oracle, no identifier may be greater than $N$, where $N$ is a predefined static upper bound. 
+
+	%\begin{verbatim}
+	\begin{minted}{coq}
+Definition jobs_arriving (N : nat) : RT JobSet :=
+  fun env s =>
+    let f :=  List.filter
+      (fun j =>  Nat.ltb j N)
+      (map jobid (env s.(now))) 
+  in (f, s).
+	\end{minted}
+	%\end{verbatim}
+
+	We would like to draw the reader's attention to the fact that the model is \textbf{purely abstract}; it does not indicate which jobs are ready for execution, since the scheduling algorithm does not rely on this information. Also note that the list of identifiers is hidden behind the abstract type \texttt{JobSet}.
+
+	In contrast, the implementation of the function that returns the oracle's prediction is quite simple:
+
+	%\begin{verbatim}
+	\begin{minted}{c}
+static inline coq_JobSet
+Primitives_jobs_arriving(coq_CNat n) {
+     return JOBS_ARRIVING_HEAD_INDEX;
+}
+	\end{minted}
+	%\end{verbatim}
+
+	The implementation simply reads the index of the first arriving job from the environment. The list of incoming jobs is previously created by the back-end, so the actual list creation process depends on the back-end.
+
+	The other oracle is a function that returns whether the job with the most critical deadline (at the head of the list maintained by our scheduler) has completed its execution. The model is stricter with this oracle. It forces the implementation to return \texttt{True} if time spent executing the job is greater than its theoretical WCET.
+
+	\vspace{1cm}
+
+	Here is the (nested) model definition:
+
+	%\begin{verbatim}
+	\begin{minted}{coq}
+Definition job_terminating : RT CBool :=
+fun _ s => ((
+    match head s.(active) with
+    | None => false
+    | Some e =>
+        let j := Jobs (e.(id)) in
+        Nat.leb e.(cnt) (j.(budget) - j.(duration))
+    end
+), s).
+	\end{minted}
+	%\end{verbatim}
+
+	Note that the counter \texttt{e.(cnt)} is decremented from an initial value of \texttt{j.(budget)} each time the job is scheduled for execution. 
+
+	Like the previous oracle, the implementation that returns the result of the oracle is very simple:
+
+	%\begin{verbatim}
+	\begin{minted}{c}
+static inline coq_CBool Primitives_job_terminating(void) {
+    return JOB_DONE;
+}
+	\end{minted}
+	%\end{verbatim}
+
+	The implementation only returns the variable \texttt{ JOB\_DONE} from the internal state. This variable is updated by the back-end when needed.
+
+	We now review the software that allows the verified code to interact with the mutable state.
+
+	\subsection{Abstract Types}
+
+	All types used by the verified code are abstract types (black box types). These types have their own interface. 
+
+	There are abstract types for Boolean values, integers, read-only job structures, and read-write job structures. Most of the primitives are simple and straightforward functions for specific data types. For example, there are 3 primitives for the boolean type \texttt{CBool} : \texttt{not}, \texttt{and}, and \texttt{or}.
+	Here one can see the model of type CBool together with the boolean primitive \texttt{or}:
+
+	%\begin{verbatim}
+	\begin{minted}{coq}
+Definition CBool := bool.
+
+Definition or (b1 b2 : CBool) : RT CBool :=
+  ret (orb b1 b2).
+	\end{minted}
+	%\end{verbatim}
+
+	The actual implementation is defined as follows:
+
+	%\begin{verbatim}
+	\begin{minted}{c}
+typedef int coq_CBool;
+
+static inline coq_CBool CBool_or(coq_CBool b1, coq_CBool b2) {
+    return b1 || b2;
+};
+	\end{minted}
+	%\end{verbatim}
+
+	Mutable structures such as type \texttt{Entry} are given primitives for creating the structure and for accessing and modifying their fields. In the same fashion, read-only data structures are only given access primitives. For example, the type \texttt{JobSet} returned by the oracle \texttt{jobs\_arriving} has only three primitives : one to check for emptiness of the set, another to get the first \texttt{Job}, and a final one to get the remaining \texttt{Jobs}. The \texttt{Job} type only has primitives that return the fields of the structure. \footnote{All model definitions for these types are available in the \texttt{src/coq/model/Interface/Types} directory.}
+
+
+	Finally, there is another set of eight primitives that interact directly with the internal state of our program. The program needs to manage a counter to keep track of time. For this, we have two primitives, a getter and a setter for the counter.
+
+	These functions are trivially modeled and implemented:
+
+	%\begin{verbatim}
+	\begin{minted}{coq}
+Definition get_time_counter
+: RT CNat :=
+  fun _ s => ((now s), s).
+
+Definition set_time_counter
+(counter : nat) : RT unit :=
+  fun _ s => (tt,
+    {|
+      now    := counter ;
+      active := (active s) ;
+    |}
+  ).
+	\end{minted}
+	%\end{verbatim}
+
+	%\begin{verbatim}
+	\begin{minted}{c}
+static inline coq_CNat
+State_get_time_counter(){
+    return CLOCK;
+};
+
+static inline void
+State_set_time_counter(coq_CNat counter){
+    CLOCK = counter;
+};
+	\end{minted}
+	%\end{verbatim}
+	The scheduler also needs to maintain a list of pending jobs. It consists of six primitives, including one primitive that determines whether jobs are present in the list, and another that returns the ID of the job located at the head of the list (if any). Two other primitives respectively add a new job to the list (in sorted form) and remove the first job from the list. The last two primitives are meant to update job structures: either just the first job or the entire list. \footnote{Their model are in the \texttt{src/coq/model/Interface/Types/State.v} file, while their implementation are in the \texttt{src/interface\_implementation/State.c} file. (The simplest ones are inline functions located in the corresponding header).}
+
+	\begin{figure*}[!ht]
+	    \centering
+	%    \begin{verbatim}
+	    \begin{minted}{coq}
+Definition insert_new_active_entry (entry : Entry)
+           (comp_func : Entry -> Entry -> CBool) : RT unit :=
+  fun _ s => (tt, {|
+    now := now s ;
+    active := (insert_Entry_aux entry (active s) comp_func);
+  |}
+).
+
+Fixpoint insert_Entry_aux (entry : Entry) (entry_list : list Entry)
+         (comp_func : Entry -> Entry -> CBool) : list Entry :=
+  match entry_list with
+  | nil => cons entry nil
+  | cons head tail =>
+      match comp_func entry head with
+      | true => cons entry (cons head tail)
+      | false => cons head (insert_Entry_aux entry tail comp_func)
+      end
+  end.
+	    \end{minted}
+	%    \end{verbatim}
+	    \vspace{0.2cm}
+	    \hrule
+	    \vspace{0.2cm}
+	%    \begin{verbatim}
+	    \begin{minted}{c}
+void State_insert_new_active_entry
+     (coq_Entry entry, entry_cmp_func_type entry_comp_func) {
+  int *entry_index_ptr = &(ACTIVE_ENTRIES_HEAD_INDEX);
+  int next_index = -1;
+  while (*entry_index_ptr != -1) {
+    if (entry_comp_func(entry, &(INTERNAL_ARRAY[*entry_index_ptr].entry))) {
+      next_index = *entry_index_ptr;
+      break;
+    }
+    entry_index_ptr = &(INTERNAL_ARRAY[*entry_index_ptr].active_next_entry_index);
+  }
+  *entry_index_ptr = entry->id;
+  INTERNAL_ARRAY[entry->id].active_next_entry_index = next_index;
+}
+	    \end{minted}
+	%    \end{verbatim}
+	    \caption{Side by side comparison between the model of a sorted list insertion primitive and its actual implementation}
+	    \label{fig:model_impl_cmp}
+	\end{figure*}
+
+	Most of these primitives are both simple to model and implement, but two of them are not so easy to implement. The first one is \texttt{insert\_new\_active\_entry}, which inserts an entry (an internal representation of a job to execute) sorted by an arbitrary comparison function. Its model is given in the first half of Figure \ref{fig:model_impl_cmp}.
+
+	Given an entry and a comparison function, this model extracts the list from the current state of the program. It passes it to a (non-monadic) auxiliary recursive function that returns the list with the newly inserted entry.
+
+	This helper function then constructs a completely new list by comparing each entry from the list with the new list, using the comparison function from the parameters. 
+
+	Of course, one can not afford to copy the list every time an item is inserted. The implementation uses in-place insertion in the list. The interface chosen to interact with the state prevents a mismatch between the model and reality, where one creates new lists while the other modifies the list in-place.
+
+	This code is conceptually the same as the recursive functional version, but uses loops and updates the required links between elements when a new element is inserted, rather than creating new elements and cleverly rearranging them.
+
+	The same technique was used to model and implement the function \texttt{update\_active\_entries}, which applies an arbitrary modification to each entry in the list. The implementation modifies the elements of the list in-place rather than creating a new list with modified copies of entries.
+
+	\label{sec:implementation}
+
+	We argue that all the primitives described in this section are simple enough to trust that the implementation actually conforms to the model. Nevertheless, the last two primitives are arguably complex enough to shake this confidence. We discuss this point further in Section \ref{sec:discussion}.
 
 	\section{Discussion sur la méthodologie suivie}
 		\subsection{Métriques}

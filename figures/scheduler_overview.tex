@@ -1,0 +1,36 @@
+\begin{tikzpicture}[>=triangle 45,font=\sffamily, every text node part/.style={align=center}, scale=0.8, every node/.style={transform shape}]
+
+    \node (task1) at (-8, 2) [fill=white, draw,  semithick, minimum height=3cm, minimum width=2cm] {Job};
+    \node[below=0.5cm of task1] {$\vdots$};
+    \node (task2) at (-8, -3) [fill=white, draw,  semithick, minimum height=3cm, minimum width=2cm] {Job};
+    
+    \node (kernel) at (-4, -6) [fill=white, draw, semithick, minimum height=2cm, minimum width=3cm] {Kernel};
+    
+    \node (scheduler) at (-0.25, -0.5) [fill=white, draw, semithick, minimum height=8cm, minimum width=11.5cm, pattern=south west lines] {};
+    \node[above=0.2cm of scheduler] {\large{Scheduler}};
+    
+    \node (back-end) at (-4, -0.5) [fill=white, draw, semithick, minimum height=7cm, minimum width=3cm] {Back-end};
+    
+    \node (election_function) at (1.5, 2) [fill=white, draw, semithick, minimum height=2cm, minimum width=6cm] {Verified Election Function};
+    
+    \node (oracles) at (-0.5, -0.5) [fill=white, draw, semithick, minimum height=1.2cm, minimum width=3cm] {Oracles};
+    
+    \node (interface) at (3.5, -0.5) [fill=white, draw, semithick, minimum height=1.2cm, minimum width=3cm] {Abstract Types};
+    
+    \node (mutable_state) at (3, -3) [fill=white, draw, semithick, minimum height=1.5cm, minimum width=3cm] {Mutable\\State};
+    
+    \node (immutable_state) at (0, -3) [fill=white, draw, semithick, minimum height=1.5cm, minimum width=3cm] {State\\Environment};
+    
+    \draw [->] (kernel) -- (back-end);
+
+    \draw [->] (back-end.301) -- (immutable_state.west);
+    \draw [->] (back-end.59) -- (election_function);
+    \draw [->] (back-end) -- (task1);
+    \draw [->] (back-end) -- (task2);
+    
+    \draw [->] (oracles) -- (immutable_state);
+    \draw [->] (interface) -- (mutable_state);
+    \draw [->] (election_function) -- (oracles);
+    \draw [->] (election_function) -- (interface);
+
+\end{tikzpicture}
