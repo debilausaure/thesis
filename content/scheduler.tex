@@ -1,21 +1,27 @@
 \chapter{Politique d'ordonnancement prouvée}
 
+	Ce chapitre porte sur l'implémentation d'un ordonnanceur Earliest Deadline First s'exécutant en espace utilisateur. L'ordonnanceur est conçu pour fonctionner dans une partition de Pip, et est muni d'une preuve formelle que sa fonction d'élection respecte la politique d'ordonnancement Earliest Deadline First. Ces travaux ont été menés conjointement avec Vlad Rusu, avec qui j'ai conçu les modèles sur lesquels reposent la preuve et qui a établit les preuves formelles sur cet ordonnanceur. Dans ce travail commun, ma contribution a été de concevoir les composants de l'ordonnanceur, leur interface ainsi qu'une partie de leur modèle, ainsi que d'écrire l'implémentation pour que cet ordonnanceur puisse être compilé et s'exécuter dans une partition de Pip.
+	\footnote{David Nowak, Gilles Grimaud et Samuel Hym ont aussi contribué à ce projet de manière plus modeste. David a participé à l'élaboration des modèles, Gilles a participé à l'établissement des interfaces, et Samuel a participé à l'écriture de l'implémentation}.
+	
+	Ces travaux ont fait l'objet d'une publication et d'une présentation à RTAS2022, dont ce chapitre s'inspire fortement. Le papier est disponible à l'adresse suivante :
+
+	% Pip fournit les outils pour la préemption, mais ce n'est pas la politique
 	\section{Motivations}
-	% Intro : ce qu'on va étudier : utliser notre méthode de dévelopement de logiciel pour prouver un algorithme de selection des cibles du transfert de flot d'exécution
-	% Préemption n'est pas la politique
 	% Autre type de preuve : garantir le respect des échéances / pourquoi est ce vraiment critique ?
+	% Intro : ce qu'on va étudier : utliser notre méthode de dévelopement de logiciel pour prouver un algorithme de selection des cibles du transfert de flot d'exécution autres propriétés que l'isolation
 	% Différence algorithme / imlplémentation de l'algorithme
 
 		\subsection{Objet de preuve}
-		% Description informelle des propriétés
+		% Description informelle des propriétés, le but n'est pas de vérifier une propriété
 	
 
 	\section{Description structurelle}
 
-		\subsection{Définition prototype et oracle}
+		\subsection{Définition prototype et oracle de la fonction d'élection}
 
 		\subsection{Place de l'ordonnancement dans Pip}
 			\subsubsection{Ordonnancement dans une partition}
+				% aspect incrémental des preuves
 			\subsubsection{Positionnement par rapport à un système d'exploitation grand public}
 				% Ne pas avoir à prouver les propriétés de sécurité demandées par du code noyau
 				% ordonnanceur et méthodologie sont agnostiques du système d'exploitation
