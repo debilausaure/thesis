@@ -3,7 +3,7 @@
 	\node[draw, fill=white, ultra thin, drop shadow, minimum height=1cm] (assembly) at (9,5.5) {Complétion du contexte d'exécution};
 	\node[draw, fill=white, ultra thin, drop shadow, minimum height=1cm] (args) at (7.5,4.25) {Récupération des arguments};
 	\node[draw, fill=white, ultra thin, drop shadow, minimum height=1.5cm, align=center] (call) at (6,2.75) {Appel au service\\Gestion des erreurs};
-	\node[draw, fill=white, ultra thin, drop shadow, minimum height=1cm] (parents_checks) at (0.5,2.75) {Récupération VIDT appelant};
+	\node[draw, fill=white, ultra thin, drop shadow, minimum height=1.5cm, align=center] (parents_checks) at (0.5,2.75) {Récupération VIDT appelant\\(partition interrompue)};
 	\node[draw, fill=white, ultra thin, drop shadow, minimum height=1cm] (callee_vidt) at (0.5,1) {Récupération VIDT appelé};
 
 	\node[draw, fill=white, ultra thin, drop shadow={shadow xshift=0.07cm,shadow yshift=-0.07cm}, minimum height=1cm, circle] (guru_meditation) at (10.5,1.5) {$\infty$};

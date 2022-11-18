@@ -1,45 +1,100 @@
 \chapter{Politique d'ordonnancement prouvée}
 
-	Ce chapitre porte sur l'implémentation d'un ordonnanceur Earliest Deadline First s'exécutant en espace utilisateur. L'ordonnanceur est conçu pour fonctionner dans une partition de Pip, et est muni d'une preuve formelle que sa fonction d'élection respecte la politique d'ordonnancement Earliest Deadline First. Ces travaux ont été menés conjointement avec Vlad Rusu, avec qui j'ai conçu les modèles sur lesquels reposent la preuve et qui a établit les preuves formelles sur cet ordonnanceur. Dans ce travail commun, ma contribution a été de concevoir les composants de l'ordonnanceur, leur interface ainsi qu'une partie de leur modèle, ainsi que d'écrire l'implémentation pour que cet ordonnanceur puisse être compilé et s'exécuter dans une partition de Pip.
+	Le chapitre précédent a porté sur un service de transfert de flôt d'exécution au sein de Pip. Ce service permet de gérer les transferts explicites de flôt d'exécution, ainsi que les interruptions. De cette manière, Pip fournit les outils nécessaires à la préemption de flôts d'exécution. La préemption est nécessaire à la mise en place d'ordonnancement au sein d'un système ; elle n'est cependant pas suffisante pour implémenter un ordonnanceur. Celui-ci doit être muni d'une politique d'ordonnancement, lui permettant de choisir le prochain flôt d'exécution.
+
+	Ce chapitre porte sur l'implémentation d'un ordonnanceur Earliest Deadline First (abrégé EDF) s'exécutant en espace utilisateur. L'ordonnanceur est conçu pour fonctionner dans une partition de Pip, et est muni d'une preuve formelle que sa fonction d'élection respecte la politique d'ordonnancement EDF. Ces travaux ont été menés conjointement avec Vlad Rusu, avec qui j'ai conçu les modèles sur lesquels reposent la preuve et qui a établit les preuves formelles sur cet ordonnanceur. Dans ce travail commun, ma contribution a été de concevoir les composants de l'ordonnanceur, leur interface ainsi qu'une partie de leur modèle, ainsi que d'écrire l'implémentation pour que cet ordonnanceur puisse être compilé et s'exécuter dans une partition de Pip.
 	\footnote{David Nowak, Gilles Grimaud et Samuel Hym ont aussi contribué à ce projet de manière plus modeste. David a participé à l'élaboration des modèles, Gilles a participé à l'établissement des interfaces, et Samuel a participé à l'écriture de l'implémentation}.
 	
-	Ces travaux ont fait l'objet d'une publication et d'une présentation à RTAS2022, dont ce chapitre s'inspire fortement. Le papier est disponible à l'adresse suivante :
+	Ces travaux ont fait l'objet d'une publication et d'une présentation à RTAS2022, dont ce chapitre s'inspire fortement. Le papier est disponible à l'adresse suivante : \url{https://hal.archives-ouvertes.fr/hal-03671598}. La vidéo de la présentation est disponible à l'adresse suivante : \url{https://pip.univ-lille.fr/recordings/RTAS.mp4}. Le dépot contenant le code ainsi que les instructions pour exécuter l'ordonnanceur est hébergé sur Github : \url{https://github.com/2xs/pip_edf_scheduler}.
 
-	% Pip fournit les outils pour la préemption, mais ce n'est pas la politique
 	\section{Motivations}
-	% Autre type de preuve : garantir le respect des échéances / pourquoi est ce vraiment critique ?
-	% Intro : ce qu'on va étudier : utliser notre méthode de dévelopement de logiciel pour prouver un algorithme de selection des cibles du transfert de flot d'exécution autres propriétés que l'isolation
-	% Différence algorithme / imlplémentation de l'algorithme
-
-		\subsection{Objet de preuve}
-		% Description informelle des propriétés, le but n'est pas de vérifier une propriété
 	
+	% Autre type de preuve : garantir le respect des échéances / pourquoi est ce vraiment critique ?
+	La motivation première de cette contribution est de proposer des garanties supplémentaires aux garanties d'isolation classiques de Pip. Cette motivation nous a mené à nous intéresser aux problématiques des systèmes temps réel, et notamment sur le respect des échéances, car nous pensons que la vision de Pip peut être pertinente. La preuve formelle du respect de la politique d'ordonnancement est un premier pas vers des garanties temps réel dans l'écosystème de Pip.
+
+	% Intro : ce qu'on va étudier : utliser notre méthode de dévelopement de logiciel pour prouver un algorithme de selection des cibles du transfert de flot d'exécution autres propriétés que l'isolation
+	Cette contribution est aussi un moyen d'éprouver la méthode de développement des logiciels et preuves de Pip, en l'appliquant à un autre objet d'étude. On peut noter deux différences fondamentales entre Pip et cet ordonnanceur. La première est que Pip s'exécute en mode privilégié, contrairement à l'ordonnanceur qui s'exécute en espace utilisateur. Cette différence a des répercussions sur la conception des interfaces ; la dépendance à du code non prouvé est moins critique en espace utilisateur. Cette différence a aussi un impact implicite sur les preuves : la logique de Hoare n'est valable que lorsque l'état ne change pas entre deux instructions -- il faut donc s'assurer que les interruptions ne perturbent pas l'ordonnanceur. La seconde réside dans le fait que les propriétés prouvées sur l'ordonnanceur relèvent de l'ordre des propriétés fonctionnelles, c'est à dire qui décrivent le comportement de l'ordonnanceur. Les propriétés d'isolation de Pip traditionnellement prouvées au travers de cette méthode ne sont pas des propriétés fonctionnelles. Aussi, nous ne chercherons pas à établir des propriétés non-fonctionnelles sur la préemption telles que des propriétés sur le partage du temps d'exécution du processeur. Ces deux différences font de cet ordonnanceur un objet d'étude intéressant du point de vue du développement logiciel.
+
+	De plus, cette contribution utilise tous les aspects du service de transfert de flôt d'exécution décrit dans le chapitre précédent. Cette contribution permet d'exhiber par l'expérience que l'utilisation de ce service est pertinente dans un composant commun de système d'exploitation.
+	
+	Enfin, cette contribution apporte une preuve inédite à la communauté des systèmes temps réels. En effet, les travaux montrant de manière formelle des propriétés sur les algorithmes d'ordonnancement sont fréquents dans la communauté. Néanmoins, peu de travaux s'intéressent à la preuve de \emph{l'implémentation} de l'algorithme, qui permettent par exemple de propager les preuves jusqu'au code compilé, et qui tiennent compte de détails supplémentaires (tels que les structures de données par exemple). Cette contribution fournit une preuve formelle que l'implémentation de la fonction d'élection respecte la politique d'ordonnancement EDF pour des \emph{jobs} arbitraires, ce qui n'avait été prouvé sur aucun autre ordonnanceur EDF auparavant. Des travaux indépendants et concomitants sur le projet CertiKOS ont montré une propriété similaire sur un ordonnanceur. Cependant leur ordonnanceur est limité à l'ordonnancement de \emph{jobs} provenant de tâches périodiques.
 
 	\section{Description structurelle}
 
+		Cette section décrit la structure générale de l'ordonnanceur. Elle commencera par sa partie phare, la fonction d'élection. Cette section en donnera une description fonctionnelle, ainsi que son prototype. Cette section décrira ensuite la place de l'ordonnancement dans Pip. Elle discutera du choix de placer l'ordonnanceur dans une partition, et des différences principales avec un système d'exploitation classique tel que Linux. Enfin, cette section détaillera les composants de l'ordonnanceur, leur fonction ainsi que leurs interactions.
+
 		\subsection{Définition prototype et oracle de la fonction d'élection}
 
+		La fonction d'élection est le morceau de logiciel que l'ordonnanceur doit appeler à chaque préemption, afin d'élire le prochain flôt d'exécution du système. La fonction d'élection fait ce choix en accord avec une politique d'ordonnancement qui lui permet de discriminer les flôts d'exécution selon des critères spécifiques qui sont propres à chaque politique. En particulier, la fonction d'élection de notre contribution suit la politique d'ordonnancement \emph{Earliest Deadline First}, qui est une politique temps réel dont la priorité est d'exécuter les \emph{jobs} dont l'échéance est la plus proche.
+
+		La fonction d'élection de notre ordonnanceur agit comme un oracle, ne prennant aucun argument et retournant un type composite. Ce type composite contient un booléen indiquant à l'ordonnanceur qu'il doit attendre la prochaine préemption car il n'y a aucun \emph{job} à exécuter. Ce type contient l'identifiant du \emph{job} à exécuter dans le cas contraire, ainsi qu'un autre booléen indiquant si le \emph{job} a dépassé son échéance. Ce dernier booléen sert à informer l'ordonnanceur que l'ensemble des \emph{jobs} n'est pas ordonnançable. 
+
+		\begin{listing}[!ht]
+			\coqcode{code/electionfunction.v}
+			\caption{Prototype de la fonction d'élection et définition de son type de retour }
+		\end{listing}
+
+			\subsubsection{Exemple d'appel à la fonction d'élection}
+
+			\textcolor{red}{Exemple de résultats produits par l'ordonnanceur sur un ensemble de deux jobs comme dans la présentation à RTAS2022}
+
 		\subsection{Place de l'ordonnancement dans Pip}
-			\subsubsection{Ordonnancement dans une partition}
-				% aspect incrémental des preuves
-			\subsubsection{Positionnement par rapport à un système d'exploitation grand public}
-				% Ne pas avoir à prouver les propriétés de sécurité demandées par du code noyau
-				% ordonnanceur et méthodologie sont agnostiques du système d'exploitation
+
+		Cet ordonnanceur ne s'exécute pas en espace privilégié, comme c'est le cas dans les systèmes d'exploitation traditionnels tels que Linux ou même dans des systèmes d'exploitation de niche tels que seL4. 
+
+		La première raison en faveur d'une implémentation de l'ordonnanceur dans une partition de Pip concerne la méthode de conception des logiciels autour de Pip. En effet, placer l'ordonnanceur en espace utilisateur lui fait implicitement profiter des propriétés d'isolation des partitions de Pip. Ce choix est en adéquation avec la vision de Pip du système, conçu comme une tour de virtualisation. Dans le modèle de Pip, les différents logiciels se construisent les uns au dessus des autres, profitant des propriétés prouvées sur le logiciel sous-jacent.
+
+		La seconde raison est une conséquence directe de ce choix, relatif à l'effort de preuve. Si l'ordonnanceur avait été implémenté dans Pip, alors il aurait fallu montrer que l'ordonnanceur respecte les propriétés d'isolation de Pip. \textcolor{red}{Inclure les métriques pour argumenter que cet effort serait non négligeable}. De plus, l'ordonnanceur développé dans cet contribution a été conçu autour de la politique d'ordonnancement EDF. Ce choix est arbitraire, et il serait tout à fait pertinent d'utiliser une autre politique d'ordonnancement pour Pip. Ainsi, il faudrait prouver les propriétés d'isolation de Pip pour chaque variante de l'ordonnanceur engendrée par chaque politique souhaitée.
 
 		\subsection{Décomposition des éléments de l'ordonnanceur}
-			\begin{figure*}[!ht]
+			\subsubsection{Vue générale}
+			\begin{figure}[!ht]
 			    \centering
 			    \input{figures/scheduler_overview.tex}
 			    \caption{Overview of the scheduler components and their interactions}
 			    \label{fig:project_overview}
-			\end{figure*}
-			\subsubsection{Vue générale}
-			\subsubsection{Fonction d'élection}
-			\subsubsection{État}
-			\subsubsection{Interface avec l'état (monade et oracles)}
+			\end{figure}
+
+
+			La figure \ref{fig:project_overview} donne une vue générale des composants de l'ordonnanceur et de leurs interactions. Le \emph{back-end} est le point d'entrée de l'ordonnanceur. Il est appelé par le noyau lorsqu'une interruption survient, appelle la fonction d'élection puis exécute le \emph{job} choisi par la fonction d'élection. Le \emph{back-end} doit aussi mettre à jour une partie de l'état sur laquelle repose la fonction d'élection, que nous appelons l'environnement. L'environnement est la partie de l'état disponible en lecture seule à la fonction d'élection, que la fonction d'élection peut interroger au travers des \emph{oracles}. La seconde partie de l'état est la partie mutable, que la fonction d'élection ne peut manipuler qu'au travers de l'\emph{interface}, principalement composée de types de données et de fonction pour les manipuler.
+
 			\subsubsection{Back-end}
+		\subsubsection{Back-ends}
+		\label{sec:back-ends}
 
 		
+
+		We have seen that the state is partly represented by an immutable part, that we have called its environment. This environment's purpose is to provide access to information that is not part of the algorithm per se, but which is crucial to the proper functioning of the algorithm. This includes announcing the list of newly available jobs to the algorithm, as well as announcing that a job completed its execution. These pieces of information are computed by what we call the back-end. The back-end is also responsible for calling the election function and running the elected job.
+
+		In our work, we provide two back-ends:
+		\begin{itemize}
+		    \item The first one  is a simulation of a scheduler whose main purpose is to provide insight into the inner state of the program. It calls the election function and outputs which job was chosen to execute in that time slot, as well as other relevant information about the inner state of the program. \footnote{The source code of the simulation back-end can be found in the file:\\ \texttt{src/partition\_mockup/partition\_mockup.c}.}
+		    \item The second one is an actual implementation of an EDF scheduler in a partition on top of the Pip kernel \cite{jomaa2018proof}. This implementation executes the election function and passes the execution flow to the elected job (which is in its own address space). Finally, either a clock interrupt occurs (effectively interrupting the job and passing the execution flow back to the scheduler) or the job has signaled its completion to the scheduler, which waits for the next clock interrupt. This back-end uses the method outlined in \cite{vanhems2019proof} to transfer the execution flow.\footnote{The source code of the real scheduler back-end can be found in the \texttt{src/partition} directory.}
+		\end{itemize}
+
+		Informations computed by the back-end are made available to the verified code through oracles.
+
+			Le back-end est la partie de l'ordonnanceur mettant à jour l'environnement de la fonction d'élection. 
+
+			Ces travaux fournissent en réalité deux \emph{back-ends}. Le premier est un back-end de simulation d'ordonnanceur, qui permet de compiler l'ordonnanceur comme un simple exécutable. Ce back-end permet d'exécuter la fonction d'élection sur un ensemble de jobs prédéfinis, et d'afficher l'état interne de la fonction d'élection à chaque appel.
+
+			Le second est le back-end du véritable ordonnanceur, appelé par le noyau lorsqu'une interruption survient. Le back-end doit alors vérifier si de nouveaux jobs sont prêts à être ordonnancés, afin de mettre cette information à disposition de la fonction d'élection. Pour ce faire, le back-end met à jour l'environnement de la fonction d'élection, puis l'appelle afin de récupérer son résultat. Le back-end transfère ensuite le flôt d'exécution au \emph{job} désigné par la fonction d'élection au travers du service de transfert de flôt d'exécution décrit dans le chapitre précédent.
+
+			Ces back-ends ne font pas partie du modèle mathématique de l'ordonnanceur, si ce n'est au travers des \emph{oracles}.
+
+
+
+
+			\subsubsection{Interface avec l'état (monade et oracles)}
+
+
+			\subsubsection{Fonction d'élection}
+
+			The election function is divided into two main parts: a first part that keeps track of the pending jobs and selects the job to be executed, and a second part that maintains the coherence of the internal state. In the first part an oracle is invoked, which returns the new jobs that needs to be scheduled. Then, the last executed job is checked, to determine whether it has finished its execution or exceeded its execution budget. If it has finished (or exceeded its execution budget a.k.a WCET - Worst-Case Execution Time) it is removed from the list of pending jobs. If the job is late, i.e., its deadline has passed, this is reported when the function returns. Then, the newly available jobs are added to the list of pending jobs, sorted by ascending deadline order, as expected from an EDF election function. Finally, the function retrieves the ID of the first job in the list (if the list is nonempty) and returns it along with the flag indicating whether the last executed job was late. A dummy value is returned if the pending jobs list is empty.
+
+			The second part of the algorithm preserves the coherence of the internal state for future calls. It starts by decreasing the time budget of the elected job by one. Then, it decreases the relative deadlines of all pending jobs by one, to account for the time spent executing the elected job. Finally, the time counter, which records how many time slots have passed since the election function was first started, is increased by one.
+
+
 	\section{Conduite de la preuve}
 
 	\label{sec:proof}
