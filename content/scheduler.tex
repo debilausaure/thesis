@@ -56,7 +56,20 @@
 			\end{figure}
 
 
-			La figure \ref{fig:project_overview} donne une vue générale des composants de l'ordonnanceur et de leurs interactions. Le \emph{back-end} est le point d'entrée de l'ordonnanceur. Il est appelé par le noyau lorsqu'une interruption survient, appelle la fonction d'élection puis exécute le \emph{job} choisi par la fonction d'élection. Le \emph{back-end} doit aussi mettre à jour une partie de l'état sur laquelle repose la fonction d'élection, que nous appelons l'environnement. L'environnement est la partie de l'état disponible en lecture seule à la fonction d'élection, que la fonction d'élection peut interroger au travers des \emph{oracles}. La seconde partie de l'état est la partie mutable, que la fonction d'élection ne peut manipuler qu'au travers de l'\emph{interface}, principalement composée de types de données et de fonction pour les manipuler.
+			La figure \ref{fig:project_overview} donne une vue générale des composants de l'ordonnanceur et de leurs interactions. Le \emph{back-end} est le point d'entrée de l'ordonnanceur. Il est appelé par le noyau lorsqu'une interruption survient, appelle la fonction d'élection puis exécute le \emph{job} choisi par la fonction d'élection. Le \emph{back-end} doit aussi mettre à jour une partie de l'état sur laquelle repose la fonction d'élection, que nous appelons l'environnement. L'environnement est la partie de l'état disponible en lecture seule à la fonction d'élection, que la fonction d'élection peut interroger au travers des \emph{oracles}. La seconde partie est la partie mutable de l'état, que la fonction d'élection ne peut manipuler qu'au travers de l'\emph{interface}, principalement composée de types de données et de fonction pour les manipuler.
+
+		\subsubsection{État interne de l'ordonnanceur}
+
+			L'état interne de l'ordonnanceur est chargé de stocker les informations nécessaires à la fonction d'élection pour calculer le prochain \emph{job} à élire. Il existe deux représentations de cet état : une implémentation exécutable, et un modèle utilisé pour la preuve.
+
+			L'état est -- de sucroit -- divisé en deux parties, qui se distinguent par leur fonction par rapport à la fonction d'élection. La première partie de l'état est maintenue par la fonction d'élection, qui peut y lire et y écrire des données à sa guise en utilisant l'interface de l'état prévue à cet effet. Cette partie de l'état est appelée l'état mutable. La seconde partie est la partie de l'état que la fonction d'élection ne peut qu'observer, qui est appelé l'environnement. L'environnement contient les informations relatives aux évènements extérieurs essentiels au bon fonctionnement de l'ordonnanceur, tels que l'arrivée de nouveaux \emph{jobs} à ordonnancer, ou la complétion d'un \emph{job} précédemment exécuté. Cette partie de l'état est donc accessible en lecture seule à la fonction d'élection. La fonction d'élection peut consulter l'environnement aux travers d'oracles, qui servent d'interface avec l'environnement.
+
+		\subsubsection{Interface avec l'état (types abstraits et oracles)}
+			
+			Comme indiqué dans la sous-section précédente, la fonction d'élection effectue des modifications sur l'état ou observe l'environnement grâce à l'interface et aux oracles. Cette interface est \emph{nécessaire} car elle permet de définir les opérations supportées par l'état, représenté soit sous forme de code exécutable soit sous forme de modèle. Sans cette interface, il serait possible d'écrire certaines opérations dans une des deux représentations sans qu'il soit possible de l'écrire dans l'autre.
+			L'interface ainsi que les oracles sont composés de types opaques, implémentés de manière indépendante dans les modèles ou dans le code exécutable. Ces types sont munis de fonctions elles aussi pourvues d'une implémentation exécutable ainsi que d'un modèle.
+
+			Les oracles sont une partie de l'interface spécifique. Les oracles sont la partie de l'interface qui permet à la fonction d'élection d'oberserver les phénomènes extérieurs à l'algorithme. Bien qu'ils disposent aussi de deux représentations, leur modèle ne décrit pas réellement les résultats que l'oracle doit produire, mais plutôt des contraintes sur les résultats produits. Le modèle va se contenter de décrire l'ensemble des résultats possibles, plutôt que d'en désigner un en particulier.
 
 			\subsubsection{Back-end}
 		\subsubsection{Back-ends}
@@ -85,7 +98,6 @@
 
 
 
-			\subsubsection{Interface avec l'état (monade et oracles)}
 
 
 			\subsubsection{Fonction d'élection}
