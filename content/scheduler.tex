@@ -66,41 +66,31 @@
 
 		\subsubsection{Interface avec l'état (types abstraits et oracles)}
 			
-			Comme indiqué dans la sous-section précédente, la fonction d'élection effectue des modifications sur l'état ou observe l'environnement grâce à l'interface et aux oracles. Cette interface est \emph{nécessaire} car elle permet de définir les opérations supportées par l'état, représenté soit sous forme de code exécutable soit sous forme de modèle. Sans cette interface, il serait possible d'écrire certaines opérations dans une des deux représentations sans qu'il soit possible de l'écrire dans l'autre.
+			Comme indiqué dans la sous-section précédente, la fonction d'élection effectue des modifications sur l'état ou observe l'environnement grâce à l'interface et aux oracles. Cette interface est \emph{nécessaire} car elle permet de définir les opérations qui doivent être supportées par l'état, et donc par ses deux représentations (le code exécutable et le modèle). Sans cette interface, certaines opérations pourraient être possible dans une des deux représentations sans qu'elle soit possible dans l'autre.
 			L'interface ainsi que les oracles sont composés de types opaques, implémentés de manière indépendante dans les modèles ou dans le code exécutable. Ces types sont munis de fonctions elles aussi pourvues d'une implémentation exécutable ainsi que d'un modèle.
 
-			Les oracles sont une partie de l'interface spécifique. Les oracles sont la partie de l'interface qui permet à la fonction d'élection d'oberserver les phénomènes extérieurs à l'algorithme. Bien qu'ils disposent aussi de deux représentations, leur modèle ne décrit pas réellement les résultats que l'oracle doit produire, mais plutôt des contraintes sur les résultats produits. Le modèle va se contenter de décrire l'ensemble des résultats possibles, plutôt que d'en désigner un en particulier.
+			Les oracles sont une partie de l'interface spécifique. Les oracles sont la partie de l'interface qui permet à la fonction d'élection d'oberserver les phénomènes extérieurs à l'algorithme de la fonction d'élection. Bien qu'ils disposent aussi de deux représentations, leur modèle ne décrit pas réellement les résultats que l'oracle doit produire, mais plutôt des contraintes sur les résultats produits. Le modèle va se contenter de décrire l'ensemble des résultats possibles, plutôt que d'en désigner un en particulier.
 
-			\subsubsection{Back-end}
 		\subsubsection{Back-ends}
 		\label{sec:back-ends}
 
-		
+		Nous avons vu que l'état est composé en partie d'une partie non mutable, appelée l'environnement. Les informations contenues dans l'environnement sont mises à jour par le \emph{back-end}. Le \emph{back-end} est aussi chargé d'appeler la fonction d'élection et d'exécuter le \emph{job} qui aura été élu.
 
-		We have seen that the state is partly represented by an immutable part, that we have called its environment. This environment's purpose is to provide access to information that is not part of the algorithm per se, but which is crucial to the proper functioning of the algorithm. This includes announcing the list of newly available jobs to the algorithm, as well as announcing that a job completed its execution. These pieces of information are computed by what we call the back-end. The back-end is also responsible for calling the election function and running the elected job.
-
-		In our work, we provide two back-ends:
+		Cette contribution est munie de deux \emph{back-ends}.
 		\begin{itemize}
-		    \item The first one  is a simulation of a scheduler whose main purpose is to provide insight into the inner state of the program. It calls the election function and outputs which job was chosen to execute in that time slot, as well as other relevant information about the inner state of the program. \footnote{The source code of the simulation back-end can be found in the file:\\ \texttt{src/partition\_mockup/partition\_mockup.c}.}
-		    \item The second one is an actual implementation of an EDF scheduler in a partition on top of the Pip kernel \cite{jomaa2018proof}. This implementation executes the election function and passes the execution flow to the elected job (which is in its own address space). Finally, either a clock interrupt occurs (effectively interrupting the job and passing the execution flow back to the scheduler) or the job has signaled its completion to the scheduler, which waits for the next clock interrupt. This back-end uses the method outlined in \cite{vanhems2019proof} to transfer the execution flow.\footnote{The source code of the real scheduler back-end can be found in the \texttt{src/partition} directory.}
+			\item Le premier back-end est conçu comme une simulation permettant d'exécuter la fonction d'élection dans un simple processus Linux, afin de fournir des informations sur l'état interne de l'ordonnanceur. Ce back-end appelle la fonction d'élection, affiche le \emph{job} choisi pour exécution et autres informations d'intérêt sur l'état interne de la fonction d'élection tels que la liste des \emph{jobs} en attente, etc ;
+
+			\item Le second back-end fourni est l'implémentation d'un ordonnanceur Earliest Dealine First dans une partition de Pip. Cette implémentation exécute la fonction d'élection et transfère le flôt d'exécution vers le \emph{job} élu par la fonction d'élection. Chaque job se trouve dans sa propre partition, avec un espace d'adressage qui lui est propre. Le flôt d'exécution revient au back-end soit lorsqu'une interruption d'horloge survient, interrompant le \emph{job} élu, soit lorsque le \emph{job} lui signale sa terminaison. Le back-end attend alors la prochaine interruption pour réélire un nouveau \emph{job}.
 		\end{itemize}
 
-		Informations computed by the back-end are made available to the verified code through oracles.
+		Les back-ends ne font pas partie du modèle mathématique de l'ordonnanceur, si ce n'est au travers des \emph{oracles}.
 
-			Le back-end est la partie de l'ordonnanceur mettant à jour l'environnement de la fonction d'élection. 
+		\subsubsection{Fonction d'élection}
 
-			Ces travaux fournissent en réalité deux \emph{back-ends}. Le premier est un back-end de simulation d'ordonnanceur, qui permet de compiler l'ordonnanceur comme un simple exécutable. Ce back-end permet d'exécuter la fonction d'élection sur un ensemble de jobs prédéfinis, et d'afficher l'état interne de la fonction d'élection à chaque appel.
+		La fonction d'élection est divisée en deux parties principales. La première partie maintient la liste des \emph{jobs} en attente et sélection le prochain \emph{job} à exécuter, la seconde maintient la cohérence de son état interne.
 
-			Le second est le back-end du véritable ordonnanceur, appelé par le noyau lorsqu'une interruption survient. Le back-end doit alors vérifier si de nouveaux jobs sont prêts à être ordonnancés, afin de mettre cette information à disposition de la fonction d'élection. Pour ce faire, le back-end met à jour l'environnement de la fonction d'élection, puis l'appelle afin de récupérer son résultat. Le back-end transfère ensuite le flôt d'exécution au \emph{job} désigné par la fonction d'élection au travers du service de transfert de flôt d'exécution décrit dans le chapitre précédent.
+		Dans la première partie, la fonction d'élection invoque un oracle, qui lui retourne la liste des nouveaux \emph{jobs} à ordonnancer. Ces jobs sont ajoutés à la liste des jobs à ordonnancer. Ensuite, elle invoque un autre oracle qui lui renvoie l'état du dernier job exécuté, afin de vérifier s'il a complété son exécution ou s'il a dépassé son échéance. Si il rempli l'une de ces deux conditions, il est enlevé de la liste des jobs à ordonnancer. Si il a excédé son échéance, l'erreur sera remontée lors du retour de la fonction.
 
-			Ces back-ends ne font pas partie du modèle mathématique de l'ordonnanceur, si ce n'est au travers des \emph{oracles}.
-
-
-
-
-
-
-			\subsubsection{Fonction d'élection}
 
 			The election function is divided into two main parts: a first part that keeps track of the pending jobs and selects the job to be executed, and a second part that maintains the coherence of the internal state. In the first part an oracle is invoked, which returns the new jobs that needs to be scheduled. Then, the last executed job is checked, to determine whether it has finished its execution or exceeded its execution budget. If it has finished (or exceeded its execution budget a.k.a WCET - Worst-Case Execution Time) it is removed from the list of pending jobs. If the job is late, i.e., its deadline has passed, this is reported when the function returns. Then, the newly available jobs are added to the list of pending jobs, sorted by ascending deadline order, as expected from an EDF election function. Finally, the function retrieves the ID of the first job in the list (if the list is nonempty) and returns it along with the flag indicating whether the last executed job was late. A dummy value is returned if the pending jobs list is empty.
 
