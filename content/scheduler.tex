@@ -89,13 +89,9 @@
 
 		La fonction d'élection est divisée en deux parties principales. La première partie maintient la liste des \emph{jobs} en attente et sélection le prochain \emph{job} à exécuter, la seconde maintient la cohérence de son état interne.
 
-		Dans la première partie, la fonction d'élection invoque un oracle, qui lui retourne la liste des nouveaux \emph{jobs} à ordonnancer. Ces jobs sont ajoutés à la liste des jobs à ordonnancer. Ensuite, elle invoque un autre oracle qui lui renvoie l'état du dernier job exécuté, afin de vérifier s'il a complété son exécution ou s'il a dépassé son échéance. Si il rempli l'une de ces deux conditions, il est enlevé de la liste des jobs à ordonnancer. Si il a excédé son échéance, l'erreur sera remontée lors du retour de la fonction.
+		Dans la première partie, la fonction d'élection invoque un oracle, qui lui retourne la liste des nouveaux \emph{jobs} à ordonnancer. Ces jobs sont ajoutés à la liste des jobs à ordonnancer. Ensuite, elle invoque un autre oracle qui lui renvoie l'état du dernier job exécuté, afin de vérifier s'il a complété son exécution ou s'il a dépassé son échéance. S'il remplit l'une de ces deux conditions, il est enlevé de la liste des jobs à ordonnancer. Si il a excédé son échéance, l'erreur sera remontée lors du retour de la fonction. Enfin, la fonction récupère l'identifiant du premier \emph{job} de la liste (si la liste n'est pas vide) et le retourne avec le drapeau indiquant si le dernier \emph{job} exécuté a dépassé son échéance. Une valeur par défaut est retournée si aucun \emph{job} n'est disponible.
 
-
-			The election function is divided into two main parts: a first part that keeps track of the pending jobs and selects the job to be executed, and a second part that maintains the coherence of the internal state. In the first part an oracle is invoked, which returns the new jobs that needs to be scheduled. Then, the last executed job is checked, to determine whether it has finished its execution or exceeded its execution budget. If it has finished (or exceeded its execution budget a.k.a WCET - Worst-Case Execution Time) it is removed from the list of pending jobs. If the job is late, i.e., its deadline has passed, this is reported when the function returns. Then, the newly available jobs are added to the list of pending jobs, sorted by ascending deadline order, as expected from an EDF election function. Finally, the function retrieves the ID of the first job in the list (if the list is nonempty) and returns it along with the flag indicating whether the last executed job was late. A dummy value is returned if the pending jobs list is empty.
-
-			The second part of the algorithm preserves the coherence of the internal state for future calls. It starts by decreasing the time budget of the elected job by one. Then, it decreases the relative deadlines of all pending jobs by one, to account for the time spent executing the elected job. Finally, the time counter, which records how many time slots have passed since the election function was first started, is increased by one.
-
+		La seconde partie de la fonction d'élection maintient la cohérence de l'état interne de la fonction d'élection pour les futurs appels. Elle commence par décrémenter le budget d'exécution du \emph{job} élu. Elle décrémente ensuite l'échéance relative des \emph{jobs} en attente, pour tenir compte du temps qui sera passé à exécuter le \emph{job} élu. Finalement, la fonction d'élection incrémente le compteur de temps, qui garde le compte de périodes de temps s'étant écoulées depuis le premier appel à la fonction d'élection.
 
 	\section{Conduite de la preuve}
 
@@ -344,19 +340,6 @@ unsigned int CLOCK = 0;
 coq_CBool  JOB_DONE = false;
 	\end{minted}
 	%\end{verbatim}
-
-	\subsection{Back-ends}
-	\label{sec:back-ends}
-
-	We have seen that the state is partly represented by an immutable part, that we have called its environment. This environment's purpose is to provide access to information that is not part of the algorithm per se, but which is crucial to the proper functioning of the algorithm. This includes announcing the list of newly available jobs to the algorithm, as well as announcing that a job completed its execution. These pieces of information are computed by what we call the back-end. The back-end is also responsible for calling the election function and running the elected job.
-
-	In our work, we provide two back-ends:
-	\begin{itemize}
-	    \item The first one  is a simulation of a scheduler whose main purpose is to provide insight into the inner state of the program. It calls the election function and outputs which job was chosen to execute in that time slot, as well as other relevant information about the inner state of the program. \footnote{The source code of the simulation back-end can be found in the file:\\ \texttt{src/partition\_mockup/partition\_mockup.c}.}
-	    \item The second one is an actual implementation of an EDF scheduler in a partition on top of the Pip kernel \cite{jomaa2018proof}. This implementation executes the election function and passes the execution flow to the elected job (which is in its own address space). Finally, either a clock interrupt occurs (effectively interrupting the job and passing the execution flow back to the scheduler) or the job has signaled its completion to the scheduler, which waits for the next clock interrupt. This back-end uses the method outlined in \cite{vanhems2019proof} to transfer the execution flow.\footnote{The source code of the real scheduler back-end can be found in the \texttt{src/partition} directory.}
-	\end{itemize}
-
-	Informations computed by the back-end are made available to the verified code through oracles.
 
 	\subsection{Oracles}
 
