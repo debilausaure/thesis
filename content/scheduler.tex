@@ -96,37 +96,35 @@
 	\section{Conduite de la preuve}
 
 	\label{sec:proof}
-	In this section we outline the proof of correctness of the monadic Gallina program for the EDF scheduler.
-	We first describe our methodology, which is a top-down refinement approach between three abstraction levels. Then we show the abstraction levels and the refinements between them, focusing on why the refinement steps preserve the correctness properties proved at higher levels. Finally we give some details about the Coq implementation of the approach.
+	Cette section met en avant la preuve fonctionnelle de la fonction d'élection de l'ordonnanceur EDF, écrit sous la forme d'un programme monadique dans l'assistant de preuve Coq.
 
+	Cette section commencera par décrire la méthodologie de preuve, qui utilise un raffinement en 3 niveaux d'abstraction. La section décrira ensuite les différents niveaux d'abstraction et le raffinement qui les relie, en détaillant particulièrement pourquoi le raffinement préserve les propriétés de correction du niveaux d'abstraction supérieur. Enfin, la section conclura sur quelques détails d'élaboration de la preuve en Coq.
 
-	\subsection{Methodology}
+	\subsection{Méthodologie de preuve}
 
-	We use refinement %\cite{wirth1971program, morris1987theoretical} 
-	as a divide-and-conquer strategy to manage the complexity of our formal proof.
-	We first define the EDF scheduling policy at an abstract level and show that,
-	under appropriate assumptions, formalized below, the policy is \emph{correct},
-	in the sense that any set of schedulable jobs is scheduled so all jobs complete
-	their execution within their deadline. Then we write a functional algorithm and
-	show that it implements the abstract scheduling policy. It follows that the functional
-	algorithm is also correct. The final step is to write a monadic scheduler,
-	detailed enough to be automatically translatable to C, and to show that
-	the monadic scheduler refines the functional one; as a result, the monadic scheduler is correct as well.
+	Cette preuve est conduite par raffinement. Cette méthode permet d'appliquer la stratégie "diviser pour régner" pour gérer la complexité de la preuve.
+	Cette preuve commence par une définition abstraite de la politique d'ordonnancement Earliest Deadline First, et montre que la politique est \emph{correcte}. Cette étape signifie que, sous réserve de quelques hypothèses, n'importe quel ensemble de \emph{jobs} ordonnançable ordonnancé selon cette politique sera ordonnancé tel que chaque \emph{job} complètera son exécution sans excéder son échéance.
+	La preuve continue en définissant un algorithme de fonction d'élection idéalisé, et montre que cet algorithme implémente la politique d'ordonnancement définie précédemment. Il suit que l'algorithme idéalisé est aussi \emph{correct}.
+	L'étape finale de la preuve consiste à écrire la fonction d'élection qui sera finalement compilée en code source C. Il faut ensuite montrer que la fonction d'élection qui sera traduite en C exhibe les mêmes comportements que l'algorithme idéalisé de la fonction d'élection (en particulier les effets de bord et les valeurs de retour). La preuve est alors complète, la preuve de correction a été propagée jusqu'au code C.
 	%The properties proved in our work act as layered invariants that extend from the EDF policy model to the monadic code. To prove a new refinement layer, we start from the invariant of the previous (more abstract) layer and show that the new invariant \emph{refines} the previous one, i.e., the new invariant has a more detailed specification that remains compatible with its more abstract version.
 	%All the proofs that we performed rely on the following assumptions.
 
-	\subsubsection{Job model}
+	\subsubsection{Modèle de \emph{job}}
 	\label{sec:jobmodel}
-	Jobs are modelled as tuples $j = (i_j, r_j,d_j,c_j, \delta_j)$  of natural numbers, where $i_j$ is the job's identifier, $r_j$ is its release date (i.e., the date at which it becomes available for scheduling), $d_j$ is the job's deadline, and $c_j$ is the job's budget a.k.a. WCET, which is an over-approximation of the job's actual duration $\delta_j$. The jobs satisfy the following well-formedness constraints:
-	$r_i + c_i \leq d_i$, i.e., the deadline is large enough for the job to complete when executed alone on the processor; and $0 < \delta_j \leq c_j$, i.e., the WCET is indeed an over-approximation of the actual running time, which is itself strictly greater than zero. Moreover, it is assumed that identifiers uniquely determine jobs and that every job is released exactly once.
+	Les \emph{jobs} sont modélisés comme des tuples $j = (i_j, r_j,d_j,c_j, \delta_j)$ d'entiers naturels, où $i_j$ est l'identifiant du \emph{job}, $r_j$ représente l'instant à partir duquel il est possible de l'ordonnancer (\emph{release date}), $d_j$ représente son échéance (\emph{deadline}), et $c_j$ représente son budget temporel, qui est une borne supérieure sur sa durée d'exécution. $\delta_j$ représente sa durée d'exécution maximum réelle (Worst Case Execution Time -- \emph{WCET}).
 
+	Les \emph{jobs} doivent respecter certaines contraintes de construction :
+	\begin{itemize}
+		\item $r_i + c_i \leq d_i$, l'échéance est assez tardive pour que le \emph{job} puisse terminer son exécution sans la dépasser s'il est le seul à s'exécuter sur le processeur ;
+		\item $0 < \delta_j \leq c_j$, le budget temporel alloué est bien une borne supérieure au temps d'exécution maximum réel (WCET), lui-même strictement positif ;
+		\item l'identifiant de chaque \emph{job} doit être unique ;
+		\item il n'existe qu'une seule occurrence de chaque \emph{job}.
+	\end{itemize}
 
-	\subsubsection{Schedulability assumption}
+	\subsubsection{Hypothèse d'ordonnançabilité}
 
-	Given any two moments $t$ and $t'$ such that $t < t'$,
-	let $\Gamma_{t, t'}$ be the set of jobs to schedule in the interval $[t, t']$
-	(i.e. jobs $j$ for which their release time $r_j$ is at least $t$ and their deadline $d_j$ is at most $t'$).
-	The schedulability condition requires that the sum of durations $\delta_j$ of the jobs to schedule in the interval $[t, t']$ is at most the length $t'-t$ of the interval.
+	Soient deux instants quelconques $t$ et $t'$ tels que $t < t'$, soit $\Gamma_{t, t'}$ l'ensemble des \emph{jobs} à ordonnancer dans l'intervalle $[t, t']$ (c'est à dire les \emph{jobs} $j$ ayant une release date $r_j$ supérieure à $t$ et une échéance $d_j$ inférieure à $t'$).
+	L'hypothèse d'ordonnançabilité stipule que la somme des durées $\delta_j$ des \emph{jobs} à ordonnancer dans l'intervalle $[t, t']$ est inférieure à la durée $t'-t$ de l'intervalle.
 
 	\begin{gather} \label{eq:schedulability}
     		\forall t, t'. ~t < t' \implies
@@ -139,86 +137,78 @@
 %%               J_i&\text{, a job from }\Gamma_{\rho, \delta},\\
 %%               r_i,~d_i,~C_i &\text{, respectively the release time, the deadline,}\\&\text{~~and the WCET of }J_i
 %% \end{align*}
-	The fact that the schedulability of a given set of jobs implies that the set of jobs is schedulable by EDF on a single processor
-	is a textbook result in schedulability theory (\cite{stankovic2012deadline}, pp. 33-34). It is also known that the schedulability condition has simpler forms in particular cases, e.g.,  for jobs that are instances of periodic tasks~\cite{stankovic2012deadline}; but in this paper we are concerned with an  EDF scheduler  applicable to a general set of jobs, so we shall not consider particular cases of the schedulability condition.
+	Le fait qu'un ensemble de jobs ordonnançable puisse être ordonnancé par un ordonnanceur Earliest Deadline First sur un unique processeur est un résultat classique de la théorie de l'ordonnancement (\cite{stankovic2012deadline}, pp. 33-34). Les conditions d'ordonnançabilité d'un ensemble peuvent parfois être représentées plus simplement, par exemple lorsque les \emph{jobs} sont des instances de tâches périodiques. Cependant cette contribution porte sur un ordonnanceur de \emph{jobs arbitraires}, ce qui ne nous permet pas d'utiliser les hypothèses d'ordonnançabilité de cas spécifiques.
 
-	The study of job schedulability is a separate area of research.
-	In this work we merely use some results from schedulability theory and prove them formally in Coq.
-	Our proof-of-concept scheduler is bundled with a simple schedulable job set for demonstration and reproducibility purposes.
+	\subsection{Couches d'abstraction et étapes de raffinement}
 
-
-	\subsection{Abstraction levels and refinement steps}
-
-	\subsubsection{EDF scheduling policy}
+	\subsubsection{Politique d'ordonnancement Earliest Deadline First}
 	\label{sec:policy}
-	The first and most abstract level for proofs is that of the EDF
-	scheduling policy, which can be defined as follows: for any job $j$ and any time instant $t$, if the job $j$ is running at instant $t$,
-	then for any other job $j'$ that is ready to run at the same instant, it holds that $d_j \leq d_{j'}$.
+	La première couche d'abstraction, la plus abstraite de toutes, est celle de la politique d'ordonnancement. Elle est définie de la manière suivante : pour tout \emph{job} $j$, et à n'importe quel instant $t$, si le \emph{job} $j$ s'exécute à l'instant $t$, alors pour chaque autre \emph{job} $j'$ qui aurait pu être exécuté à la place, on a $d_j \leq d_{j'}$.
 
-%Formally,
-%% \begin{equation*}
-%%      \forall i, \forall t, [...]~\text{run}~i~t = true \implies
-%%      \forall x,~\text{waiting}~x~t \implies d_i \leq d_x.
-%% \end{equation*}
-%% \text{with:}
-%% \begin{align*}
-%%               i, x&\text{, job identifiers},\\
-%%               t&\text{, an arbitrary time instant},\\
-%%               \text{run}~i~t&\text{, \emph{true} iff $J_i$ is running at instant $t$},\\ 
-%%               \text{waiting}~x~t&\text{, \emph{true} iff $J_x$ is waiting to run at instant $t$}
-%% \end{align*}
-	The \emph{correctness property} for the EDF scheduling policy is stated as follows.
-	Given a set of schedulable jobs, i.e., jobs satisfying the schedulability assumption~(\ref{eq:schedulability}), when the EDF scheduling policy is applied,
-	no job in the set ever exceeds its deadline.
+	De manière formelle,
+	\begin{equation*}
+		\forall j, \forall t, [...]~\mathtt{run}~j~t~~\implies~~\forall j',~\mathtt{waiting}~j'~t~~\implies~~d_j \leq d_{j'}.
+	\end{equation*}
+\indent avec :
+	\begin{align*}
+		j, j'&\text{, deux identifiants de job},\\
+		t&\text{, un instant arbitraire},\\
+		\mathtt{run}~i~t&\text{, prouvable si le \emph{job} $j$ s'exécute à l'instant $t$},\\ 
+		\text{waiting}~x~t&\text{, prouvable si le \emph{job} $j'$ est prêt à s'exécuter à l'instant $t$}
+	\end{align*}
+
+	La \emph{propriété de correction} pour la politique d'ordonnancement EDF est décrite de la manière suivante.
+	Étant donné un ensemble ordonnançable de \emph{jobs} (c'est à dire satisfaisant l'hypothèse d'ordonnancement \ref{eq:schedulability}), si la politique d'ordonnancement EDF est appliquée, alors aucun \emph{job} de l'ensemble ne dépassera son échéance.
 	
 	\begin{gather*}
-  		\text{schedulable} \implies\\
-  		\forall j, \forall t. ~\text{EdfPolicyUpTo}~t \implies \neg \text{overdue}~j~t.
+		\textit{ordonnançable} \implies\\
+  		\forall j, \forall t, ~\text{EdfPolicyUpTo}~t \implies \neg \text{overdue}~j~t.
 	\end{gather*}
-	where {EdfPolicyUpTo}~$t$ means that the EDF policy was  applied up to the instant $t$, and
-	{overdue}~$j$~$t$ = \emph{true} iff the job $j$ missed its deadline at instant $t$.
+\indent	avec :
+	\begin{align*}
+		\text{EdfPolicyUpTo}~t&\text{ signifie que la politique a été appliquée jusqu'à l'instant}~t\\
+		\text{overdue}~j~t&\text{, prouvable si le \emph{job} $j$ a dépassé son échéance à l'instant}~t
+	\end{align*}
 
-	\subsubsection{Functional EDF implements EDF policy}
+	\subsubsection{Fonction d'élection idéalisée implémente la politique}
 	\label{sec:functional}
-	The first refinement step is to prove that our functional EDF election function \texttt{functional\_scheduler\_star} implements the EDF policy. The following property states that if the functional election function has been executed up to a certain time instant $t$, then the EDF policy has been applied up to that instant.
+
+	La première étape du raffinement est de montrer que la fonction d'élection idéalisée \texttt{functional\_scheduler\_star} implémente la politique d'ordonnancement EDF. La propriété suivante établie que si la fonction d'élection idéalisée est exécutée jusqu'à un certain instant $t$, alors la politique EDF a été appliquée jusqu'à cet instant.
 	\begin{gather*}
 		\forall t, \forall o, \forall s.\\ 
 		~\texttt{functional\_scheduler\_star}~(t) = (o,s) \implies\\
 		\text{EdfPolicyUpTo}~(\text{now}~s).
 	\end{gather*}
-	\text{with:}
+\indent	avec :
 	\begin{align*}
-              s&\text{, the state of the program after executing the}\\
-	       &\text{~~functional election function for $t$ time units},\\
-	      %\texttt{functional\_scheduler\_star}~(t)&\text{an execution of the functional election function up to the instant $t$}
-              %\text{EdfPolicyUpTo}~t&\text{, the policy applied up to a given instant $t$},\\ 
-              \text{now}~s&\text{, extracts the current time from the state $s$.}\\
-	      o~&\text{, the id of the chosen job at instant $t$}
+		s&\text{, l'état du programme après avoir exécuté la fonction}\\
+		&~~\text{d'élection idéalisée après $t$ unités de temps},\\
+		%\texttt{functional\_scheduler\_star}~(t)&\text{, appel à la fonction d'élection idéalisée pour $t$ unités de temps}\\
+		\text{now}~s&\text{, extrait le compteur d'unité de temps de l'état $s$}\\
+		o~&\text{, l'identifiant du \emph{job} élu à l'instant $t$}
 	\end{align*}
 
-From this property one can derive the property expressing the correctness of the functional EDF program:
-given a schedulable job set and any job $j$ from this set, that job will not exceed its deadline at the instant $t$ if the functional EDF algorithm has been applied up to the instant $t$.
+	De cette propriété, on peut déduire la propriété exprimant la propriété de correction de la fonction d'élection idéalisée :
+	étant donné un ensemble de \emph{job} ordonnançable, alors pour tout \emph{job} $j$ de cet ensemble, ce \emph{job} ne dépassera pas son échéance à l'instant $t$ si la fonction a été appelée à chaque instant jusqu'à l'instant $t$
 
 	\begin{gather*}
-		\text{schedulable} \implies\\
+		\textit{ordonnançable} \implies\\
 		\forall t, \forall o, \forall s.\\
 		\texttt{functional\_scheduler\_star}~(t) = (o,s) \implies\\
 		\forall i.~\neg \text{overdue}~i~(\text{now}~s).
 	\end{gather*}
 
-	\subsubsection{Monadic EDF refines functional EDF}
+	\subsubsection{Fonction d'élection monadique raffine la fonction d'élection idéalisée}
 	\label{sec:monadic}
-	The next step consists in proving that the monadic scheduler is a refinement of the functional one. We  use Hoare triples \cite{hoare1969axiomatic} for writing this property in a formal manner.
-	A Hoare triple has the following form: $\{ P \}~c~\{ Q \}$. $\{ P \}$ stands for the \emph{preconditions}, the properties of the program state that hold before the program is executed. $c$ represents the program, the sequence of instructions to be executed. $\{Q \}$ stands for the \emph{postconditions}, the properties that hold after the program is executed.
 
-	The preconditions are parameterized by an observable environment \emph{env} and by a mutable state $s$. The postconditions are parameterized by the return value $o$ of the program $c$, and a state $s'$, the result of executing the program $c$ on $s$.
+	La prochaine étape consiste à prouver que la fonction d'élection monadique raffine la fonction d'élection idéalisée. Cette propriété contient des triplets de Hoare. 
+	Les préconditions de la propriété sont paramétrés par un environnement observable \texttt{env} et par un état mutable $s$. Les postconditions sont paramétrées par la valeur de retour $o$ du programme $x$, et un état $s'$, le résultat de l'exécution du programme $c$ sur l'état $s$.
 
-	The refinement step is informally described as follows: for any given moment $t$, if $(o, s')$ is the result of the execution of the monadic EDF election function \texttt{scheduler\_star} on the environment $E$ and the initial state $init$, then $(o, s')$ is also the result of the functional EDF election function \texttt{functional\_scheduler\_star} at the instant $t$. The corresponding Hoare triple is :
-
+	Cette étape de raffinement peut être décrite de la manière suivante : pour tout instant $t$, si $(o, s')$ sont les valeurs retournées par la fonction d'élection monadique \texttt{scheduler\_star} sur l'environnement $E$ et l'état initial \texttt{init}, alors $(o, s')$ sont aussi les valeurs retournées par la fonction d'élection idéalisée \texttt{functional\_scheduler\_star} à l'instant $t$. Le triplet de Hoare correspondant est le suivant :
 	\begin{gather*}
 		\forall t.\\
 		\{
-		~\lambda~\textit{env}~s. ~\textit{env} = E \land s = \textit{init}~
+		~\lambda~\mathtt{env}~s. ~\mathtt{env} = E \land s = \mathtt{init}~
 		\}\\
 		\texttt{scheduler\_star}~(t)\\
 		\{
@@ -226,17 +216,17 @@ given a schedulable job set and any job $j$ from this set, that job will not exc
 		\}
 	\end{gather*}
 
-	From this triple, one gets a Hoare triple expressing the monadic program's correctness property.
+	À partir de ce triplet, on peut déduire le triplet de Hoare exprimant la propriété de correction de la fonction d'élection monadique.
 
 	\begin{gather*}
-		\textit{schedulable} \implies\\
+		\textit{ordonnançable} \implies\\
 		\forall t.\\
 		\{
-		~\lambda~\textit{env}~s. ~\textit{env} = E \land s = \textit{init}~
+		~\lambda~\mathtt{env}~s. ~\mathtt{env} = E \land s = \mathtt{init}~
 		\}\\
 		\texttt{scheduler\_star}~(t)\\
 		\{
-		~\lambda~o~s'. ~\forall i,~\neg \textit{overdue}~i~(\textit{now}~s') ~
+		~\lambda~o~s'. ~\forall i,~\neg \text{overdue}~i~(\text{now}~s') ~
 		\}
 	\end{gather*}
 
