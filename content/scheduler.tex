@@ -3,7 +3,7 @@
 	Le chapitre précédent a porté sur un service de transfert de flôt d'exécution au sein de Pip. Ce service permet de gérer les transferts explicites de flôt d'exécution, ainsi que les interruptions. De cette manière, Pip fournit les outils nécessaires à la préemption de flôts d'exécution. La préemption est nécessaire à la mise en place d'ordonnancement au sein d'un système ; elle n'est cependant pas suffisante pour implémenter un ordonnanceur. Celui-ci doit être muni d'une politique d'ordonnancement, lui permettant de choisir le prochain flôt d'exécution.
 
 	Ce chapitre porte sur l'implémentation d'un ordonnanceur Earliest Deadline First (abrégé EDF) s'exécutant en espace utilisateur. L'ordonnanceur est conçu pour fonctionner dans une partition de Pip, et est muni d'une preuve formelle que sa fonction d'élection respecte la politique d'ordonnancement EDF. Ces travaux ont été menés conjointement avec Vlad Rusu, avec qui j'ai conçu les modèles sur lesquels reposent la preuve et qui a établit les preuves formelles sur cet ordonnanceur. Dans ce travail commun, ma contribution a été de concevoir les composants de l'ordonnanceur, leur interface ainsi qu'une partie de leur modèle, ainsi que d'écrire l'implémentation pour que cet ordonnanceur puisse être compilé et s'exécuter dans une partition de Pip.
-	\footnote{David Nowak, Gilles Grimaud et Samuel Hym ont aussi contribué à ce projet de manière plus modeste. David a participé à l'élaboration des modèles, Gilles a participé à l'établissement des interfaces, et Samuel a participé à l'écriture de l'implémentation}.
+	\footnote{David Nowak, Gilles Grimaud mais aussi Samuel Hym ont aussi contribué à ce projet de manière plus modeste. David a participé à l'élaboration des modèles, Gilles a participé à l'établissement des interfaces, et Samuel a participé à l'écriture de l'implémentation}.
 	
 	Ces travaux ont fait l'objet d'une publication et d'une présentation à RTAS2022, dont ce chapitre s'inspire fortement. Le papier est disponible à l'adresse suivante : \url{https://hal.archives-ouvertes.fr/hal-03671598}. La vidéo de la présentation est disponible à l'adresse suivante : \url{https://pip.univ-lille.fr/recordings/RTAS.mp4}. Le dépot contenant le code ainsi que les instructions pour exécuter l'ordonnanceur est hébergé sur Github : \url{https://github.com/2xs/pip_edf_scheduler}.
 
@@ -36,13 +36,27 @@
 
 			\subsubsection{Exemple d'appel à la fonction d'élection}
 
-			\textcolor{red}{Exemple de résultats produits par l'ordonnanceur sur un ensemble de deux jobs comme dans la présentation à RTAS2022}
+			\begin{figure}[!ht]
+			\centering{
+				\input{figures/electionfunction_example.tex}
+				\caption{Exemple de jobs pour l'illustration du fonctionnement de la fonction d'élection}
+				\label{fig:electionfunction_jobs}
+			}
+			\end{figure}
+
+			\begin{figure}[!ht]
+			\centering{
+				\input{figures/electionfunction_timeline.tex}
+				\caption{Illustration d'un appel à la fonction d'élection sur les \emph{jobs} $a$ et $b$}
+				\label{fig:electionfunction_jobs}
+			}
+			\end{figure}
 
 		\subsection{Place de l'ordonnancement dans Pip}
 
 		Cet ordonnanceur ne s'exécute pas en espace privilégié, comme c'est le cas dans les systèmes d'exploitation traditionnels tels que Linux ou même dans des systèmes d'exploitation de niche tels que seL4. 
 
-		La première raison en faveur d'une implémentation de l'ordonnanceur dans une partition de Pip concerne la méthode de conception des logiciels autour de Pip. En effet, placer l'ordonnanceur en espace utilisateur lui fait implicitement profiter des propriétés d'isolation des partitions de Pip. Ce choix est en adéquation avec la vision de Pip du système, conçu comme une tour de virtualisation. Dans le modèle de Pip, les différents logiciels se construisent les uns au dessus des autres, profitant des propriétés prouvées sur le logiciel sous-jacent.
+		La première raison en faveur d'une implémentation de l'ordonnanceur dans une partition de Pip concerne la méthode de conception des logiciels autour de Pip. En effet, placer l'ordonnanceur en espace utilisateur lui fait implicitement profiter des propriétés d'isolation des partitions de Pip. Ce choix est en adéquation avec la vision de Pip du système, conçu comme une tour de virtualisation. Une tour de virualisation dont chaque étage devient partie prenante de la base de confiance (TCB) des étages supérieurs. Dans le modèle de Pip, les différents logiciels se construisent les uns au dessus des autres, profitant des propriétés prouvées sur le logiciel sous-jacent.
 
 		La seconde raison est une conséquence directe de ce choix, relatif à l'effort de preuve. Si l'ordonnanceur avait été implémenté dans Pip, alors il aurait fallu montrer que l'ordonnanceur respecte les propriétés d'isolation de Pip. \textcolor{red}{Inclure les métriques pour argumenter que cet effort serait non négligeable}. De plus, l'ordonnanceur développé dans cet contribution a été conçu autour de la politique d'ordonnancement EDF. Ce choix est arbitraire, et il serait tout à fait pertinent d'utiliser une autre politique d'ordonnancement pour Pip. Ainsi, il faudrait prouver les propriétés d'isolation de Pip pour chaque variante de l'ordonnanceur engendrée par chaque politique souhaitée.
 
@@ -69,7 +83,7 @@
 			Comme indiqué dans la sous-section précédente, la fonction d'élection effectue des modifications sur l'état ou observe l'environnement grâce à l'interface et aux oracles. Cette interface est \emph{nécessaire} car elle permet de définir les opérations qui doivent être supportées par l'état, et donc par ses deux représentations (le code exécutable et le modèle). Sans cette interface, certaines opérations pourraient être possible dans une des deux représentations sans qu'elle soit possible dans l'autre.
 			L'interface ainsi que les oracles sont composés de types opaques, implémentés de manière indépendante dans les modèles ou dans le code exécutable. Ces types sont munis de fonctions elles aussi pourvues d'une implémentation exécutable ainsi que d'un modèle.
 
-			Les oracles sont une partie de l'interface spécifique. Les oracles sont la partie de l'interface qui permet à la fonction d'élection d'oberserver les phénomènes extérieurs à l'algorithme de la fonction d'élection. Bien qu'ils disposent aussi de deux représentations, leur modèle ne décrit pas réellement les résultats que l'oracle doit produire, mais plutôt des contraintes sur les résultats produits. Le modèle va se contenter de décrire l'ensemble des résultats possibles, plutôt que d'en désigner un en particulier.
+			Les oracles sont une partie de l'interface spécifique. Les oracles sont la partie de l'interface qui permet à la fonction d'élection d'observer les phénomènes extérieurs qui lui sont extérieurs, plsu précisément la terminaison du \emph{job} précédemment exécuté et la liste des nouveaux \emph{jobs} à ordonnancer. Bien qu'ils disposent aussi de deux représentations, leur modèle ne décrit pas réellement les résultats que l'oracle doit produire, mais plutôt des contraintes sur les résultats produits. Le modèle va se contenter de décrire l'ensemble des résultats possibles, plutôt que d'en désigner un en particulier. Par exemple, une des contraintes sur la liste des nouveaux jobs est que leur date d'arrivée ne peut pas être supérieure à la date courante. 
 
 		\subsubsection{Back-ends}
 		\label{sec:back-ends}
@@ -83,7 +97,7 @@
 			\item Le second back-end fourni est l'implémentation d'un ordonnanceur Earliest Dealine First dans une partition de Pip. Cette implémentation exécute la fonction d'élection et transfère le flôt d'exécution vers le \emph{job} élu par la fonction d'élection. Chaque job se trouve dans sa propre partition, avec un espace d'adressage qui lui est propre. Le flôt d'exécution revient au back-end soit lorsqu'une interruption d'horloge survient, interrompant le \emph{job} élu, soit lorsque le \emph{job} lui signale sa terminaison. Le back-end attend alors la prochaine interruption pour réélire un nouveau \emph{job}.
 		\end{itemize}
 
-		Les back-ends ne font pas partie du modèle mathématique de l'ordonnanceur, si ce n'est au travers des \emph{oracles}.
+		Les back-ends ne font pas partie du modèle mathématique de l'ordonnanceur, si ce n'est au travers des \emph{oracles}. Ils ne font pas partie de la politique d'ordonnancement ; ils appliquent simplement ses arbitrages et lui fournissent les informations dont elle a besoin.
 
 		\subsubsection{Fonction d'élection}
 
@@ -162,7 +176,8 @@
 	
 	\begin{gather*}
 		\textit{ordonnançable} \implies\\
-  		\forall j, \forall t, ~\text{EdfPolicyUpTo}~t \implies \neg \text{overdue}~j~t.
+  		\forall j, \forall t.~~~\text{EdfPolicyUpTo}~t \implies\\
+		\neg \text{overdue}~j~t.
 	\end{gather*}
 \indent	avec :
 	\begin{align*}
@@ -170,13 +185,12 @@
 		\text{overdue}~j~t&\text{, prouvable si le \emph{job} $j$ a dépassé son échéance à l'instant}~t
 	\end{align*}
 
-	\subsubsection{Fonction d'élection idéalisée implémente la politique}
+	\subsubsection{Fonction d'élection idéalisée implémentant la politique d'ordonnancement}
 	\label{sec:functional}
 
 	La première étape du raffinement est de montrer que la fonction d'élection idéalisée \texttt{functional\_scheduler\_star} implémente la politique d'ordonnancement EDF. La propriété suivante établie que si la fonction d'élection idéalisée est exécutée jusqu'à un certain instant $t$, alors la politique EDF a été appliquée jusqu'à cet instant.
 	\begin{gather*}
-		\forall t, \forall o, \forall s.\\ 
-		~\texttt{functional\_scheduler\_star}~(t) = (o,s) \implies\\
+		\forall t, \forall o, \forall s.~~~\texttt{functional\_scheduler\_star}~(t) = (o,s) \implies\\
 		\text{EdfPolicyUpTo}~(\text{now}~s).
 	\end{gather*}
 \indent	avec :
@@ -188,17 +202,16 @@
 		o~&\text{, l'identifiant du \emph{job} élu à l'instant $t$}
 	\end{align*}
 
-	De cette propriété, on peut déduire la propriété exprimant la propriété de correction de la fonction d'élection idéalisée :
+	De cela, on peut déduire la propriété de correction de la fonction d'élection idéalisée :
 	étant donné un ensemble de \emph{job} ordonnançable, alors pour tout \emph{job} $j$ de cet ensemble, ce \emph{job} ne dépassera pas son échéance à l'instant $t$ si la fonction a été appelée à chaque instant jusqu'à l'instant $t$
 
 	\begin{gather*}
 		\textit{ordonnançable} \implies\\
-		\forall t, \forall o, \forall s.\\
-		\texttt{functional\_scheduler\_star}~(t) = (o,s) \implies\\
-		\forall i.~\neg \text{overdue}~i~(\text{now}~s).
+		\forall t, \forall o, \forall s.~~~\texttt{functional\_scheduler\_star}~(t) = (o,s) \implies\\
+		\forall i.~~~\neg \text{overdue}~i~(\text{now}~s).
 	\end{gather*}
 
-	\subsubsection{Fonction d'élection monadique raffine la fonction d'élection idéalisée}
+	\subsubsection{Fonction d'élection monadique raffinant la fonction d'élection idéalisée}
 	\label{sec:monadic}
 
 	La prochaine étape consiste à prouver que la fonction d'élection monadique raffine la fonction d'élection idéalisée. Cette propriété contient des triplets de Hoare. 
@@ -208,11 +221,11 @@
 	\begin{gather*}
 		\forall t.\\
 		\{
-		~\lambda~\mathtt{env}~s. ~\mathtt{env} = E \land s = \mathtt{init}~
+		~\lambda~\mathtt{env}~s.~~~\mathtt{env} = E~~\land~~s = \mathtt{init}~
 		\}\\
 		\texttt{scheduler\_star}~(t)\\
 		\{
-		~\lambda~o~s'. ~\texttt{functional\_scheduler\_star}~(t) = (o,s')~
+		~\lambda~o~s'.~~~\texttt{functional\_scheduler\_star}~(t) = (o,s')~
 		\}
 	\end{gather*}
 
@@ -222,16 +235,19 @@
 		\textit{ordonnançable} \implies\\
 		\forall t.\\
 		\{
-		~\lambda~\mathtt{env}~s. ~\mathtt{env} = E \land s = \mathtt{init}~
+		~\lambda~\mathtt{env}~s.~~~\mathtt{env} = E~~\land~~s = \mathtt{init}~
 		\}\\
 		\texttt{scheduler\_star}~(t)\\
 		\{
-		~\lambda~o~s'. ~\forall i,~\neg \text{overdue}~i~(\text{now}~s') ~
+		~\lambda~\_~s'.~~~\forall i.~~~\neg \text{overdue}~i~(\text{now}~s') ~
 		\}
 	\end{gather*}
 
 
-	\subsection{The proofs in Coq}
+	\subsection{Articulation de la preuve en Coq}
+
+	\textcolor{red}{Les détails de la preuve sont disponibles sur le dépot, mais ici nous allons développer les faits saillants de cette preuve}
+
 	Our Coq proofs closely follow the top-down refinement approach outlined above. First, the job model, mathematically described in Section~\ref{sec:jobmodel}, is encoded in Coq. The assumptions listed in~\ref{sec:jobmodel} (specifically: each deadline is large enough for a job to complete its execution when running alone on the processor; job durations are greater than zero and are over-approximated by the respective budgets; identifiers uniquely determine jobs; and every job is released exactly once) are global assumptions of the proof. Arguably, the global assumptions are just reasonable well-formedness constraints.
 
 

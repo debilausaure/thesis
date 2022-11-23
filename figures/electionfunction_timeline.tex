@@ -1,0 +1,40 @@
+\definecolor{job1color}{RGB}{88 ,88,184}
+\definecolor{job2color}{RGB}{234,80,90}
+
+\begin{tikzpicture}[>=triangle 45,font=\sffamily, every text node part/.style={align=center}, every node/.style={transform shape}]
+
+	%timeline
+	\node (tstart) at (0, 0) {};
+	\node (tend) at (9, 0) {};
+	\draw[->] (tstart.center) -- (tend.center);
+	\node[below=0.2cm of tend] {temps (u.a.)};
+	
+	\node[draw, fill=job1color, minimum height = 1cm, minimum width = 4cm] (job1) at (3.5, 4) {};
+	\node[left=0.3cm of job1] {Job \small{$a$}};
+	\draw[<->] (1.5, 3.3) -- (5.5, 3.3);
+	\node[below=0.2cm of job1] {$c_a$};
+	\node[draw, fill=job2color, minimum width = 1cm, minimum height = 1cm] (job2) at (7, 4) {};
+	\node[right=0.3cm of job2] {Job \small{$b$}};
+	\draw[<->] (6.5, 3.3) -- (7.5, 3.3);
+	\node[below=0.2cm of job2] {$c_b$};
+
+	\node (tjob1arrival) at (2, 1.5) {$r_a$};
+	\node (tjob1arrival2) at (2, -0.5) {$t=2$};
+	\draw[dashed] (tjob1arrival) -- (tjob1arrival2);
+	\node (tjob1deadline) at (7, 1.5) {$d_a$};
+	\node (tjob1deadline2) at (7, -0.5) {$t=7$};
+	\draw[dashed] (tjob1deadline) -- (tjob1deadline2);
+	\node (job1height) at (2, 1) {};
+	\draw (tjob1arrival |- job1height) -- (tjob1deadline |- tend) node [midway, draw, fill=white, minimum width = 5cm, minimum height = 1cm] (job1execperiod) {};
+	\node[draw, pattern color=job1color, pattern=south west lines, minimum width = 5cm, minimum height = 1cm] at (job1execperiod) {};
+
+	\node (tjob2arrival) at (3, 2.5) {$r_b$};
+	\node (tjob2arrival2) at (3, -1) {$t=3$};
+	\draw[dashed] (tjob2arrival) -- (tjob2arrival2);
+	\node (tjob2deadline) at (6, 2.5) {$d_b$};
+	\node (tjob2deadline2) at (6, -1) {$t=6$};
+	\draw[dashed] (tjob2deadline) -- (tjob2deadline2);
+	\node (job2height) at (2, 2) {};
+	\draw (tjob2arrival |- job2height) -- (tjob2deadline |- job1height) node [midway, draw, fill=white, minimum width = 3cm, minimum height = 1cm] (job2execperiod) {};
+	\node[draw, pattern color=job2color, pattern=south west lines, minimum width = 3cm, minimum height = 1cm] at (job2execperiod) {};
+\end{tikzpicture}
