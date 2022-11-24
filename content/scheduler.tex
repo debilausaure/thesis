@@ -27,7 +27,7 @@
 
 		La fonction d'élection est le morceau de logiciel que l'ordonnanceur doit appeler à chaque préemption, afin d'élire le prochain flôt d'exécution du système. La fonction d'élection fait ce choix en accord avec une politique d'ordonnancement qui lui permet de discriminer les flôts d'exécution selon des critères spécifiques qui sont propres à chaque politique. En particulier, la fonction d'élection de notre contribution suit la politique d'ordonnancement \emph{Earliest Deadline First}, qui est une politique temps réel dont la priorité est d'exécuter les \emph{jobs} dont l'échéance est la plus proche.
 
-		La fonction d'élection de notre ordonnanceur agit comme un oracle, ne prennant aucun argument et retournant un type composite. Ce type composite contient un booléen indiquant à l'ordonnanceur qu'il doit attendre la prochaine préemption car il n'y a aucun \emph{job} à exécuter. Ce type contient l'identifiant du \emph{job} à exécuter dans le cas contraire, ainsi qu'un autre booléen indiquant si le \emph{job} a dépassé son échéance. Ce dernier booléen sert à informer l'ordonnanceur que l'ensemble des \emph{jobs} n'est pas ordonnançable. 
+		La fonction d'élection de notre ordonnanceur agit comme un oracle, ne prennant aucun argument et retournant un type composite. Ce type composite contient un booléen indiquant à l'ordonnanceur qu'il doit attendre la prochaine préemption car il n'y a aucun \emph{job} à exécuter. Ce type contient l'identifiant du \emph{job} à exécuter dans le cas contraire, ainsi qu'un autre booléen indiquant si le \emph{job} a dépassé son échéance. Ce dernier booléen sert à informer l'ordonnanceur que l'ensemble des \emph{jobs} n'est pas ordonnançable.
 
 		\begin{listing}[!ht]
 			\coqcode{code/electionfunction.v}

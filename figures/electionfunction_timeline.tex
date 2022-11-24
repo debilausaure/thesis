@@ -3,38 +3,73 @@
 
 \begin{tikzpicture}[>=triangle 45,font=\sffamily, every text node part/.style={align=center}, every node/.style={transform shape}]
 
-	%timeline
-	\node (tstart) at (0, 0) {};
-	\node (tend) at (9, 0) {};
-	\draw[->] (tstart.center) -- (tend.center);
-	\node[below=0.2cm of tend] {temps (u.a.)};
-	
-	\node[draw, fill=job1color, minimum height = 1cm, minimum width = 4cm] (job1) at (3.5, 4) {};
-	\node[left=0.3cm of job1] {Job \small{$a$}};
-	\draw[<->] (1.5, 3.3) -- (5.5, 3.3);
-	\node[below=0.2cm of job1] {$c_a$};
-	\node[draw, fill=job2color, minimum width = 1cm, minimum height = 1cm] (job2) at (7, 4) {};
-	\node[right=0.3cm of job2] {Job \small{$b$}};
-	\draw[<->] (6.5, 3.3) -- (7.5, 3.3);
-	\node[below=0.2cm of job2] {$c_b$};
+	\node (tstart0) at (-1, 0) {};
+	\node (tend0) at (9, 0) {};
+	\node (t0) at (0, 1) {};
+	\draw[->] (tstart0.center) -- (tend0.center);
+	\draw[semithick] (t0.center) -- (t0 |- tend0);
+	\node[above left=0.2cm of tstart0] {$t=0$};
 
-	\node (tjob1arrival) at (2, 1.5) {$r_a$};
-	\node (tjob1arrival2) at (2, -0.5) {$t=2$};
-	\draw[dashed] (tjob1arrival) -- (tjob1arrival2);
-	\node (tjob1deadline) at (7, 1.5) {$d_a$};
-	\node (tjob1deadline2) at (7, -0.5) {$t=7$};
-	\draw[dashed] (tjob1deadline) -- (tjob1deadline2);
-	\node (job1height) at (2, 1) {};
-	\draw (tjob1arrival |- job1height) -- (tjob1deadline |- tend) node [midway, draw, fill=white, minimum width = 5cm, minimum height = 1cm] (job1execperiod) {};
-	\node[draw, pattern color=job1color, pattern=south west lines, minimum width = 5cm, minimum height = 1cm] at (job1execperiod) {};
+	\node (tstart1) at (-1, -2) {};
+	\node (tend1) at (9, -2) {};
+	\node (t1) at (0, -1) {};
+	\node[above=0.0cm of t1] {\texttt{Fonction d'élection (1) = $\emptyset$}};
+	\draw[->] (tstart1.center) -- (tend1.center);
+	\draw[semithick] (t1.center) -- (t1 |- tend1);
+	\node[above left=0.2cm of tstart1] {$t=1$};
 
-	\node (tjob2arrival) at (3, 2.5) {$r_b$};
-	\node (tjob2arrival2) at (3, -1) {$t=3$};
-	\draw[dashed] (tjob2arrival) -- (tjob2arrival2);
-	\node (tjob2deadline) at (6, 2.5) {$d_b$};
-	\node (tjob2deadline2) at (6, -1) {$t=6$};
-	\draw[dashed] (tjob2deadline) -- (tjob2deadline2);
-	\node (job2height) at (2, 2) {};
-	\draw (tjob2arrival |- job2height) -- (tjob2deadline |- job1height) node [midway, draw, fill=white, minimum width = 3cm, minimum height = 1cm] (job2execperiod) {};
-	\node[draw, pattern color=job2color, pattern=south west lines, minimum width = 3cm, minimum height = 1cm] at (job2execperiod) {};
+	\node (tstart2) at (-1, -4) {};
+	\node (tend2) at (9, -4) {};
+	\node (t2) at (0, -3) {};
+	\node[above=0.0cm of t2] {\texttt{Fonction d'élection (2) = }Job $a$};
+	\draw[->] (tstart2.center) -- (tend2.center);
+	\draw[thick] (t2.center) -- (t2 |- tend2);
+	\node[above left=0.2cm of tstart2] {$t=2$};
+	\draw (t2.center) -- (4, -4) node [midway, fill=white, minimum width = 4cm, minimum height = 1cm] (jobaexecperiod) {};
+	\node[draw, pattern color=job1color, pattern=south west lines, minimum width = 4cm, minimum height = 1cm] at (jobaexecperiod) {};
+
+	\node (tstart3) at (-1, -6) {};
+	\node (tend3) at (9, -6) {};
+	\node (t3) at (0, -5) {};
+	\node[above=0.0cm of t3] {\texttt{Fonction d'élection (3) = }Job $b$};
+	\draw[->] (tstart3.center) -- (tend3.center);
+	\draw[semithick] (t3.center) -- (t3 |- tend3);
+	\node[above left=0.2cm of tstart3] {$t=3$};
+
+	\node (tstart4) at (-1, -8) {};
+	\node (tend4) at (9, -8) {};
+	\node (t4) at (0, -7) {};
+	\node[above=0.0cm of t4] {\texttt{Fonction d'élection (4) = }Job $a$};
+	\draw[->] (tstart4.center) -- (tend4.center);
+	\draw[semithick] (t4.center) -- (t4 |- tend4);
+	\node[above left=0.2cm of tstart4] {$t=4$};
+	\node[below=0.2cm of tend4] {temps (u.a.)};
+	%\node[draw, fill=job1color, minimum height = 1cm, minimum width = 4cm] (job1) at (3.5, 4) {};
+	%\node[left=0.3cm of job1] {Job \small{$a$}};
+	%\draw[<->] (1.5, 3.3) -- (5.5, 3.3);
+	%\node[below=0.2cm of job1] {$c_a$};
+	%\node[draw, fill=job2color, minimum width = 1cm, minimum height = 1cm] (job2) at (7, 4) {};
+	%\node[right=0.3cm of job2] {Job \small{$b$}};
+	%\draw[<->] (6.5, 3.3) -- (7.5, 3.3);
+	%\node[below=0.2cm of job2] {$c_b$};
+
+	%\node (tjob1arrival) at (2, 1.5) {$r_a$};
+	%\node (tjob1arrival2) at (2, -0.5) {$t=2$};
+	%\draw[dashed] (tjob1arrival) -- (tjob1arrival2);
+	%\node (tjob1deadline) at (7, 1.5) {$d_a$};
+	%\node (tjob1deadline2) at (7, -0.5) {$t=7$};
+	%\draw[dashed] (tjob1deadline) -- (tjob1deadline2);
+	%\node (job1height) at (2, 1) {};
+	%\draw (tjob1arrival |- job1height) -- (tjob1deadline |- tend) node [midway, draw, fill=white, minimum width = 5cm, minimum height = 1cm] (job1execperiod) {};
+	%\node[draw, pattern color=job1color, pattern=south west lines, minimum width = 5cm, minimum height = 1cm] at (job1execperiod) {};
+
+	%\node (tjob2arrival) at (3, 2.5) {$r_b$};
+	%\node (tjob2arrival2) at (3, -1) {$t=3$};
+	%\draw[dashed] (tjob2arrival) -- (tjob2arrival2);
+	%\node (tjob2deadline) at (6, 2.5) {$d_b$};
+	%\node (tjob2deadline2) at (6, -1) {$t=6$};
+	%\draw[dashed] (tjob2deadline) -- (tjob2deadline2);
+	%\node (job2height) at (2, 2) {};
+	%\draw (tjob2arrival |- job2height) -- (tjob2deadline |- job1height) node [midway, draw, fill=white, minimum width = 3cm, minimum height = 1cm] (job2execperiod) {};
+	%\node[draw, pattern color=job2color, pattern=south west lines, minimum width = 3cm, minimum height = 1cm] at (job2execperiod) {};
 \end{tikzpicture}
