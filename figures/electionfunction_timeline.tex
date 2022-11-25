@@ -1,75 +1,136 @@
 \definecolor{job1color}{RGB}{88 ,88,184}
 \definecolor{job2color}{RGB}{234,80,90}
-
+\tikzfading[name=fade left, left color=transparent!100, right color=transparent!0]
 \begin{tikzpicture}[>=triangle 45,font=\sffamily, every text node part/.style={align=center}, every node/.style={transform shape}]
 
-	\node (tstart0) at (-1, 0) {};
-	\node (tend0) at (9, 0) {};
+	\node (tstart0) at (-3, 0) {};
+	\node (tend0) at (7, 0) {};
 	\node (t0) at (0, 1) {};
 	\draw[->] (tstart0.center) -- (tend0.center);
 	\draw[semithick] (t0.center) -- (t0 |- tend0);
-	\node[above left=0.2cm of tstart0] {$t=0$};
+	\node at (-3.8, 0.5) {$t=0$};
 
-	\node (tstart1) at (-1, -2) {};
-	\node (tend1) at (9, -2) {};
+	\node (ra0) at (2, 0.75) {};
+	\node[above=0.0cm of ra0, opacity=0.5] {$r_a$};
+	\draw[->, dashed, color=job1color, opacity=0.5] (ra0.center) -- (ra0 |- tend0);
+	\node (rb0) at (3, 0.75) {};
+	\node[above=0.0cm of rb0, opacity=0.5] {$r_b$};
+	\draw[->, dashed, color=job2color, opacity=0.5] (rb0.center) -- (rb0 |- tend0);
+
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+	\node (tstart1) at (-3, -2) {};
+	\node (tend1) at (7, -2) {};
+	\node at (-3.8, -1.5) {$t=1$};
 	\node (t1) at (0, -1) {};
-	\node[above=0.0cm of t1] {\texttt{Fonction d'élection (1) = $\emptyset$}};
+
+	\node (ra1) at (1, -1.25) {};
+	\node[above=0.0cm of ra1, opacity=0.5] {$r_a$};
+	\draw[->, dashed, color=job1color, opacity=0.5] (ra1.center) -- (ra1 |- tend1);
+	\node (rb1) at (2, -1.25) {};
+	\node[above=0.0cm of rb1, opacity=0.5] {$r_b$};
+	\draw[->, dashed, color=job2color, opacity=0.5] (rb1.center) -- (rb1 |- tend1);
+
+	%\node[above=0.0cm of t1] {\texttt{Fonction d'élection (1) = $\emptyset$}};
 	\draw[->] (tstart1.center) -- (tend1.center);
 	\draw[semithick] (t1.center) -- (t1 |- tend1);
-	\node[above left=0.2cm of tstart1] {$t=1$};
 
-	\node (tstart2) at (-1, -4) {};
-	\node (tend2) at (9, -4) {};
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+	\node (tstart2) at (-3, -4) {};
+	\node (tend2) at (6, -4) {};
 	\node (t2) at (0, -3) {};
-	\node[above=0.0cm of t2] {\texttt{Fonction d'élection (2) = }Job $a$};
 	\draw[->] (tstart2.center) -- (tend2.center);
+	%\node[above=0.0cm of t2] {\texttt{Fonction d'élection (2) = }Job $a$};
+	
 	\draw[thick] (t2.center) -- (t2 |- tend2);
-	\node[above left=0.2cm of tstart2] {$t=2$};
+	\node at (-3.8, -3.5) {$t=2$};
 	\draw (t2.center) -- (4, -4) node [midway, fill=white, minimum width = 4cm, minimum height = 1cm] (jobaexecperiod) {};
-	\node[draw, pattern color=job1color, pattern=south west lines, minimum width = 4cm, minimum height = 1cm] at (jobaexecperiod) {};
+	\node[draw, pattern color=job1color, pattern=south west lines, minimum width = 4cm, minimum height = 1cm, opacity=0.3] at (jobaexecperiod) {};
 
-	\node (tstart3) at (-1, -6) {};
-	\node (tend3) at (9, -6) {};
+	\node (da2) at (5, -3) {};
+	\node[above=0.0cm of da2] {$d_a$};
+	\draw[->, dashed, color=job1color] (da2.center) -- (da2 |- tend2);
+
+	\draw (t2.center) -- (1, -4) node [midway, fill=job1color, minimum width = 1cm, minimum height = 1cm] (jobaexec1) {};
+
+	\node[above=0.0cm of t2] {$r_a$};
+	\draw[->, dashed] (t2.center) -- (t2 |- tend2);
+	\node (rb2) at (1, -3) {};
+	\node[above=0.0cm of rb2, opacity=0.5] {$r_b$};
+	\draw[->, dashed, color=job2color, opacity=0.5] (rb2.center) -- (rb2 |- tend2);
+
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+	\node (tstart3) at (-3, -6) {};
+	\node (tend3) at (5, -6) {};
 	\node (t3) at (0, -5) {};
-	\node[above=0.0cm of t3] {\texttt{Fonction d'élection (3) = }Job $b$};
+	%\node[above=0.0cm of t3] {\texttt{Fonction d'élection (3) = }Job $b$};
 	\draw[->] (tstart3.center) -- (tend3.center);
 	\draw[semithick] (t3.center) -- (t3 |- tend3);
-	\node[above left=0.2cm of tstart3] {$t=3$};
+	\node at (-3.8, -5.5) {$t=3$};
+	
+	\draw (t3.center) -- (4, -6) node [midway, fill=white, minimum width = 4cm, minimum height = 1cm] (jobaexecperiod1) {};
+	\node[draw, pattern color=job1color, pattern=south west lines, minimum width = 4cm, minimum height = 1cm, opacity=0.3] at (jobaexecperiod1) {};
 
-	\node (tstart4) at (-1, -8) {};
-	\node (tend4) at (9, -8) {};
+	\draw (t3.center) -- ( 1, -6) node [draw, midway, fill=job2color, minimum width = 1cm, minimum height = 1cm] (jobbexec1) {};
+	\draw (t3.center) -- (-1, -6) node [draw, midway, fill=job1color, minimum width = 1cm, minimum height = 1cm] (jobaexec2) {};
+
+	\node (ra3) at (-1, -5) {};
+	\node[above=0.0cm of ra3, opacity=0.5] {$r_a$};
+	\draw[->, dashed, color=job1color, opacity=0.5] (ra3.center) -- (ra3 |- tend3);
+
+	\node (da3) at (4, -5) {};
+	\node[above=0.0cm of da3] {$d_a$};
+	\draw[->, dashed, color=job1color] (da3.center) -- (da3 |- tend3);
+
+	\node (db3) at (3, -5) {};
+	\node[above=0.0cm of db3] {$d_b$};
+	\draw[->, dashed, color=job2color] (db3.center) -- (db3 |- tend3);
+
+	%\fill[job1color,path fading=fade left] (-1,-6) rectangle (0, -5);
+	%\draw (t3.center) -- (-1, -6) node[midway, shading = axis, shading angle=90, left color=white, right color=job1color, minimum width = 1cm, minimum height = 1cm] {};
+
+	\node[above=0.0cm of t3] {$r_b$};
+	\draw[->, dashed] (t3.center) -- (t3 |- tend3);
+
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+	\node (tstart4) at (-3, -8) {};
+	\node (tend4) at (4, -8) {};
 	\node (t4) at (0, -7) {};
-	\node[above=0.0cm of t4] {\texttt{Fonction d'élection (4) = }Job $a$};
+	%\node[above=0.0cm of t4] {\texttt{Fonction d'élection (4) = }Job $a$};
 	\draw[->] (tstart4.center) -- (tend4.center);
 	\draw[semithick] (t4.center) -- (t4 |- tend4);
-	\node[above left=0.2cm of tstart4] {$t=4$};
+	\node at (-3.8, -7.5) {$t=4$};
 	\node[below=0.2cm of tend4] {temps (u.a.)};
-	%\node[draw, fill=job1color, minimum height = 1cm, minimum width = 4cm] (job1) at (3.5, 4) {};
-	%\node[left=0.3cm of job1] {Job \small{$a$}};
-	%\draw[<->] (1.5, 3.3) -- (5.5, 3.3);
-	%\node[below=0.2cm of job1] {$c_a$};
-	%\node[draw, fill=job2color, minimum width = 1cm, minimum height = 1cm] (job2) at (7, 4) {};
-	%\node[right=0.3cm of job2] {Job \small{$b$}};
-	%\draw[<->] (6.5, 3.3) -- (7.5, 3.3);
-	%\node[below=0.2cm of job2] {$c_b$};
 
-	%\node (tjob1arrival) at (2, 1.5) {$r_a$};
-	%\node (tjob1arrival2) at (2, -0.5) {$t=2$};
-	%\draw[dashed] (tjob1arrival) -- (tjob1arrival2);
-	%\node (tjob1deadline) at (7, 1.5) {$d_a$};
-	%\node (tjob1deadline2) at (7, -0.5) {$t=7$};
-	%\draw[dashed] (tjob1deadline) -- (tjob1deadline2);
-	%\node (job1height) at (2, 1) {};
-	%\draw (tjob1arrival |- job1height) -- (tjob1deadline |- tend) node [midway, draw, fill=white, minimum width = 5cm, minimum height = 1cm] (job1execperiod) {};
-	%\node[draw, pattern color=job1color, pattern=south west lines, minimum width = 5cm, minimum height = 1cm] at (job1execperiod) {};
+	\draw (t4.center) -- (3, -8) node [midway, fill=white, minimum width = 3cm, minimum height = 1cm] (jobaexecperiod1) {};
+	\node[draw, pattern color=job1color, pattern=south west lines, minimum width = 3cm, minimum height = 1cm, opacity=0.3] at (jobaexecperiod1) {};
 
-	%\node (tjob2arrival) at (3, 2.5) {$r_b$};
-	%\node (tjob2arrival2) at (3, -1) {$t=3$};
-	%\draw[dashed] (tjob2arrival) -- (tjob2arrival2);
-	%\node (tjob2deadline) at (6, 2.5) {$d_b$};
-	%\node (tjob2deadline2) at (6, -1) {$t=6$};
-	%\draw[dashed] (tjob2deadline) -- (tjob2deadline2);
-	%\node (job2height) at (2, 2) {};
-	%\draw (tjob2arrival |- job2height) -- (tjob2deadline |- job1height) node [midway, draw, fill=white, minimum width = 3cm, minimum height = 1cm] (job2execperiod) {};
-	%\node[draw, pattern color=job2color, pattern=south west lines, minimum width = 3cm, minimum height = 1cm] at (job2execperiod) {};
+	\draw (t4.center) -- ( 1, -8) node [draw, midway, fill=job1color, minimum width = 1cm, minimum height = 1cm] (jobaexec3) {};
+	\draw (t4.center) -- (-1, -8) node [draw, midway, fill=job2color, minimum width = 1cm, minimum height = 1cm] (jobaexec4) {};
+	\draw (-2, -8)    -- (-1, -7) node [draw, midway, fill=job1color, minimum width = 1cm, minimum height = 1cm] (jobbexec2) {};
+
+	\node (ra4) at (-2, -7) {};
+	\node[above=0.0cm of ra4, opacity=0.5] {$r_a$};
+	\draw[->, dashed, color=job1color, opacity=0.5] (ra4.center) -- (ra4 |- tend4);
+
+	\node (rb4) at (-1, -7) {};
+	\node[above=0.0cm of rb4, opacity=0.5] {$r_b$};
+	\draw[->, dashed, color=job2color, opacity=0.5] (rb4.center) -- (rb4 |- tend4);
+
+	\node (da4) at (3, -7) {};
+	\node[above=0.0cm of da4] {$d_a$};
+	\draw[->, dashed, color=job1color] (da4.center) -- (da4 |- tend4);
+
+	\node (db4) at (2, -7) {};
+	\node[above=0.0cm of db4] {$d_b$};
+	\draw[->, dashed, color=job2color] (db4.center) -- (db4 |- tend4);
+
+	%\fill[job1color,path fading=fade left] (-1,-6) rectangle (0, -5);
+	%\draw (t3.center) -- (-1, -6) node[midway, shading = axis, shading angle=90, left color=white, right color=job1color, minimum width = 1cm, minimum height = 1cm] {};
+
+	\node[above=0.0cm of t3] {$r_b$};
+	\draw[->, dashed] (t3.center) -- (t3 |- tend3);
 \end{tikzpicture}
