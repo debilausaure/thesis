@@ -248,24 +248,21 @@
 
 	\textcolor{red}{Les détails de la preuve sont disponibles sur le dépot, mais ici nous allons développer les faits saillants de cette preuve}
 
-	Our Coq proofs closely follow the top-down refinement approach outlined above. First, the job model, mathematically described in Section~\ref{sec:jobmodel}, is encoded in Coq. The assumptions listed in~\ref{sec:jobmodel} (specifically: each deadline is large enough for a job to complete its execution when running alone on the processor; job durations are greater than zero and are over-approximated by the respective budgets; identifiers uniquely determine jobs; and every job is released exactly once) are global assumptions of the proof. Arguably, the global assumptions are just reasonable well-formedness constraints.
+	Les preuves Coq suivent de près l'approche par raffinement décrite dans la sous-section précédente. Tout d'abord, le modèle choisi pour les jobs, décrit mathématiquement dans la section \ref{sec:jobmodel} est implémenté dans Coq. Les hypothèses listées dans la même section \ref{sec:jobmodel} sont des hypothèses globales, qui s'appliquent donc à l'ensemble de la preuve. Il est facile d'argumenter que ces hypothèses sont des hypothèses raisonnables sur l'ensemble étudié, c'est à dire qui ne restreignent pas les ensembles considérés, ou sans lesquelles l'ordonnancement d'un tel ensemble est impossible.
 
+	La couche d'abstraction représentant la politique d'ordonnancement nécessite des hypothèses \emph{locales} supplémentaires. Ces hypothèses locales ne sont utilisées que pour établir sa preuve de correction. Elles disparaissent dès le premier raffinement vers la fonction d'élection idéalisée ; ces hypothèses deviennent alors des définitions et des lemmes Coq.
 
-
-	At the highest abstraction level (EDF policy) there are additional \emph{local} assumptions.
-	The local assumptions are only used in the proof of correctness of the EDF scheduling policy. When the policy is subsequently
-	refined into an algorithm the local assumptions disappear - they become Coq definitions and lemmas.
-	Two abstract functions are locally assumed: \texttt{run}, which determines which job (if any) is  running at a given moment, and \texttt{rem}, that keeps track of the remaining execution time for any given job and at any given moment.
-	The following facts are also locally assumed about these functions, which model general facts about monoprocessor scheduling:
+	On suppose localement que deux fonctions sont fournies : \texttt{run} qui permet de déterminer quel \emph{job} sera exécuté à n'importe quel instant, et \texttt{rem}, qui garde le compte du temps d'exécution restant de chaque \emph{job} à n'importe quel moment.
+	Ces fonctions ont besoin de quelques hypothèses locales supplémentaires, qui représentent des propriétés générales sur l'ordonnancement mono-processeur :
 	
 	\begin{itemize}
-		\item at any moment in time, at most one job is running;
-		\item up to and including its release time, the remaining execution time of a job equals its duration;
-		\item the remaining execution time of a job decreases when the job is running, and stays constant otherwise;
-		\item whenever there is at least a released job with non-zero remaining execution time, there is one job that is running.
+		\item à chaque instant, au maximum un \emph{job} est exécuté;
+		\item le temps d'exécution restant d'un \emph{job} est égal à sa durée au moins jusqu'à sa \emph{release date};
+		\item le temps d'exécution restant d'un \emph{job} diminue lorsqu'il est exécuté, et reste constant lorsqu'il ne l'est pas;
+		\item il y a un \emph{job} qui s'exécute à chaque instant où au moins un \emph{job} est prêt à être exécuté.
 	\end{itemize}
 
-	Under the said local assumptions the correctness proof of the EDF policy is mostly a matter of algebraic calculations. It is relatively short: $\sim$1000 lines, mostly due to the fact that at this abstraction level one can focus on the essentials, without having to deal with implementation details.
+
 
 	The first refinement step, from EDF policy to EDF functional scheduler, amounts for the largest part of the proof effort. Essentially, this is because there is a substantial abstraction gap between the EDF policy level, which is written in relatively simple algebraic terms, and the functional-scheduler level, which encodes the policy in terms of a rather detailed list data structure. The refinement consisted in defining concrete versions of the abstract functions locally assumed at the EDF policy level - \emph{run} and \emph{rem} - in terms of the said list structure, and in proving the properties relating these functions, which at the EDF policy level were locally assumed. Once this is done, the correctness of the EDF functional algorithm is a simple conjunction between the correctness of the EDF policy and the fact that the function scheduler implements the policy. Proving an implementation relation instead of the global correctness property on the functional scheduler is easier, since the proof obligations for the implementation relation are more detailed than the global correctness property: there are fewer details that need to be "filled in" by additional proofs.
 
@@ -549,4 +546,6 @@ void State_insert_new_active_entry
 
 	\section{Discussion sur la méthodologie suivie}
 		\subsection{Métriques}
+		Avec ces hypothèses locales, la preuve de correction de la politique n'est qu'une question de calculs algébriques. Elle est relativement courte, $\sim$1000 lignes. Ceci est dû au haut niveau d'abstraction, qui permet de se concentrer sur l'essentiel sans s'encombrer des détails d'implémentation.
+
 		\subsection{Choix des primitives}
