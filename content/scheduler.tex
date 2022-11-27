@@ -61,6 +61,7 @@
 		La seconde raison est une conséquence directe de ce choix, relatif à l'effort de preuve. Si l'ordonnanceur avait été implémenté dans Pip, alors il aurait fallu montrer que l'ordonnanceur respecte les propriétés d'isolation de Pip. \textcolor{red}{Inclure les métriques pour argumenter que cet effort serait non négligeable}. De plus, l'ordonnanceur développé dans cet contribution a été conçu autour de la politique d'ordonnancement EDF. Ce choix est arbitraire, et il serait tout à fait pertinent d'utiliser une autre politique d'ordonnancement pour Pip. Ainsi, il faudrait prouver les propriétés d'isolation de Pip pour chaque variante de l'ordonnanceur engendrée par chaque politique souhaitée.
 
 		\subsection{Décomposition des éléments de l'ordonnanceur}
+		\label{sec:project_overview}
 			\subsubsection{Vue générale}
 			\begin{figure}[!ht]
 			    \centering
@@ -112,7 +113,7 @@
 	\label{sec:proof}
 	Cette section met en avant la preuve fonctionnelle de la fonction d'élection de l'ordonnanceur EDF, écrit sous la forme d'un programme monadique dans l'assistant de preuve Coq.
 
-	Cette section commencera par décrire la méthodologie de preuve, qui utilise un raffinement en 3 niveaux d'abstraction. La section décrira ensuite les différents niveaux d'abstraction et le raffinement qui les relie, en détaillant particulièrement pourquoi le raffinement préserve les propriétés de correction du niveaux d'abstraction supérieur. Enfin, la section conclura sur quelques détails d'élaboration de la preuve en Coq.
+	Cette section commencera par décrire la méthodologie de preuve, qui utilise un raffinement en trois niveaux d'abstraction. La section décrira ensuite les différents niveaux d'abstraction et le raffinement qui les relie, en détaillant particulièrement pourquoi le raffinement préserve les propriétés de correction du niveaux d'abstraction supérieur. Enfin, la section conclura sur quelques détails d'élaboration de la preuve en Coq.
 
 	\subsection{Méthodologie de preuve}
 
@@ -244,16 +245,16 @@
 	\end{gather*}
 
 
-	\subsection{Articulation de la preuve en Coq}
+	\subsection{Hypothèses et déroulement de la preuve en Coq}
 
-	\textcolor{red}{Les détails de la preuve sont disponibles sur le dépot, mais ici nous allons développer les faits saillants de cette preuve}
+	Les détails de la preuve sont disponibles sur le dépot, et nous avons décrit la structure principale de la preuve. Nous allons ici développer les faits les plus caractéristiques de cette preuve, donnant une vision plus précise de son déroulement. 
 
-	Les preuves Coq suivent de près l'approche par raffinement décrite dans la sous-section précédente. Tout d'abord, le modèle choisi pour les jobs, décrit mathématiquement dans la section \ref{sec:jobmodel} est implémenté dans Coq. Les hypothèses listées dans la même section \ref{sec:jobmodel} sont des hypothèses globales, qui s'appliquent donc à l'ensemble de la preuve. Il est facile d'argumenter que ces hypothèses sont des hypothèses raisonnables sur l'ensemble étudié, c'est à dire qui ne restreignent pas les ensembles considérés, ou sans lesquelles l'ordonnancement d'un tel ensemble est impossible.
+	Les preuves Coq suivent de près l'approche par raffinement décrite dans la sous-section précédente. Tout d'abord, le modèle choisi pour les jobs, décrit sous forme mathématiquement dans la section \ref{sec:jobmodel} est implémenté dans l'assistant de preuve. Les hypothèses listées dans la même section \ref{sec:jobmodel} sont des hypothèses globales, qui s'appliquent donc à l'ensemble de la preuve. Il est facile d'argumenter que ces hypothèses sont des hypothèses raisonnables sur l'ensemble étudié, c'est à dire qui ne restreignent pas les ensembles considérés, ou sans lesquelles l'ordonnancement d'un tel ensemble est impossible.
 
-	La couche d'abstraction représentant la politique d'ordonnancement nécessite des hypothèses \emph{locales} supplémentaires. Ces hypothèses locales ne sont utilisées que pour établir sa preuve de correction. Elles disparaissent dès le premier raffinement vers la fonction d'élection idéalisée ; ces hypothèses deviennent alors des définitions et des lemmes Coq.
+	La première couche d'abstraction modélisant la politique d'ordonnancement nécessite des hypothèses supplémentaires. Ces hypothèses -- appelées hypothèses \emph{locales} -- ne sont utilisées que pour établir la preuve de correction de la politique. Elles disparaissent dès le premier raffinement vers la fonction d'élection idéalisée ; ces hypothèses deviennent alors des définitions et des lemmes Coq.
 
-	On suppose localement que deux fonctions sont fournies : \texttt{run} qui permet de déterminer quel \emph{job} sera exécuté à n'importe quel instant, et \texttt{rem}, qui garde le compte du temps d'exécution restant de chaque \emph{job} à n'importe quel moment.
-	Ces fonctions ont besoin de quelques hypothèses locales supplémentaires, qui représentent des propriétés générales sur l'ordonnancement mono-processeur :
+	On suppose localement que deux fonctions sont fournies avec la politique : \texttt{run} qui permet de déterminer quel \emph{job} sera exécuté à n'importe quel instant, et \texttt{rem}, qui garde le compte du temps d'exécution restant de chaque \emph{job} à n'importe quel moment.
+	Ces fonctions ont besoin elles aussi d'hypothèses locales supplémentaires, qui représentent des propriétés générales sur l'ordonnancement mono-processeur :
 	
 	\begin{itemize}
 		\item à chaque instant, au maximum un \emph{job} est exécuté;
@@ -262,64 +263,107 @@
 		\item il y a un \emph{job} qui s'exécute à chaque instant où au moins un \emph{job} est prêt à être exécuté.
 	\end{itemize}
 
+	Le premier raffinement représente la plus grosse portion de la preuve. Cela s'explique par le fossé d'abstraction entre la politique d'ordonnancement (composée de termes algébriques relativement simples), et la couche d'abstraction de la fonction d'élection idéalisée qui décrit la politique en fonction d'opération sur des structures de données, en particulier des listes chainées. Ce raffinement consiste à définir les fonctions abstraites \texttt{run} et \texttt{rem} supposées fournies dans la couche d'abstraction de la politique, puis à prouver les hypothèses localement supposées sur ces fonctions.
+		Une fois ces hypothèses prouvées, la propriété de correction de la fonction d'élection idéalisée est une simple conjonction entre la propriété de correction de la politique d'ordonnancement et la propriété de raffinement. Il est plus intéressant de prouver une relation d'implémentation plutôt que de prouver directement la propriété de correction de la fonction d'élection idéalisée, car les obligations de preuve de la preuve par raffinement sont plus concrètes. La preuve par raffinement nécessitant l'établissement d'abstractions avant son écriture, elle nous propose des termes de preuves plus directs que ceux qui auraient été proposés par la preuve directe.
 
+	Toutes les propriétés à prouver à ce niveau de raffinement sont des \emph{invariants} -- des prédicats qui doivent être vrais sur tous les états atteignables depuis l'état initial, obtenus en exécutant un nombre arbitraire de fois la fonction d'élection idéalisée. La preuve de certains de ces invariants a cependant nécessité la conception d'invariants \emph{inductifs} supplémentaires, vrais sur l'état initial, et préservés par chaque exécution subséquente de la fonction d'élection idéalisée. Ces invariants ont été conçus de telle manière à ce qu'ensembles, ils impliquent l'invariant initial à prouver.
 
-	The first refinement step, from EDF policy to EDF functional scheduler, amounts for the largest part of the proof effort. Essentially, this is because there is a substantial abstraction gap between the EDF policy level, which is written in relatively simple algebraic terms, and the functional-scheduler level, which encodes the policy in terms of a rather detailed list data structure. The refinement consisted in defining concrete versions of the abstract functions locally assumed at the EDF policy level - \emph{run} and \emph{rem} - in terms of the said list structure, and in proving the properties relating these functions, which at the EDF policy level were locally assumed. Once this is done, the correctness of the EDF functional algorithm is a simple conjunction between the correctness of the EDF policy and the fact that the function scheduler implements the policy. Proving an implementation relation instead of the global correctness property on the functional scheduler is easier, since the proof obligations for the implementation relation are more detailed than the global correctness property: there are fewer details that need to be "filled in" by additional proofs.
+	La dernière étape de raffinement permet de montrer que la fonction d'élection exécutable raffine la fonction d'élection idéalisée. Elle consiste à montrer que l'ensemble des états atteignables par la fonction d'élection exécutable est inclus dans l'ensemble des états atteignables par la fonction d'élection idéalisée. Cette étape est relativement simple comparée au premier raffinement, car les fonctions d'élection idéalisées et exécutables sont à des niveaux d'abstractions relativement proches ; en particulier, elles utilisent les mêmes structures de données.
+	La différence notable entre les deux fonctions d'élection est que la fonction d'élection idéalisée calcule en une grosse itération ce que la fonction d'élection exécutable calcule en plusieurs petites itérations. La fonction d'élection idéalisée n'est pas assujettie à de telles contraintes et peut de ce fait factoriser ces longues séquences de petites itérations en une seule grosse itération. Ce faisant, la fonction d'élection idéalisée nous avait épargné la preuve d'invariants supplémentaires à propos des états intermédiaires générés par la fonction d'élection exécutable, qu'il a fallu prouver dans cette étape de raffinement.
 
-	All the properties to be proved are invariants - predicates that hold at all states reachable from an initial state, obtained by executing the functional scheduler any finite number of times. The proof required us to discover additional \emph{inductive} invariants, which hold initially and whose truth is preserved by each execution of the scheduler. Such invariants have to be chosen so that together they imply the original invariant. This is where creativity is required from the user. Together with the functional scheduler this step amount to $\sim$1600 lines of code.
+	La conclusion globale indiquant la fonction d'élection exécutable est correcte découle de la propriété de correction de la politique d'ordonnancement et des preuves des deux raffinements successifs.
 
-	By comparison, the second (and last) refinement step is short ($\sim$500 lines). It amounts to proving that, starting from a given initial state, the reachable states generated by running the monadic EDF scheduler are included in the states generated by running the functional EDF scheduler. This was relatively easy (especially compared to the first refinement step) because the functional and monadic schedulers are relatively close in terms of abstraction level; e.g., they work with the same data structures. The difference lies in the fact that the functional scheduler computes in one large step what the monadic one computes in a sequence of many small steps.  The functional algorithm is not subject to such requirements, thus, it is free to "compact" a long sequence of small steps into a large single step. By doing so the functional scheduler also saves us from the effort of proving even more additional invariants, about intermediary states that the monadic scheduler generates.  
-\indent The global conclusion that the monadic EDF scheduler is correct follows from the correctness of the abstract EDF policy and the correctness of the two successive refinements.
+	\textcolor{red}{Il faut une transition c'est trop raide}
 
-	\section{Mise en oeuvre / Implémentation}
+	\section{Implémentation et modèle de l'état et de son interface}
+
+	Cette section commencera par rappeler le rôle de la monade d'état dans le monde mathématique et de la nécessité de son interface. Elle illustrera ensuite le problème de \emph{dualité} des modèles et de l'objet réel modélisé avec un exemple s'étant présenté pendant l'implémentation.
+	Dans une seconde partie, cette section présentera notre implémentation et les modèles relatifs à l'état et aux fonctions de l'interface.
+	Cette section décrira l'implémentation de l'interface avec la monade d'état, qui permet à la fonction d'élection d'intéragir avec l'état interne du programme.
 		\subsection{Dualité implémentation/modélisation}
-			% Méthode générale
+			La monade d'état représente l'état du programme dans le monde fonctionnel du modèle qui en est autrement dépourvu. Les fonctions qui permettent d'interagir avec la monade d'état constituent son interface. Lors de la compilation du code Gallina vers du code C, la monade d'état disparaît, pour laisser place à l'état intrinsèque du monde impératif.
+			Il existe donc deux penchants de l'interface : le modèle, intéragissant avec la monade d'état, et son implémentation, intéragissant directement avec l'état intrinsèque du programme. Cette interface est supposée correcte : on suppose que l'appel à une fonction de l'interface a les mêmes effets dans le monde mathématique et dans le monde réel. La méthode usuelle pour minimiser l'impact de cette supposition est de créer une interface constituée de fonctions dont les effets sur l'état sont les plus simples possibles, idéalement de l'ordre d'une simple instruction assembleur.
+			Malheureusement, cette méthode est souvent en tension avec l'effort de preuve, qui augmente de manière exponentielle lorsque les modèles se rapprochent de plus en plus du matériel. Ainsi, chaque modèle trouve son propre point d'équilibre entre coût de la preuve et risque de distorsion entre le modèle et la réalité.
+
+			Pour illustrer ce propos, voici un exemple relatif à l'établissement de la preuve décrite dans la section précédente. Afin de simplifier grandement la preuve, notre monade d'état contient des listes. Le modèle de l'interface repose de ce fait sur les listes fonctionnelles du langage, qui créent des copies à chaque opération et qui ne manquent jamais de mémoire. Ce type de liste \emph{idéalisé} ne peut être implémenté qu'avec des logiciels ad-hoc lourds comme, par exemple, les ramasse-miettes. Incorporer de tels logiciels dans la base de confiance est en nette contradiction avec notre méthodologie.
+			Nous avons de ce fait décidé d'opter pour une interface utilisant des listes avec modification en place, de telle sorte à fournir une interface qui soit pratique à utiliser dans le code monadique, dont le modèle fonctionnel est simple du point de vue de la preuve, et qui soit facile à implémenter en C. Ce choix nous contraints néanmoins à ne jamais laisser l'utilisateur manipuler les objets de listes directement, sous peine de créer une distorsion entre la réalité et le modèle.
+
+Pour illustrer cette distorsion, prenons par exemple la séquence d'instructions idéalisée suivante :
+\begin{verbatim}
+do liste_initiale <- get_liste_initiale;
+do liste_modifiee <- modifie_liste liste_initiale;
+do queue_liste_initiale <- get_tail liste_initiale;
+\end{verbatim}
+
+Dans le monde fonctionnel, l'interface utilise les listes \emph{idéalisées} qui retournent des \emph{copies} (éventuellement modifiées) de la liste initiale. La variable \texttt{queue\_liste\_initiale} contient effectivement une référence vers une copie de la queue de la liste initiale. Cependant, l'implémentation réelle de l'interface utilise une implémentation de liste sans copie, avec une modification des listes en place. La variable \texttt{queue\_liste\_initiale} contient une référence vers la queue de la seule liste existante, c'est à dire celle de la liste modifiée.
+
+Afin d'éviter de s'exposer à ce problème de distortion, notre interface ne fournit donc pas d'objet de liste, mais des fonctions pour modifier les listes contenues dans l'état. Cette approche a cependant le désavantage de créer des primitives non-triviales, comme par exemple l'insertion triée dans une liste. Nous reviendrons sur ce choix d'inclusion de fonctions non-triviales dans l'interface (et donc dans la base de confiance) à la fin de ce chapitre, dans la section \ref{sec:interfaceTCB}. 
 		
 		\subsection{Implémentation vue comme un cas particulier de l'interface abstraite}
 	\label{sec:monad}
 
-	In this section we detail how the interface of the verified code - the monad - is designed. The monad is simply a specification of how the interface should behave. We also explain the differences between the monad's model and its actual implementation.
-	The various parts are represented in Figure \ref{fig:project_overview}.
+	Cette sous-section détaille comment l'interface du code vérifié avec l'état a été conçue, décrivant à la fois les modèles et leur implémentation.
+	Pour rappel, les différentes parties de l'interface et leurs interactions sont représentées dans la section \ref{sec:project_overview}, dans la figure \ref{fig:project_overview}.
 
-	We start by detailing the verified code's internal state, which is composed of two parts: a read-only part that we call the environment, and a mutable part. Then, we introduce a model-blind software that computes the information held in the environment, that we call the back-end. Next, we  explain how the verified code can retrieve the information from the environment. Finally, we give details about the interface that allows the verified code to interact with the mutable part of the state.
+	Cette section décrira d'abord l'état interne de la fonction d'élection, composé de deux parties : une partie en lecture seule appelée l'environnement, et une partie mutable. Ensuite, la section expose comment la fonction d'élection utilise les \emph{oracles} pour récupèrer les informations de l'environnement, et comment la fonction d'élection utilise l'interface pour manipuler la partie mutable de l'état.
 
-	\subsection{Program state}
+	\subsubsection{État de l'ordonnanceur}
 
-	The state model is divided into two parts: a part containing the values over which the algorithm has no control, its \emph{environment}, which is immutable. These values are provided by the back-end. The second part of the model contains the values over which the algorithm has control and which are therefore mutable.
+	Le modèle de l'état est divisé en deux parties : l'environnement, contenant les valeurs calculées par le back-end sur lesquelles la fonction d'élection n'a aucun contrôle, et la partie de l'état modifiable par la fonction d'élection.
 
-	The environment is defined as a function that, given a certain timestamp, returns a list of jobs to add to the pending jobs list.
-	%\begin{verbatim}
+	Le modèle de l'environnement \texttt{Env} est défini comme une fonction qui, en fonction de l'instant passé en paramètre, retourne la liste des \emph{jobs} à ajouter à la liste des \emph{jobs} prêts à être ordonnancés.
 	\begin{minted}{coq}
+Record Job  :=
+mk_Job {
+    jobid : CNat ;
+    arrival : CNat ;
+    duration : CNat ;
+    budget : CNat ;
+    deadline : CNat
+}.
+
 Definition Env : Type := CNat -> list Job.
 	\end{minted}
-	%\end{verbatim}
 
-	The mutable state model consists of structure with two fields. The first is simply a time counter and the other is a list of \emph{entries}. Entries are structures that associate jobs with their remaining time budget and relative deadline. The state is therefore defined as follows:
-	%\begin{verbatim}
-	\begin{minted}{coq}
-Record State := 
-mk_State {
-    now : CNat ;
+	Le modèle de la partie mutable \texttt{State} est constitué d'une structure avec deux champs. Le premier est un simple compteur de temps, gardant le compte des interruptions d'horloge ; l'autre champ est une liste d'\texttt{entries}. Les \emph{entries} sont des structures qui associent chaque \emph{job} à son budget d'exécution restant et à son échéance relative. Le modèle de cet état mutable est donc défini de la manière suivante :
+\begin{figure}[ht]
+\begin{minipage}[c]{0.50\linewidth}
+\begin{minted}{coq}
+Record Entry :=
+mk_Entry {
+    id : CNat ;
+    cnt : CNat ;
+    del : CNat
+}.
+\end{minted}
+\end{minipage}
+\begin{minipage}[c]{0.50\linewidth}
+\begin{minted}{coq}
+Record State :=                     
+mk_State {                      
+    now : CNat ;                 
     active : list Entry ;
 }.
-	\end{minted}
-	%\end{verbatim}
 
-	The resulting state model, composed of both mutable and immutable parts, has the following type:
-	%\begin{verbatim}
+\end{minted}
+\end{minipage}
+
+\end{figure}
+
+	La monade d'état, composé de l'environnement et de la partie mutable, a le type suivant :
 	\begin{minted}{coq}
 Definition RT (A : Type) : Type :=
     Env -> State -> A * State.
 	\end{minted}
-	%\end{verbatim}
+	Dans notre modèle, chaque fonction monadique a un type de retour \texttt{RT A}, et prend donc en paramètre l'environnement et l'état mutable actuel et renvoie une valeur de type arbitraire \texttt{A} ``enrobée'' avec la nouvelle partie mutable de l'état.
 
-	We now describe how the state is implemented.
-	The implementation takes advantage of the fact that the election function creates a single structure for each job. Essentially, the implementation reserves additional memory space for each job to be scheduled, which the algorithm uses to store the related Entry structure.
+	Les paragraphes suivants décrivent comment l'état est implémenté.
+	L'implémentation profite du fait que la fonction d'élection crée une nouvelle structure \texttt{entry} pour chaque \emph{job} à ordonnancer. L'implémentation réserve de l'espace mémoire supplémentaire dans la structure de chaque \emph{job}, afin que la fonction d'élection puisse y écrire la structure \texttt{entry} associée.
 
-	Thus, there is an array of \texttt{coq\_N} elements (where \texttt{coq\_N} is the static upper bound on the number of jobs to be scheduled) that contains the initial immutable information about the pending jobs, as well as the additional mutable memory that the algorithm needs. The jobs are identified by their own index in this array. Each element of this array also contains two additional memory words. These memory bits are used to maintain the various lists required by the algorithm: the list of newly available jobs to be scheduled from the environment and maintained by the back-end, and the list of jobs pending execution from the internal state of the program, maintained by the algorithm).
+	Notre implémentation fournit un ensemble jouet de job à ordonnancer sous la forme d'un tableau de \texttt{coq\_N} éléments (où \texttt{coq\_N} est une borne supérieure au nombre de \emph{jobs} à ordonnancer connue à la compilation). Les jobs sont discriminés par leur position au sein de ce tableau. Chaque élément de ce tableau correspond donc à un \emph{job} de l'ensemble à ordonnancer. Il contient les informations immuables qui le caractérisent (par exemple sa \emph{release date}, son échéance, son budget temporel d'exécution), ainsi qu'une portion de mémoire non initialisée qui sera utilisée par la fonction d'élection pour y écrire la structure \texttt{entry} qui lui est associée. De plus, chaque élément contient deux mots mémoire supplémentaires. Ils sont utilisés pour maintenir deux listes nécessaires au fonctionnement de l'ordonnanceur. La première est la liste des nouveaux \emph{jobs} à ordonnancer, exposée par l'environnement et maintenue par le \emph{back-end}. La seconde est la liste des \emph{jobs} prêt à être exécutés, maintenue par la fonction d'élection.
 
-	So this large array has elements of type:
-	%\begin{verbatim}
+	Chaque élément est représenté en C avec le type suivant :
+	\begin{listing}[!hb]
 	\begin{minted}{c}
 typedef struct __internal_s__ {
     struct __internal_job__   job;
@@ -328,29 +372,38 @@ typedef struct __internal_s__ {
     int active_next_entry_index;
 } internal_t;
 	\end{minted}
-	%\end{verbatim}
+	\caption{Implémentation du type des éléments du tableau contenant les \emph{jobs} à ordonnancer}
+	\label{code:array_elem_impl}
+	\end{listing}
 
-	The overall state of the program consists of this big array, the heads for the two different lists, the clock counter variable from the mutable state, and a variable that indicates whether the last job completed its execution (which is manipulated by the back-end):
+	L'implémentation de l'état, donnée en listing \ref{code:sched_state_impl}, est donc constituée :
+	\begin{itemize}
+		\item du tableau contenant les informations sur les \emph{jobs} et l'espace supplémentaire requis par la fonction d'élection pour y stocker les structures \texttt{entry}
+		\item d'une référence vers la liste des nouveaux \emph{jobs} à ordonnancer
+		\item d'une référence vers la liste des \emph{jobs} prêts à être ordonnancés
+		\item de la variable gardant le compte des interruptions d'horloge
+		\item de la variable indiquant si le dernier \emph{job} exécuté a terminé son exécution
+	\end{itemize}
 
-	%\begin{verbatim}
+	\begin{listing}[!hb]
 	\begin{minted}{c}
 internal_t INTERNAL_ARRAY[coq_N] = EXAMPLE_JOB_SET;
-
 int JOBS_ARRIVING_HEAD_INDEX = -1;
 int ACTIVE_ENTRIES_HEAD_INDEX = -1;
-
 unsigned int CLOCK = 0;
-coq_CBool  JOB_DONE = false;
+coq_CBool JOB_DONE = false;
 	\end{minted}
-	%\end{verbatim}
+	\caption{Implémentation de l'environnement et de la partie mutable de l'état de l'ordonnanceur}
+	\label{code:sched_state_impl}
+	\end{listing}
 
-	\subsection{Oracles}
+	\subsubsection{Oracles}
 
-	There are two oracle primitives that return values managed by the back-end code and abstract to the model. The first, \texttt{jobs\_arriving}, retrieves the new jobs that need to be added to the pending job list; the other, \texttt{job\_terminating}, returns whether the last executed job completed its execution (if such a job exists). \footnote{Their model is available in \texttt{src/coq/model/Interface/Oracles.v}, while their C interface implementation can be found in \texttt{src/interface\_implementation/include/Primitives.h}.}
+	Il existe deux fonctions qui retournent des valeurs de l'environnement calculées par le back-end. La première, \texttt{jobs\_arriving}, récupère les nouveaux \emph{jobs} à ordonnancer ; la seconde, \texttt{job\_terminating}, retourne si le dernier \emph{job} exécuté a terminé son exécution (si un tel \emph{job} existe). Nous appelons ces fonctions les \emph{oracles} de l'ordonnanceur, car leur modèle ne décrit que les contraintes imposées sur les résultats qu'elles produisent, et non pas comment ces résultats sont fournis.
 
-	The monadic code can retrieve the identifiers of incoming jobs via an oracle that reads the environment. The model imposes a single constraint on the implementation: in the list of job identifiers returned by the oracle, no identifier may be greater than $N$, where $N$ is a predefined static upper bound. 
+	La fonction \texttt{jobs\_arriving}, qui récupére les identifiants des nouveaux jobs à ordonnancer, a un modèle n'imposant qu'une seule contrainte à l'implémentation : dans la liste des identifiants de \emph{jobs} retournés par l'oracle, aucun identifiant ne doit être plus grand que $N$, où $N$ est une borne supérieure définie à la compilation. Cette borne est la même que la borne \texttt{coq\_N} présentée dans la section précédente sur l'implémentation de l'état. La liste renvoyée par l'oracle est cachée derrière le type opaque \texttt{JobSet}.\\
+	Voici le modèle de cette fonction :
 
-	%\begin{verbatim}
 	\begin{minted}{coq}
 Definition jobs_arriving (N : nat) : RT JobSet :=
   fun env s =>
@@ -359,26 +412,20 @@ Definition jobs_arriving (N : nat) : RT JobSet :=
       (map jobid (env s.(now))) 
   in (f, s).
 	\end{minted}
-	%\end{verbatim}
 
-	We would like to draw the reader's attention to the fact that the model is \textbf{purely abstract}; it does not indicate which jobs are ready for execution, since the scheduling algorithm does not rely on this information. Also note that the list of identifiers is hidden behind the abstract type \texttt{JobSet}.
+	Rappelons que ce modèle n'indique aucunement comment calculer une telle liste de \emph{jobs}. Ce choix est délibéré, afin de s'assurer que la fonction d'élection n'est pas en capacité de prévoir l'arrivée de nouveaux \emph{jobs}, guarantissant que n'importe quel ensemble arbitraire de \emph{jobs} puisse être utilisé avec cet ordonnanceur.
 
-	In contrast, the implementation of the function that returns the oracle's prediction is quite simple:
+	L'implémentation de la fonction retournant la prédiction de l'oracle est particulièrement simple : elle retourne simplement la variable de l'état contenant la référence vers la liste des nouveaux \emph{jobs} à ordonnancer. Plus précisement, cette variable contient l'indice de l'élément du tableau étant en tête de cette liste. La liste a été construite par le back-end avant l'exécution de la fonction d'élection qui fait appel à l'oracle. La construction de cette liste est donc totalement déléguée à l'implémentation du back-end, sans aucune répercussion sur le monde mathématique.
 
-	%\begin{verbatim}
 	\begin{minted}{c}
 static inline coq_JobSet
 Primitives_jobs_arriving(coq_CNat n) {
      return JOBS_ARRIVING_HEAD_INDEX;
 }
 	\end{minted}
-	%\end{verbatim}
 
-	The implementation simply reads the index of the first arriving job from the environment. The list of incoming jobs is previously created by the back-end, so the actual list creation process depends on the back-end.
-
+	L'autre oracle est une fonction qui retourne 
 	The other oracle is a function that returns whether the job with the most critical deadline (at the head of the list maintained by our scheduler) has completed its execution. The model is stricter with this oracle. It forces the implementation to return \texttt{True} if time spent executing the job is greater than its theoretical WCET.
-
-	\vspace{1cm}
 
 	Here is the (nested) model definition:
 
@@ -412,7 +459,7 @@ static inline coq_CBool Primitives_job_terminating(void) {
 
 	We now review the software that allows the verified code to interact with the mutable state.
 
-	\subsection{Abstract Types}
+	\subsubsection{Abstract Types}
 
 	All types used by the verified code are abstract types (black box types). These types have their own interface. 
 
@@ -547,5 +594,10 @@ void State_insert_new_active_entry
 	\section{Discussion sur la méthodologie suivie}
 		\subsection{Métriques}
 		Avec ces hypothèses locales, la preuve de correction de la politique n'est qu'une question de calculs algébriques. Elle est relativement courte, $\sim$1000 lignes. Ceci est dû au haut niveau d'abstraction, qui permet de se concentrer sur l'essentiel sans s'encombrer des détails d'implémentation.
+		
+		La première étape du raffinement, allant de la politique d'ordonnancement vers la fonction d'élection idéalisée, représente la majeure partie de la preuve
 
+		This is where creativity is required from the user. Together with the functional scheduler this step amount to $\sim$1600 lines of code.
+		By comparison, the second (and last) refinement step is short ($\sim$500 lines). 
 		\subsection{Choix des primitives}
+		\label{sec:interfaceTCB}
