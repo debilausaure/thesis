@@ -36,6 +36,8 @@
 
 			\subsubsection{Exemple d'appel à la fonction d'élection}
 
+			\textcolor{red}{décrire les figures, expliquer les jobs et le role de la fonction d'élection}
+
 			\begin{figure}[!ht]
 			\centering{
 				\input{figures/electionfunction_example.tex}
@@ -79,12 +81,12 @@
 
 			L'état est -- de sucroit -- divisé en deux parties, qui se distinguent par leur fonction par rapport à la fonction d'élection. La première partie de l'état est maintenue par la fonction d'élection, qui peut y lire et y écrire des données à sa guise en utilisant l'interface de l'état prévue à cet effet. Cette partie de l'état est appelée l'état mutable. La seconde partie est la partie de l'état que la fonction d'élection ne peut qu'observer, qui est appelé l'environnement. L'environnement contient les informations relatives aux évènements extérieurs essentiels au bon fonctionnement de l'ordonnanceur, tels que l'arrivée de nouveaux \emph{jobs} à ordonnancer, ou la complétion d'un \emph{job} précédemment exécuté. Cette partie de l'état est donc accessible en lecture seule à la fonction d'élection. La fonction d'élection peut consulter l'environnement aux travers d'oracles, qui servent d'interface avec l'environnement.
 
-		\subsubsection{Interface avec l'état (types abstraits et oracles)}
+		\subsubsection{Interface avec l'état -- Oracles, Types opaques et fonctions associées}
 			
 			Comme indiqué dans la sous-section précédente, la fonction d'élection effectue des modifications sur l'état ou observe l'environnement grâce à l'interface et aux oracles. Cette interface est \emph{nécessaire} car elle permet de définir les opérations qui doivent être supportées par l'état, et donc par ses deux représentations (le code exécutable et le modèle). Sans cette interface, certaines opérations pourraient être possible dans une des deux représentations sans qu'elle soit possible dans l'autre.
 			L'interface ainsi que les oracles sont composés de types opaques, implémentés de manière indépendante dans les modèles ou dans le code exécutable. Ces types sont munis de fonctions elles aussi pourvues d'une implémentation exécutable ainsi que d'un modèle.
 
-			Les oracles sont une partie de l'interface spécifique. Les oracles sont la partie de l'interface qui permet à la fonction d'élection d'observer les phénomènes extérieurs qui lui sont extérieurs, plsu précisément la terminaison du \emph{job} précédemment exécuté et la liste des nouveaux \emph{jobs} à ordonnancer. Bien qu'ils disposent aussi de deux représentations, leur modèle ne décrit pas réellement les résultats que l'oracle doit produire, mais plutôt des contraintes sur les résultats produits. Le modèle va se contenter de décrire l'ensemble des résultats possibles, plutôt que d'en désigner un en particulier. Par exemple, une des contraintes sur la liste des nouveaux jobs est que leur date d'arrivée ne peut pas être supérieure à la date courante. 
+			Les oracles sont une partie de l'interface spécifique. Les oracles sont la partie de l'interface qui permet à la fonction d'élection d'observer les phénomènes extérieurs qui lui sont extérieurs, plus précisément la terminaison du \emph{job} précédemment exécuté et la liste des nouveaux \emph{jobs} à ordonnancer. Bien qu'ils disposent aussi de deux représentations, leur modèle ne décrit pas réellement les résultats que l'oracle doit produire, mais plutôt des contraintes sur les résultats produits. Le modèle va se contenter de décrire l'ensemble des résultats possibles, plutôt que d'en désigner un en particulier. Par exemple, une des contraintes sur la liste des nouveaux jobs est que leur date d'arrivée ne peut pas être supérieure à la date courante. 
 
 		\subsubsection{Back-ends}
 		\label{sec:back-ends}
@@ -117,7 +119,7 @@
 
 	\subsection{Méthodologie de preuve}
 
-	Cette preuve est conduite par raffinement. Cette méthode permet d'appliquer la stratégie "diviser pour régner" pour gérer la complexité de la preuve.
+	Cette preuve est conduite par raffinement. Cette méthode permet d'appliquer la stratégie ``diviser pour régner'' pour gérer la complexité de la preuve.
 	Cette preuve commence par une définition abstraite de la politique d'ordonnancement Earliest Deadline First, et montre que la politique est \emph{correcte}. Cette étape signifie que, sous réserve de quelques hypothèses, n'importe quel ensemble de \emph{jobs} ordonnançable ordonnancé selon cette politique sera ordonnancé tel que chaque \emph{job} complètera son exécution sans excéder son échéance.
 	La preuve continue en définissant un algorithme de fonction d'élection idéalisé, et montre que cet algorithme implémente la politique d'ordonnancement définie précédemment. Il suit que l'algorithme idéalisé est aussi \emph{correct}.
 	L'étape finale de la preuve consiste à écrire la fonction d'élection qui sera finalement compilée en code source C. Il faut ensuite montrer que la fonction d'élection qui sera traduite en C exhibe les mêmes comportements que l'algorithme idéalisé de la fonction d'élection (en particulier les effets de bord et les valeurs de retour). La preuve est alors complète, la preuve de correction a été propagée jusqu'au code C.
@@ -263,12 +265,14 @@
 		\item il y a un \emph{job} qui s'exécute à chaque instant où au moins un \emph{job} est prêt à être exécuté.
 	\end{itemize}
 
-	Le premier raffinement représente la plus grosse portion de la preuve. Cela s'explique par le fossé d'abstraction entre la politique d'ordonnancement (composée de termes algébriques relativement simples), et la couche d'abstraction de la fonction d'élection idéalisée qui décrit la politique en fonction d'opération sur des structures de données, en particulier des listes chainées. Ce raffinement consiste à définir les fonctions abstraites \texttt{run} et \texttt{rem} supposées fournies dans la couche d'abstraction de la politique, puis à prouver les hypothèses localement supposées sur ces fonctions.
+	\label{sec:proof_insight}
+
+	Le premier raffinement représente la plus grosse portion de la preuve. Ce raffinement consiste à définir les fonctions abstraites \texttt{run} et \texttt{rem} supposées fournies dans la couche d'abstraction de la politique, puis à prouver les hypothèses localement supposées sur ces fonctions.
 		Une fois ces hypothèses prouvées, la propriété de correction de la fonction d'élection idéalisée est une simple conjonction entre la propriété de correction de la politique d'ordonnancement et la propriété de raffinement. Il est plus intéressant de prouver une relation d'implémentation plutôt que de prouver directement la propriété de correction de la fonction d'élection idéalisée, car les obligations de preuve de la preuve par raffinement sont plus concrètes. La preuve par raffinement nécessitant l'établissement d'abstractions avant son écriture, elle nous propose des termes de preuves plus directs que ceux qui auraient été proposés par la preuve directe.
 
 	Toutes les propriétés à prouver à ce niveau de raffinement sont des \emph{invariants} -- des prédicats qui doivent être vrais sur tous les états atteignables depuis l'état initial, obtenus en exécutant un nombre arbitraire de fois la fonction d'élection idéalisée. La preuve de certains de ces invariants a cependant nécessité la conception d'invariants \emph{inductifs} supplémentaires, vrais sur l'état initial, et préservés par chaque exécution subséquente de la fonction d'élection idéalisée. Ces invariants ont été conçus de telle manière à ce qu'ensembles, ils impliquent l'invariant initial à prouver.
 
-	La dernière étape de raffinement permet de montrer que la fonction d'élection exécutable raffine la fonction d'élection idéalisée. Elle consiste à montrer que l'ensemble des états atteignables par la fonction d'élection exécutable est inclus dans l'ensemble des états atteignables par la fonction d'élection idéalisée. Cette étape est relativement simple comparée au premier raffinement, car les fonctions d'élection idéalisées et exécutables sont à des niveaux d'abstractions relativement proches ; en particulier, elles utilisent les mêmes structures de données.
+	La dernière étape de raffinement permet de montrer que la fonction d'élection exécutable raffine la fonction d'élection idéalisée. Elle consiste à montrer que l'ensemble des états atteignables par la fonction d'élection exécutable est inclus dans l'ensemble des états atteignables par la fonction d'élection idéalisée. 
 	La différence notable entre les deux fonctions d'élection est que la fonction d'élection idéalisée calcule en une grosse itération ce que la fonction d'élection exécutable calcule en plusieurs petites itérations. La fonction d'élection idéalisée n'est pas assujettie à de telles contraintes et peut de ce fait factoriser ces longues séquences de petites itérations en une seule grosse itération. Ce faisant, la fonction d'élection idéalisée nous avait épargné la preuve d'invariants supplémentaires à propos des états intermédiaires générés par la fonction d'élection exécutable, qu'il a fallu prouver dans cette étape de raffinement.
 
 	La conclusion globale indiquant la fonction d'élection exécutable est correcte découle de la propriété de correction de la politique d'ordonnancement et des preuves des deux raffinements successifs.
@@ -281,6 +285,7 @@
 	Dans une seconde partie, cette section présentera notre implémentation et les modèles relatifs à l'état et aux fonctions de l'interface.
 	Cette section décrira l'implémentation de l'interface avec la monade d'état, qui permet à la fonction d'élection d'intéragir avec l'état interne du programme.
 		\subsection{Dualité implémentation/modélisation}
+		\label{sec:model_distortion}
 			La monade d'état représente l'état du programme dans le monde fonctionnel du modèle qui en est autrement dépourvu. Les fonctions qui permettent d'interagir avec la monade d'état constituent son interface. Lors de la compilation du code Gallina vers du code C, la monade d'état disparaît, pour laisser place à l'état intrinsèque du monde impératif.
 			Il existe donc deux penchants de l'interface : le modèle, intéragissant avec la monade d'état, et son implémentation, intéragissant directement avec l'état intrinsèque du programme. Cette interface est supposée correcte : on suppose que l'appel à une fonction de l'interface a les mêmes effets dans le monde mathématique et dans le monde réel. La méthode usuelle pour minimiser l'impact de cette supposition est de créer une interface constituée de fonctions dont les effets sur l'état sont les plus simples possibles, idéalement de l'ordre d'une simple instruction assembleur.
 			Malheureusement, cette méthode est souvent en tension avec l'effort de preuve, qui augmente de manière exponentielle lorsque les modèles se rapprochent de plus en plus du matériel. Ainsi, chaque modèle trouve son propre point d'équilibre entre coût de la preuve et risque de distorsion entre le modèle et la réalité.
@@ -450,7 +455,7 @@ fun _ s => ((
 	\label{code:jobs_terminating_model}
 	\end{listing}
 
-	Ce modèle décrémente le compteur \texttt{e.(cnt)} à partir d'une valeur initiale de \texttt{j.(budget)} à chaque fois que le \emph{job} est élu pour exécution. Tout comme l'implémentation de l'oracle précédent, l'implémentation de cet oracle est particulièrement simple, comme démontré en figure \ref{code:job_terminating_impl}. Elle ne fait que retourner la variable \texttt{JOB\_DONE} de l'état interne; cette variable est mise à jour par le \emph{back-end} lorsqu'un \emph{job} termine son exécution, et remis à \texttt{False} après chaque appel à la fonction d'élection.
+	Ce modèle décrémente le compteur \texttt{e.(cnt)} à partir d'une valeur initiale de \texttt{j.(budget)} à chaque fois que le \emph{job} est élu pour exécution. Tout comme l'implémentation de l'oracle précédent, l'implémentation de cet oracle est particulièrement simple, comme démontré en listing \ref{code:job_terminating_impl}. Elle ne fait que retourner la variable \texttt{JOB\_DONE} de l'état interne; cette variable est mise à jour par le \emph{back-end} lorsqu'un \emph{job} termine son exécution, et remis à \texttt{False} après chaque appel à la fonction d'élection.
 
 	\begin{listing}[!ht]
 	\begin{minted}{c}
@@ -459,30 +464,29 @@ static inline coq_CBool Primitives_job_terminating(void) {
 }
 	\end{minted}
 	\caption{Implémentation de l'oracle \texttt{job\_terminating}}
-	\label{code:jobs_terminating_impl}
+	\label{code:job_terminating_impl}
 	\end{listing}
 
-	We now review the software that allows the verified code to interact with the mutable state.
+	La dernière portion de cette section détaillera l'interface de la fonction d'élection avec la partie mutable de l'état.
 
-	\subsubsection{Abstract Types}
+	\subsubsection{Types opaque et interface avec l'état mutable}
 
-	All types used by the verified code are abstract types (black box types). These types have their own interface. 
+	Tous les types utilisés par la fonction d'élection sont des types opaques, c'est à dire que des types agnostiques de leur représentation et uniquement définis au travers des fonctions qui permettent de les manipuler, qu'on appelle leurs \emph{primitives}.
 
-	There are abstract types for Boolean values, integers, read-only job structures, and read-write job structures. Most of the primitives are simple and straightforward functions for specific data types. For example, there are 3 primitives for the boolean type \texttt{CBool} : \texttt{not}, \texttt{and}, and \texttt{or}.
-	Here one can see the model of type CBool together with the boolean primitive \texttt{or}:
+	Ces travaux comportent des types opaques pour des valeurs booléennes, pour des entiers, pour les structures en lecture seule telles que celles contenant les informations initiales sur les \emph{jobs} ou la liste des nouveaux \emph{jobs} à ordonnancer, ainsi que pour les structures contenant des données mutables telles que les structures \texttt{entry}. La plupart des primitives sur ces types sont extrêmement simples ; par exemple, le type \texttt{CBool} permettant de représenter les booléens est muni de trois primitives : \texttt{not}, \texttt{and}, et \texttt{or}. Le listing \ref{code:boolean_definition_prim} montre la modélisation de ce type avec sa primitive \texttt{or}. Son implémentation est décrite dans le listing \ref{code:boolean_definition_impl}.
 
-	%\begin{verbatim}
+	\begin{listing}[!ht]
 	\begin{minted}{coq}
 Definition CBool := bool.
 
 Definition or (b1 b2 : CBool) : RT CBool :=
   ret (orb b1 b2).
 	\end{minted}
-	%\end{verbatim}
+	\caption{Modèle du type opaque \texttt{CBool} et de sa primitive \texttt{or}}
+	\label{code:boolean_definition_prim}
+	\end{listing}
 
-	The actual implementation is defined as follows:
-
-	%\begin{verbatim}
+	\begin{listing}[!ht]
 	\begin{minted}{c}
 typedef int coq_CBool;
 
@@ -490,48 +494,56 @@ static inline coq_CBool CBool_or(coq_CBool b1, coq_CBool b2) {
     return b1 || b2;
 };
 	\end{minted}
-	%\end{verbatim}
+	\caption{Implémentation du type opaque \texttt{CBool} et de sa primitive \texttt{or}}
+	\label{code:boolean_definition_impl}
+	\end{listing}
 
-	Mutable structures such as type \texttt{Entry} are given primitives for creating the structure and for accessing and modifying their fields. In the same fashion, read-only data structures are only given access primitives. For example, the type \texttt{JobSet} returned by the oracle \texttt{jobs\_arriving} has only three primitives : one to check for emptiness of the set, another to get the first \texttt{Job}, and a final one to get the remaining \texttt{Jobs}. The \texttt{Job} type only has primitives that return the fields of the structure. \footnote{All model definitions for these types are available in the \texttt{src/coq/model/Interface/Types} directory.}
+	Les structures mutables, telles que le type \texttt{entry}, sont munies de primitives permettant de les créer, ainsi que de lire et modifier leurs champs. Dans le même esprit, les structures de données en lecture seule ne sont munies que de primitives permettant de lire les informations qu'elles renferment. Par exemple, le type opaque \texttt{JobSet}, retourné par l'oracle \texttt{jobs\_arriving} n'est muni que de trois primitives : une vérifiant si l'ensemble est vide, une autre récupérant le premier élément de l'ensemble, et une dernière retournant un plus petit \texttt{JobSet} contenant les \emph{jobs} restants. Le type opaque \texttt{Job} quand à lui ne possède que des primitives permettant de récupérer individuellement chaque champ de la structure.
+	
+	Enfin, il existe huit autres primitives conçues pour intéragir directement avec l'état mutable de la fonction d'élection. La fonction d'élection a notamment besoin de gérer le compteur d'interruption d'horloge ; pour cela il existe deux primitives, un \emph{getter} et un \emph{setter} pour la variable de compteur.
+	Ces fonctions sont extrêmement simples à modéliser et implémenter, comme en attestent les listings \ref{code:time_counter_model} et \ref{code:time_counter_impl}.
 
-
-	Finally, there is another set of eight primitives that interact directly with the internal state of our program. The program needs to manage a counter to keep track of time. For this, we have two primitives, a getter and a setter for the counter.
-
-	These functions are trivially modeled and implemented:
-
-	%\begin{verbatim}
+	\begin{listing}[!ht]
 	\begin{minted}{coq}
-Definition get_time_counter
-: RT CNat :=
-  fun _ s => ((now s), s).
+Definition get_time_counter : RT CNat :=
+fun _ s => ((now s), s).
 
-Definition set_time_counter
-(counter : nat) : RT unit :=
-  fun _ s => (tt,
+Definition set_time_counter (counter : nat) : RT unit :=
+fun _ s => (tt,
     {|
-      now    := counter ;
-      active := (active s) ;
-    |}
-  ).
+        now    := counter ;
+        active := (active s) ;
+    |}).
 	\end{minted}
-	%\end{verbatim}
+	\caption{Modèle des fonctions de récupération et de modification de la variable de compteur de l'état}
+	\label{code:time_counter_model}
+	\end{listing}
 
-	%\begin{verbatim}
+	\begin{listing}[!ht]
 	\begin{minted}{c}
-static inline coq_CNat
-State_get_time_counter(){
+static inline coq_CNat State_get_time_counter(){
     return CLOCK;
 };
 
-static inline void
-State_set_time_counter(coq_CNat counter){
+static inline void State_set_time_counter(coq_CNat counter){
     CLOCK = counter;
 };
 	\end{minted}
-	%\end{verbatim}
-	The scheduler also needs to maintain a list of pending jobs. It consists of six primitives, including one primitive that determines whether jobs are present in the list, and another that returns the ID of the job located at the head of the list (if any). Two other primitives respectively add a new job to the list (in sorted form) and remove the first job from the list. The last two primitives are meant to update job structures: either just the first job or the entire list. \footnote{Their model are in the \texttt{src/coq/model/Interface/Types/State.v} file, while their implementation are in the \texttt{src/interface\_implementation/State.c} file. (The simplest ones are inline functions located in the corresponding header).}
+	\caption{Implémentation des fonctions de récupération et de modification de la variable de compteur de l'état}
+	\label{code:time_counter_impl}
+	\end{listing}
 
-	\begin{figure*}[!ht]
+	La fonction d'élection doit aussi maintenir la liste des jobs prêts à être ordonnancés. Elle a à sa disposition six primitives :
+	\begin{itemize}
+		\item une primitive permettant de vérifier si cette liste est vide
+		\item une primitive retournant le \emph{job} à la tête de la liste
+		\item une primitive ajoutant un \emph{job} à la liste de manière triée selon une fonction de comparaison fournie en paramètre
+		\item une primitive retirant le premier job de la liste
+		\item une primitive mettant à jour la structure \texttt{entry} liée au premier \emph{job} de la liste
+		\item une primitive mettant à jour la structure \texttt{entry} de tous les \emph{job} de la liste
+	\end{itemize}
+
+	\begin{listing}[!ht]
 	    \centering
 	%    \begin{verbatim}
 	    \begin{minted}{coq}
@@ -553,13 +565,13 @@ Fixpoint insert_Entry_aux (entry : Entry) (entry_list : list Entry)
       | false => cons head (insert_Entry_aux entry tail comp_func)
       end
   end.
+
+
 	    \end{minted}
-	%    \end{verbatim}
-	    \vspace{0.2cm}
 	    \hrule
-	    \vspace{0.2cm}
-	%    \begin{verbatim}
 	    \begin{minted}{c}
+
+
 void State_insert_new_active_entry
      (coq_Entry entry, entry_cmp_func_type entry_comp_func) {
   int *entry_index_ptr = &(ACTIVE_ENTRIES_HEAD_INDEX);
@@ -575,34 +587,82 @@ void State_insert_new_active_entry
   INTERNAL_ARRAY[entry->id].active_next_entry_index = next_index;
 }
 	    \end{minted}
-	%    \end{verbatim}
-	    \caption{Side by side comparison between the model of a sorted list insertion primitive and its actual implementation}
-	    \label{fig:model_impl_cmp}
-	\end{figure*}
+	    \caption{Comparaison entre le modèle de la primitive d'insertion triée dans la liste et son implémentation}
+	    \label{code:model_impl_cmp}
+	\end{listing}
 
-	Most of these primitives are both simple to model and implement, but two of them are not so easy to implement. The first one is \texttt{insert\_new\_active\_entry}, which inserts an entry (an internal representation of a job to execute) sorted by an arbitrary comparison function. Its model is given in the first half of Figure \ref{fig:model_impl_cmp}.
+		La plupart de ces primitives sont aussi simples à modéliser qu'à implémenter ; cependant deux d'entre elles dérogent à cette règle. La première est la fonction \texttt{insert\_new\_active\_entry}, qui insère une structure \texttt{entry} (contenant les valeurs manipulables d'un job par la fonction d'élection) de manière triée selon une fonction de comparaison. Son modèle est donné dans la moitié supérieure du listing \ref{code:model_impl_cmp}.
 
-	Given an entry and a comparison function, this model extracts the list from the current state of the program. It passes it to a (non-monadic) auxiliary recursive function that returns the list with the newly inserted entry.
+		Étant donné une structure \texttt{entry} et une fonction de comparaison, ce modèle extrait d'abord la liste du modèle de l'état de l'ordonnanceur. Le modèle passe cette liste à une fonction auxiliaire purement fonctionnelle qui retourne la liste contenant la structure \texttt{entry} à insérer. Cette fonction auxiliaire crée en réalité une nouvelle liste, en comparant chaque structure \texttt{entry} de la liste initiale avec la structure \texttt{entry} à insérer grâce à la fonction de comparaison passée en paramètre, et en ajoutant au fur et à mesure des copies des éléments à cette liste.
 
-	This helper function then constructs a completely new list by comparing each entry from the list with the new list, using the comparison function from the parameters. 
+		Pour des raisons de performances et de minimisation de la base de confiance, l'implémentation ne crée pas de nouvelle liste à chaque nouvelle insertion, mais modifie en place la liste actuelle. L'interface choisie empêche le problème de distortion exposé dans la section précédente \ref{sec:model_distortion}, où le modèle crée des copies et où l'implémentation modifie la liste en place.
 
-	Of course, one can not afford to copy the list every time an item is inserted. The implementation uses in-place insertion in the list. The interface chosen to interact with the state prevents a mismatch between the model and reality, where one creates new lists while the other modifies the list in-place.
+		Le code de l'implémentation, disponible dans la motié inférieure du listing \ref{code:model_impl_cmp}, est similaire à la fonction auxiliaire récursive du modèle, mais utilise une boucle et met à jour le lien entre les éléments quand la nouvelle struture \texttt{entry} est insérée, plutôt que de créer des copies des éléments de la liste en les réordonnant correctement. 
 
-	This code is conceptually the same as the recursive functional version, but uses loops and updates the required links between elements when a new element is inserted, rather than creating new elements and cleverly rearranging them.
-
-	The same technique was used to model and implement the function \texttt{update\_active\_entries}, which applies an arbitrary modification to each entry in the list. The implementation modifies the elements of the list in-place rather than creating a new list with modified copies of entries.
+		La fonction \texttt{update\_active\_entries}, qui applique une modification arbitraire à chaque structure \texttt{entry} de la liste, a subit la même méthode de modélisation et d'implémentation. L'implémentation modifie les éléments de la liste en place plutôt que de créer une nouvelle liste avec des copies modifiés des éléments originaux.
 
 	\label{sec:implementation}
 
-	We argue that all the primitives described in this section are simple enough to trust that the implementation actually conforms to the model. Nevertheless, the last two primitives are arguably complex enough to shake this confidence. We discuss this point further in Section \ref{sec:discussion}.
+		Nous défendons l'argument que les primitives présentées dans cette section, définissant l'interface de la fonction d'élection avec l'implémentation réelle de l'ordonnanceur et de son état interne, sont assez simples pour se convaincre que les effets de leur implémentation correspond bien au effet décrits par leur modèle. Néanmoins, les fonctions \texttt{insert\_new\_active\_entry} et \texttt{update\_active\_entries} présentées à la fin de cette section sont objectivement plus complexes que les autres primitives présentées. Cet argument est débatable sur ces deux fonctions ; aussi la section \ref{sec:interfaceTCB} présentera des arguments supplémentaires en faveur de ce choix de primitives.
 
 	\section{Discussion sur la méthodologie suivie}
-		\subsection{Métriques}
-		Avec ces hypothèses locales, la preuve de correction de la politique n'est qu'une question de calculs algébriques. Elle est relativement courte, $\sim$1000 lignes. Ceci est dû au haut niveau d'abstraction, qui permet de se concentrer sur l'essentiel sans s'encombrer des détails d'implémentation.
-		
-		La première étape du raffinement, allant de la politique d'ordonnancement vers la fonction d'élection idéalisée, représente la majeure partie de la preuve
 
-		This is where creativity is required from the user. Together with the functional scheduler this step amount to $\sim$1600 lines of code.
-		By comparison, the second (and last) refinement step is short ($\sim$500 lines). 
-		\subsection{Choix des primitives}
+		Cette section sert de retour d'expérience sur la contribution, en prenant du recul sur le travail fourni.
+		Elle commence par présenter différentes métriques concernant l'ordonnanceur, discutant des proportions de code prouvé, de lignes de preuves et de lignes d'implémentation, et du temps investi. Dans une seconde partie, cette section discutera des choix fait pour ces travaux, et plus particulièrement du choix des primitives et de l'impact de ce choix sur la confiance apportée par la preuve.
+
+		\subsection{Métriques}
+
+		La partie technique de cette contribution est le fruit de 9 mois de travail de deux personnes à temps plein, aidés ponctuellement par d'autres membres de nos équipes de recherche respectives. La présentation de l'ordonnanceur en conférence et la publication du papier ont eu lieu un an et demi après le premier commit sur le dépôt de code du projet.
+
+			\subsubsection{Implémentation}
+			La fonction d'élection, écrite en Gallina, compte à elle seule environ 150 lignes de code. L'implémentation de l'état, des types opaques et des fonctions formant l'interface avec l'état compte environ 350 lignes de code C, composé majoritairement de fichiers \emph{headers} particulièrement verbeux.
+
+			Concernant le back-end de \emph{simulation} de l'ordonnanceur, celui-ci a requis environ 100 lignes de code C. L'implémentation de la partition de Pip contenant l'ordonnanceur préemptif temps réel, sans compter la fonction d'élection ni l'implémentation de l'état et de l'interface, compte pour environ 1150 lignes de code. Sont pris en compte, les fichiers de code C et leur \emph{headers}, les fichiers de code assembleur, mais aussi les scripts d'édition de liens. En revanche, ce nombre de lignes ne contient pas les lignes de la librairie utilisateur de Pip. Sur ces 1150 lignes, environ 900 lignes sont requises par Pip pour créer les partitions de l'ordonnanceur et des \emph{jobs}, ainsi que pour mapper leur code dans leur espace d'adressage respectifs. Les 250 lignes restantes sont dédiées au fonctionnement de l'ordonnanceur en lui-même.
+
+			\subsubsection{Modèles et preuves}
+			
+			Les modèles de l'état, des types opaques, et des fonctions permettant d'intéragir avec l'état représentent en tout environ 650 lignes de code.
+
+			Pour rappel, la preuve se découpe en trois parties majeures : la définition de la politique d'ordonnancement \emph{Earliest Deadline First} et l'établissement de sa propriété de correction , l'implémentation d'une fonction d'élection idéalisée et de sa preuve de raffinement de la politique d'ordonnancement, puis d'un raffinement vers la fonction d'élection qui sera traduite en C.
+
+			La première partie de cette preuve concernant la correction de la politique d'ordonnancement est relativement courte. L'écriture de la politique d'ordonnancement, avec sa preuve de correction représente environ 1100 lignes de code et de preuve. Ce nombre de lignes relativement restreint est dû au haut niveau d'abstraction, profitant à l'établissement de la preuve : cela permet de se concentrer sur l'essentiel sans s'encombrer de détails d'implémentation.
+		
+			Comme énoncé dans la section \ref{sec:proof_insight}, le premier raffinement, allant de la politique d'ordonnancement vers la fonction d'élection idéalisée, représente la majeure partie de la preuve, et qui a necéssité de redoubler d'ingéniosité. Cela s'explique par le fossé d'abstraction entre la politique d'ordonnancement (composée de termes algébriques relativement simples), et la couche d'abstraction de la fonction d'élection idéalisée qui décrit la politique en fonction d'opération sur des structures de données, en particulier des listes chainées. Cette partie de la preuve représente environ 1600 lignes de Coq (comptabilisant aussi les lignes de code de la fonction d'élection idéalisée).
+
+			Le second raffinement est relativement simple comparé au premier raffinement, car les fonctions d'élection idéalisées et exécutables sont à des niveaux d'abstractions relativement proches ; en particulier, elles utilisent les mêmes structures de données. À titre de comparaison, cette dernière étape de raffinement est courte, environ 500 lignes de preuve.
+
+			Ainsi, l'établissement de la preuve sur la fonction d'élection longue de 150 lignes a nécessité au total 3250 lignes de Coq, quand le nombre total de ligne nécessaires pour implémenter l'ordonnanceur avoisinne les 1400 lignes de code. Le code prouvé représente donc environ 10\% du code total de l'ordonnanceur.
+
+
+		\subsection{Choix des primitives et discussion sur la base de confiance}
 		\label{sec:interfaceTCB}
+		Formal proofs transfer confidence from hypotheses (or premises) to conclusions. In computer security hypotheses are called the trusted computing base. We have divided the implicit and explicit hypotheses of the trusted computing base into three categories. The first category of assumptions, the most fundamental ones, are assumptions about the correctness of the hardware and tools used to check the proof itself. The second category of assumptions includes properties expected of software libraries and runtime environments. And the last category of assumptions arises from the compilation process, more precisely from the semantics of the operations used by the source code (on which the proof is based) and the semantics of the operations used by the target code (which is actually executed). In this section, we question the trusted computing base of our work and discuss it in light of related works.
+
+\subsubsection{Fundamental barriers}
+
+In this subsection we focus on the trusted computing base that is, to the best of our knowledge, common to the whole formal code verification community.
+
+The first common TCB is the tool used to achieve the formal verification. In our case, this is the Coq proof assistant. It is based on a logic called the calculus of inductive constructions. It assists the user in incrementally building a proof in this logic. Its critical part is its kernel -- the piece of code that checks whether a tentative proof is an actual proof. One can reasonably trust the kernel of Coq and include it in the TCB.
+
+The second, orders of magnitude larger, common TCB is the specification of the hardware running the verified code. There are two parts to this argument, that are closely related to the two steps of algorithm implementation exposed in Section \ref{sec:motivations}.
+
+\begin{itemize}
+    \item First, most of the manufacturers do not provide a formal specification of their hardware -- which implies that in order to reason on hardware specification, one has to interpret the informal specification to produce a formal one. This process is tedious and error-prone.
+    As a side-effect, it is delicate to verify software that directly rely on hardware primitives. Nonetheless, progress is made in that domain, notably with open hardware development and manufacturers beginning to provide such specifications \cite{reid2017guards}.
+    \item Second -- assuming there were a formal specification of the hardware -- there are no known method to prove that the hardware effectively behaves as described by its specification.
+\end{itemize}
+
+As such, and in spite of the modern hardware's increasing complexity, running code on a specific hardware implicitly includes the whole hardware in the TCB.
+
+\subsubsection{Inclusion of primitives and libraries inside the TCB}
+
+We argued in Section \ref{sec:implementation} that the primitives we use in our election function are straightforward enough to trust \emph{without a doubt} that their implementation indeed conforms to their specification. There are however two primitives that are arguably too big to reach such a claim : a sorted insertion primitive and a primitive that applies a modification to every element of a list.
+
+The main reason behind our choice of interface is that the core of our contribution is the election function correctness proof. We deemed that the memory management aspect of this work was orthogonal to the properties we proved. Considering the reasonable size (respectively thirteen and seven lines of C) of the impacted primitives, we decided to treat them as trusted libraries -- like the oracles -- and not to embed them further into the model.
+
+However, in a setting where every single piece of code has to be proved (for example in a case where the proofs relies on a formal specification of the hardware), one could imagine to apply our methodology to get rid of these two primitives. The process would follow what we described in the previous sections. The first step would be to design an interface that further decomposes the two primitives, then write a monadic program that exclusively uses the broken down primitives, and finally prove that this new monadic program refines the original one.
+
+As a side note, we want to reflect on the discussion we had in this section about our interface choices. We believe our proof methodology, and particularly the use of shallow embedding, sheds light on the assumptions brought by the Trusted Computing Base and presses us to discuss these choices. Specifically, because proof and implementation are expressed in the same language, they both share the same definition of TCB assumptions, which we believe is strongly beneficial to the proof process. In comparison, it seems straightforward to us that proofs conducted on deep embedding structures -- that represents the implementation language in the proof assistant -- adds a layer of obfuscation on the Trusted Computing Base.
+
+
+		\textcolor{red}{Résumer les claims et introduire la contribution suivante}
