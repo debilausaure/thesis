@@ -385,7 +385,7 @@ typedef struct __internal_s__ {
 		\item de la variable indiquant si le dernier \emph{job} exécuté a terminé son exécution
 	\end{itemize}
 
-	\begin{listing}[!hb]
+	\begin{listing}[!ht]
 	\begin{minted}{c}
 internal_t INTERNAL_ARRAY[coq_N] = EXAMPLE_JOB_SET;
 int JOBS_ARRIVING_HEAD_INDEX = -1;
@@ -402,8 +402,9 @@ coq_CBool JOB_DONE = false;
 	Il existe deux fonctions qui retournent des valeurs de l'environnement calculées par le back-end. La première, \texttt{jobs\_arriving}, récupère les nouveaux \emph{jobs} à ordonnancer ; la seconde, \texttt{job\_terminating}, retourne si le dernier \emph{job} exécuté a terminé son exécution (si un tel \emph{job} existe). Nous appelons ces fonctions les \emph{oracles} de l'ordonnanceur, car leur modèle ne décrit que les contraintes imposées sur les résultats qu'elles produisent, et non pas comment ces résultats sont fournis.
 
 	La fonction \texttt{jobs\_arriving}, qui récupére les identifiants des nouveaux jobs à ordonnancer, a un modèle n'imposant qu'une seule contrainte à l'implémentation : dans la liste des identifiants de \emph{jobs} retournés par l'oracle, aucun identifiant ne doit être plus grand que $N$, où $N$ est une borne supérieure définie à la compilation. Cette borne est la même que la borne \texttt{coq\_N} présentée dans la section précédente sur l'implémentation de l'état. La liste renvoyée par l'oracle est cachée derrière le type opaque \texttt{JobSet}.\\
-	Voici le modèle de cette fonction :
+	Le modèle de cette fonction est exposé dans le listing \ref{code:jobs_arriving_model}.
 
+	\begin{listing}[!ht]
 	\begin{minted}{coq}
 Definition jobs_arriving (N : nat) : RT JobSet :=
   fun env s =>
@@ -412,24 +413,28 @@ Definition jobs_arriving (N : nat) : RT JobSet :=
       (map jobid (env s.(now))) 
   in (f, s).
 	\end{minted}
+	\caption{Modèle de l'oracle \texttt{jobs\_arriving}}
+	\label{code:jobs_arriving_model}
+	\end{listing}
 
 	Rappelons que ce modèle n'indique aucunement comment calculer une telle liste de \emph{jobs}. Ce choix est délibéré, afin de s'assurer que la fonction d'élection n'est pas en capacité de prévoir l'arrivée de nouveaux \emph{jobs}, guarantissant que n'importe quel ensemble arbitraire de \emph{jobs} puisse être utilisé avec cet ordonnanceur.
 
 	L'implémentation de la fonction retournant la prédiction de l'oracle est particulièrement simple : elle retourne simplement la variable de l'état contenant la référence vers la liste des nouveaux \emph{jobs} à ordonnancer. Plus précisement, cette variable contient l'indice de l'élément du tableau étant en tête de cette liste. La liste a été construite par le back-end avant l'exécution de la fonction d'élection qui fait appel à l'oracle. La construction de cette liste est donc totalement déléguée à l'implémentation du back-end, sans aucune répercussion sur le monde mathématique.
 
+	\begin{listing}[!ht]
 	\begin{minted}{c}
 static inline coq_JobSet
 Primitives_jobs_arriving(coq_CNat n) {
      return JOBS_ARRIVING_HEAD_INDEX;
 }
 	\end{minted}
+	\caption{Implémentation de l'oracle \texttt{jobs\_arriving}}
+	\label{code:jobs_arriving_impl}
+	\end{listing}
 
-	L'autre oracle est une fonction qui retourne 
-	The other oracle is a function that returns whether the job with the most critical deadline (at the head of the list maintained by our scheduler) has completed its execution. The model is stricter with this oracle. It forces the implementation to return \texttt{True} if time spent executing the job is greater than its theoretical WCET.
+	L'autre oracle est une fonction qui retourne si le \emph{job} exécuté durant la précédente période d'exécution a terminé son exécution (si un tel \emph{job} existe). Le modèle de cet oracle est plus strict ; il force l'implémentation de l'oracle à retourner \texttt{True} si le nombre de périodes passées à exécuter le \emph{job} excède son \emph{WCET}. Son modèle est présenté en figure \ref{code:jobs_terminating_model}.
 
-	Here is the (nested) model definition:
-
-	%\begin{verbatim}
+	\begin{listing}[!ht]
 	\begin{minted}{coq}
 Definition job_terminating : RT CBool :=
 fun _ s => ((
@@ -441,21 +446,21 @@ fun _ s => ((
     end
 ), s).
 	\end{minted}
-	%\end{verbatim}
+	\caption{Modèle de l'oracle \texttt{job\_terminating}}
+	\label{code:jobs_terminating_model}
+	\end{listing}
 
-	Note that the counter \texttt{e.(cnt)} is decremented from an initial value of \texttt{j.(budget)} each time the job is scheduled for execution. 
+	Ce modèle décrémente le compteur \texttt{e.(cnt)} à partir d'une valeur initiale de \texttt{j.(budget)} à chaque fois que le \emph{job} est élu pour exécution. Tout comme l'implémentation de l'oracle précédent, l'implémentation de cet oracle est particulièrement simple, comme démontré en figure \ref{code:job_terminating_impl}. Elle ne fait que retourner la variable \texttt{JOB\_DONE} de l'état interne; cette variable est mise à jour par le \emph{back-end} lorsqu'un \emph{job} termine son exécution, et remis à \texttt{False} après chaque appel à la fonction d'élection.
 
-	Like the previous oracle, the implementation that returns the result of the oracle is very simple:
-
-	%\begin{verbatim}
+	\begin{listing}[!ht]
 	\begin{minted}{c}
 static inline coq_CBool Primitives_job_terminating(void) {
     return JOB_DONE;
 }
 	\end{minted}
-	%\end{verbatim}
-
-	The implementation only returns the variable \texttt{ JOB\_DONE} from the internal state. This variable is updated by the back-end when needed.
+	\caption{Implémentation de l'oracle \texttt{job\_terminating}}
+	\label{code:jobs_terminating_impl}
+	\end{listing}
 
 	We now review the software that allows the verified code to interact with the mutable state.
 
