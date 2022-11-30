@@ -50,7 +50,7 @@
 			\centering{
 				\input{figures/electionfunction_timeline.tex}
 				\caption{Illustration d'un appel à la fonction d'élection sur les \emph{jobs} $a$ et $b$}
-				\label{fig:electionfunction_jobs}
+				\label{fig:electionfunction_timeline}
 			}
 			\end{figure}
 
@@ -636,33 +636,38 @@ void State_insert_new_active_entry
 
 		\subsection{Choix des primitives et discussion sur la base de confiance}
 		\label{sec:interfaceTCB}
-		Formal proofs transfer confidence from hypotheses (or premises) to conclusions. In computer security hypotheses are called the trusted computing base. We have divided the implicit and explicit hypotheses of the trusted computing base into three categories. The first category of assumptions, the most fundamental ones, are assumptions about the correctness of the hardware and tools used to check the proof itself. The second category of assumptions includes properties expected of software libraries and runtime environments. And the last category of assumptions arises from the compilation process, more precisely from the semantics of the operations used by the source code (on which the proof is based) and the semantics of the operations used by the target code (which is actually executed). In this section, we question the trusted computing base of our work and discuss it in light of related works.
 
-\subsubsection{Fundamental barriers}
+		Les preuves formelles transfèrent la confiance accordées aux hypothèses vers la conclusion d'une démonstration. Lorsque ces hypothèses sont relatives à la sécurité informatique, on parle alors de base de confiance (\emph{Trusted Computing Base} ou \emph{TCB}). On peut distinguer trois catégories d'hypothèses dans les bases de confiance. La première catégorie, renfermant les hypothèses les plus fondamentales, sont les hypothèses sur la correction du matériel et des outils utilisés pour vérifier la preuve. La seconde catégorie englobe les hypothèses sur l'ensemble des logiciels non vérifiés s'exécutant avec le code prouvé. La troisième et dernière catégorie regroupe les hypothèses concernant le processus de compilation, et plus particulièrement sur la sémantique associée aux opérations utilisées par le code source (sur laquelle la preuve repose) et la sémantique utilisée par le code compilé (qui est réellement exécuté). Cette sous-section questionnera la base de confiance de l'ordonnanceur présenté dans ce chapitre, en la comparant avec celle de travaux connexes.
 
-In this subsection we focus on the trusted computing base that is, to the best of our knowledge, common to the whole formal code verification community.
+\subsubsection{Barrières fondamentales}
 
-The first common TCB is the tool used to achieve the formal verification. In our case, this is the Coq proof assistant. It is based on a logic called the calculus of inductive constructions. It assists the user in incrementally building a proof in this logic. Its critical part is its kernel -- the piece of code that checks whether a tentative proof is an actual proof. One can reasonably trust the kernel of Coq and include it in the TCB.
+Il existe des hypothèses universelles, présentes dans la base de confiance de l'intégralité de la communauté de vérification formelle de code.
 
-The second, orders of magnitude larger, common TCB is the specification of the hardware running the verified code. There are two parts to this argument, that are closely related to the two steps of algorithm implementation exposed in Section \ref{sec:motivations}.
+Les premières de ces hypothèses sont celles de l'outil utilisé pour vérifier la preuve formelle : dans notre cas, l'assistant de preuve Coq. Sa partie critique est circonscrite par son noyau -- la partie minimiale de l'assistant qui vérifie si une tentative de preuve est valide au sens formel. On pourrait accroitre notre confiance dans le noyau en le vérifiant formellement ; c'est ce que le projet MetaCoq \textcolor{red}{REF} vise à atteindre, en formalisant le noyau de Coq dans Coq.
+
+Néanmoins, il existe, dans la base de confiance commune, d'autres hypothèses plus fortes par plusieurs ordres de grandeur : la spécification du matériel exécutant le code vérifié. On peut découper cet argument en deux parties :
 
 \begin{itemize}
-    \item First, most of the manufacturers do not provide a formal specification of their hardware -- which implies that in order to reason on hardware specification, one has to interpret the informal specification to produce a formal one. This process is tedious and error-prone.
-    As a side-effect, it is delicate to verify software that directly rely on hardware primitives. Nonetheless, progress is made in that domain, notably with open hardware development and manufacturers beginning to provide such specifications \cite{reid2017guards}.
-    \item Second -- assuming there were a formal specification of the hardware -- there are no known method to prove that the hardware effectively behaves as described by its specification.
+	\item Tout d'abord, la (quasi?) totalité des fabriquants ne fournissent pas de spécification formelle du fonctionnement de leur matériel. Cela implique que pour raisonner sur ce matériel, il faut \emph{interpréter} la documentation informelle pour produire la spécification formelle. Ce travail est fastidieux et délicat, ce qui le rend particulièrement sujet à l'erreur. Par effet de bord, il est difficile de vérifier du logiciel qui s'appuierait directement sur des primitives fournies par le hardware. Néanmoins, de nouveaux projets visent à améliorer les choses, avec notamment la démocratisation du développement de matériel open-source et l'apparition de spécifications formelles pour certains processeurs \cite{reid2017guards} ;
+	\item Par ailleurs, si on considérait qu'il existait une spécification formelle du matériel sur lequel le code s'exécuterait, il n'existe pour l'instant aucune méthode permettant de s'assurer que le matériel se comporte exactement comme la spécification le décrit.
 \end{itemize}
 
-As such, and in spite of the modern hardware's increasing complexity, running code on a specific hardware implicitly includes the whole hardware in the TCB.
+Ainsi, en dépit de la complexité grandissante des divers composants matériels, exécuter du code sur du matériel spécifique inclus le bon fonctionnement de ce matériel dans la base de confiance, peu importe les efforts fournis.
 
-\subsubsection{Inclusion of primitives and libraries inside the TCB}
+\subsubsection{Inclusion de librairies et primitives dans la base de confiance}
 
-We argued in Section \ref{sec:implementation} that the primitives we use in our election function are straightforward enough to trust \emph{without a doubt} that their implementation indeed conforms to their specification. There are however two primitives that are arguably too big to reach such a claim : a sorted insertion primitive and a primitive that applies a modification to every element of a list.
+Dans la section \ref{sec:implementation}, nous avons soutenu l'argument que les fonctions de l'interface utilisées par la fonction d'élection étaient assez simples pour se convaincre \emph{sans l'ombre d'un doute} que leur implémentation correspondait à leur spécification. Cependant deux fonctions de cette interface sont trop complexes pour pouvoir l'affirmer : une fonction exécutant une insertion triée dans une liste, et une fonction appliquant une modification à chaque élément d'une liste.
 
-The main reason behind our choice of interface is that the core of our contribution is the election function correctness proof. We deemed that the memory management aspect of this work was orthogonal to the properties we proved. Considering the reasonable size (respectively thirteen and seven lines of C) of the impacted primitives, we decided to treat them as trusted libraries -- like the oracles -- and not to embed them further into the model.
+La raison principale derrière ce choix d'interface est que nous pensons que le coeur de notre contribution est la preuve de correction de la fonction d'élection. Nous avons estimé que l'aspect de gestion de la mémoire requise avec l'utilisation de liste dépassait ce cadre, et que cette preuve était orthogonale aux propriétés que nous avons prouvé. Étant donné leurs tailles raisonnables (respectivement 13 et 7 lignes de code C), nous avons décidé des les considérer comme du logiciel de confiance -- comme les oracles et le back-end -- et que nous n'allions pas les détailler dans le modèle.
 
-However, in a setting where every single piece of code has to be proved (for example in a case where the proofs relies on a formal specification of the hardware), one could imagine to apply our methodology to get rid of these two primitives. The process would follow what we described in the previous sections. The first step would be to design an interface that further decomposes the two primitives, then write a monadic program that exclusively uses the broken down primitives, and finally prove that this new monadic program refines the original one.
+Néanmoins, dans le cadre d'une preuve où chaque élément logiciel \emph{doit} être prouvé (par exemple dans le cadre d'une preuve reposant seulement sur des primitives du matériel), on pourrait imaginer appliquer la même méthodologie pour se débarasser de ces primitives. La première étape serait de concevoir une nouvelle interface qui décompose les deux primitives, puis d'écrire la fonction d'élection en utilisant uniquement les nouvelles primitives, puis en montrant que la nouvelle fonction d'élection raffine la fonction d'élection originale.
 
-As a side note, we want to reflect on the discussion we had in this section about our interface choices. We believe our proof methodology, and particularly the use of shallow embedding, sheds light on the assumptions brought by the Trusted Computing Base and presses us to discuss these choices. Specifically, because proof and implementation are expressed in the same language, they both share the same definition of TCB assumptions, which we believe is strongly beneficial to the proof process. In comparison, it seems straightforward to us that proofs conducted on deep embedding structures -- that represents the implementation language in the proof assistant -- adds a layer of obfuscation on the Trusted Computing Base.
+Par ailleurs, nous souhaitons revenir sur l'existence même de cette discussion à propos de nos choix d'interface. Nous pensons que notre méthodologie de preuve, et particulièrement le \emph{shallow embedding}, met en lumière les hypothèses introduites dans la base de confiance, et nous pousse à les discuter. Plus spécifiquement, puisque la preuve et l'implémentation sont exprimées dans le même langage, ils partagent la même définition des hypothèses de la base de confiance, ce que nous pensons particulièrement bénéfique au processus. À titre de comparaison, il nous semble peu discutable que les preuves conduites avec un \emph{deep embedding}, et donc conduites sur la représentation de l'\emph{AST} du code du langage représenté, ajoute une couche supplémentaire d'obfuscation aux hypothèses introduites dans la base de confiance.
 
+\subsubsection{Raisonnement sur le code Gallina et confiance dans le code compilé}
+
+Une chaîne d'outils qui propage les propriétés jusqu'au code compilé est le modèle d'excellence qu'il faut chercher à atteindre dans le monde des preuves formelles. Nous nous efforçons d'atteindre ce but, et cette sous-section présentera l'état de notre base de confiance sur ce sujet.
+
+Comme mentionné dans l'état de l'art, la chaîne de compilation de Pip utilise soit Digger, soit $\partial x$ pour compiler le code Gallina \emph{shallow embedded} vers du code C classique. Aucun de ces deux outils n'est pour l'instant muni de preuve de préservation de la sémantique.
 
 		\textcolor{red}{Résumer les claims et introduire la contribution suivante}
