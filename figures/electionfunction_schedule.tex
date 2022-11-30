@@ -1,0 +1,60 @@
+\definecolor{job1color}{RGB}{88 ,88,184}
+\definecolor{job2color}{RGB}{234,80,90}
+
+\begin{tikzpicture}[>=triangle 45,font=\sffamily, every text node part/.style={align=center}, every node/.style={transform shape}]
+
+	%timeline
+	\node (tstart) at (0, 0) {};
+	\node (tend) at (9, 0) {};
+	\draw[->] (tstart.center) -- (tend.center);
+	\node[below=0cm of tend] {temps (u.a.)};
+
+	\node (tjob1arrival) at (2, -0.5) {$r_a$};
+	\node (tjob1deadline) at (7, -0.5) {$d_a$};
+	\node (job1height) at (2, 1) {};
+	\draw (tjob1arrival |- job1height) -- (tjob1deadline |- tend) node [midway, draw, fill=white, minimum width = 5cm, minimum height = 1cm] (job1execperiod) {};
+	\node[draw, pattern color=job1color, pattern=south west lines, minimum width = 5cm, minimum height = 1cm] at (job1execperiod) {};
+	\draw (tjob1arrival |- job1height) -- (tjob2deadline |- tend) node [midway, draw, fill=job1color, minimum width = 4cm, minimum height = 1cm] (job1) {};
+
+	\node (tjob2arrival) at (3, 2.5) {$r_b$};
+	\node (tjob2deadline) at (6, 2.5) {$d_b$};
+	\node (job2height) at (2, 2) {};
+	\draw (tjob2arrival |- job2height) -- (tjob2deadline |- job1height) node [midway, draw, fill=white, minimum width = 3cm, minimum height = 1cm] (job2execperiod) {};
+	\node[draw, fill=white, pattern color=job2color, pattern=south west lines, minimum width = 3cm, minimum height = 1cm] at (job2execperiod) {};
+
+	\node (tjob2end) at (4, 2.5) {};
+	\draw (tjob2arrival |- job2height) -- (tjob2end |- job1height) node [midway, draw, fill=job2color, minimum width = 1cm, minimum height = 1cm] (job2) {};
+	\node [fill=job1color, text=job2color] at (3.5, 0.5) {\huge{!}};
+	\draw[dashed] (tjob1arrival |- tend) -- (tjob1arrival);
+	\draw[dashed] (tjob1deadline |- tend) -- (tjob1deadline);
+	\draw[dashed] (tjob2arrival) -- (tjob2arrival |- tend);
+	\draw[dashed] (tjob2deadline) -- (tjob2deadline |- tend);
+	\draw[dashed] (tjob2end) -- (tjob2end |- tend);
+
+	\node (tstart2) at (0, -3.5) {};
+	\node (tend2) at (9, -3.5) {};
+	\draw[->] (tstart2.center) -- (tend2.center);
+	\node[below=0cm of tend2] {temps (u.a.)};
+
+	\node (tjob1arrival2) at (2, -4) {$r_a$};
+	\node (tjob1deadline2) at (7, -4) {$d_a$};
+	\node (job1height2) at (2, -2.5) {};
+	\draw (tjob1arrival2 |- job1height2) -- (tjob1deadline2 |- tend2) node [midway, draw, fill=white, minimum width = 5cm, minimum height = 1cm] (job1execperiod2) {};
+	\node[draw, pattern color=job1color, pattern=south west lines, minimum width = 5cm, minimum height = 1cm] at (job1execperiod2) {};
+
+	\node (tjob2arrival2) at (3, -1) {$r_b$};
+	\node (tjob2deadline2) at (6,-1) {$d_b$};
+	\node (job2height2) at (2, -1.5) {};
+	\draw (tjob2arrival2 |- job2height2) -- (tjob2deadline2 |- job1height2) node [midway, draw, fill=white, minimum width = 3cm, minimum height = 1cm] (job2execperiod2) {};
+	\node[draw, fill=white, pattern color=job2color, pattern=south west lines, minimum width = 3cm, minimum height = 1cm] at (job2execperiod2) {};
+
+	\node (tjob2end2) at (4, -1) {};
+	\draw (tjob2arrival2 |- job2height2) -- (tjob2end2 |- job1height2) node [midway, draw, fill=job2color, minimum width = 1cm, minimum height = 1cm] (job22) {};
+	\draw (tjob1arrival2 |- job1height2) -- (tjob2arrival2 |- tend2) node [midway, draw, fill=job1color, minimum width = 1cm, minimum height = 1cm] (job121) {};
+	\draw[dashed] (tjob1arrival2 |- tend2) -- (tjob1arrival2);
+	\draw[dashed] (tjob1deadline2 |- tend2) -- (tjob1deadline2);
+	\draw[dashed] (tjob2arrival2) -- (tjob2arrival2 |- tend2);
+	\draw[dashed] (tjob2deadline2) -- (tjob2deadline2 |- tend2);
+	\draw[dashed] (tjob2end2) -- (tjob2end2 |- tend2);
+	\draw (tjob2end2 |- job1height2) -- (tjob1deadline2 |- tend2) node [midway, draw, fill=job1color, minimum width = 3cm, minimum height = 1cm] (job122) {};
+\end{tikzpicture}

@@ -4,37 +4,46 @@
 \begin{tikzpicture}[>=triangle 45,font=\sffamily, every text node part/.style={align=center}, every node/.style={transform shape}]
 
 	%timeline
-	\node (tstart) at (0, 0) {};
-	\node (tend) at (9, 0) {};
-	\draw[->] (tstart.center) -- (tend.center);
-	\node[below=0.2cm of tend] {temps (u.a.)};
-	
-	\node[draw, fill=job1color, minimum height = 1cm, minimum width = 4cm] (job1) at (3.5, 4) {};
+	\node (tstarta) at (0, 0) {};
+	\node (tenda) at (9, 0) {};
+	\draw[->] (tstarta.center) -- (tenda.center);
+	\node[below=0.2cm of tenda] {temps (u.a.)};
+
+	\node (tstartb) at (0, 2) {};
+	\node (tendb) at (9, 2) {};
+	\draw[->] (tstartb.center) -- (tendb.center);
+	\node[below=0.2cm of tendb] {temps (u.a.)};
+
+	\node[draw, fill=job1color, minimum height = 1cm, minimum width = 4cm] (job1) at (3.5, 4.5) {};
 	\node[left=0.3cm of job1] {Job \small{$a$}};
-	\draw[<->] (1.5, 3.3) -- (5.5, 3.3);
+	\draw[<->] (1.5, 3.8) -- (5.5, 3.8);
 	\node[below=0.2cm of job1] {$c_a$};
-	\node[draw, fill=job2color, minimum width = 1cm, minimum height = 1cm] (job2) at (7, 4) {};
+	\node[draw, fill=job2color, minimum width = 1cm, minimum height = 1cm] (job2) at (7, 4.5) {};
 	\node[right=0.3cm of job2] {Job \small{$b$}};
-	\draw[<->] (6.5, 3.3) -- (7.5, 3.3);
+	\draw[<->] (6.5, 3.8) -- (7.5, 3.8);
 	\node[below=0.2cm of job2] {$c_b$};
 
-	\node (tjob1arrival) at (2, 1.5) {$r_a$};
+	\node (tjob1arrival) at (2, 0) {};
+	\node[above left=0cm of tjob1arrival] {$r_a$};
 	\node (tjob1arrival2) at (2, -0.5) {$t=2$};
 	\draw[dashed] (tjob1arrival) -- (tjob1arrival2);
-	\node (tjob1deadline) at (7, 1.5) {$d_a$};
+	\node (tjob1deadline) at (7, 0) {};
+	\node[above right=0cm of tjob1deadline] {$d_a$};
 	\node (tjob1deadline2) at (7, -0.5) {$t=7$};
 	\draw[dashed] (tjob1deadline) -- (tjob1deadline2);
 	\node (job1height) at (2, 1) {};
-	\draw (tjob1arrival |- job1height) -- (tjob1deadline |- tend) node [midway, draw, fill=white, minimum width = 5cm, minimum height = 1cm] (job1execperiod) {};
+	\draw (tjob1arrival2 |- job1height) -- (tjob1deadline2 |- tenda) node [midway, draw, fill=white, minimum width = 5cm, minimum height = 1cm] (job1execperiod) {};
 	\node[draw, pattern color=job1color, pattern=south west lines, minimum width = 5cm, minimum height = 1cm] at (job1execperiod) {};
 
-	\node (tjob2arrival) at (3, 2.5) {$r_b$};
-	\node (tjob2arrival2) at (3, -1) {$t=3$};
+	\node (tjob2arrival) at (3, 2) {};
+	\node[above left=0cm of tjob2arrival] {$r_b$};
+	\node (tjob2arrival2) at (3, 1.5) {$t=3$};
 	\draw[dashed] (tjob2arrival) -- (tjob2arrival2);
-	\node (tjob2deadline) at (6, 2.5) {$d_b$};
-	\node (tjob2deadline2) at (6, -1) {$t=6$};
+	\node (tjob2deadline) at (6, 2) {};
+	\node[above right=0cm of tjob2deadline] {$d_b$};
+	\node (tjob2deadline2) at (6, 1.5) {$t=6$};
 	\draw[dashed] (tjob2deadline) -- (tjob2deadline2);
-	\node (job2height) at (2, 2) {};
-	\draw (tjob2arrival |- job2height) -- (tjob2deadline |- job1height) node [midway, draw, fill=white, minimum width = 3cm, minimum height = 1cm] (job2execperiod) {};
+	\node (job2height) at (2, 3) {};
+	\draw (tjob2arrival2 |- job2height) -- (tjob2deadline2 |- tendb) node [midway, draw, fill=white, minimum width = 3cm, minimum height = 1cm] (job2execperiod) {};
 	\node[draw, pattern color=job2color, pattern=south west lines, minimum width = 3cm, minimum height = 1cm] at (job2execperiod) {};
 \end{tikzpicture}

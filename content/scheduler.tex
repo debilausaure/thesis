@@ -34,17 +34,30 @@
 			\caption{Prototype de la fonction d'élection et définition de son type de retour }
 		\end{listing}
 
+b\begin{figure}[!b]
+		\centering{
+			\input{figures/electionfunction_example.tex}
+			\caption{Exemple de jobs pour l'illustration du fonctionnement de la fonction d'élection}
+			\label{fig:electionfunction_jobs}
+		}
+		\end{figure}
 			\subsubsection{Exemple d'appel à la fonction d'élection}
 
-			\textcolor{red}{décrire les figures, expliquer les jobs et le role de la fonction d'élection}
+			Pour rappel, chaque \emph{job} est muni au minimum des informations suivantes : une \emph{release date}, notée $r$, indiquant l'instant à partir duquel il est possible d'exécuter le \emph{job}, une échéance, notée $d$, pour laquelle le \emph{job} doit avoir terminé son exécution, et un budget d'exécution, noté $c$, indiquant le nombre de périodes d'exécution allouées pour ce \emph{job}.
+
+			Dans cet exemple, on considère l'ensemble de \emph{jobs} constitué des \emph{jobs} $a$ et $b$ représenté sur la Figure \ref{fig:electionfunction_jobs}. Le \emph{job} $a$ représenté par un rectangle bleu sur la Figure \ref{fig:electionfunction_jobs} a pour \emph{release date} $r_a = 2$, pour échéance $d_a = 7$, et pour budget d'exécution $c_a = 4$ (indiqué par la longueur du rectangle bleu le représentant). Le \emph{job} $b$ représenté par le rectangle rouge a pour \emph{release date} $r_b = 3$, pour échéance $d_b = 6$, et pour budget d'exécution $c_b = 1$ (indiqué par la longueur du rectangle rouge). La période d'exécution potentielle de chaque \emph{job}, s'étalant de leur \emph{release date} jusqu'à leur échéance, et représentée par les rectangles hachurés de la Figure \ref{fig:electionfunction_jobs}.
 
 			\begin{figure}[!ht]
 			\centering{
-				\input{figures/electionfunction_example.tex}
-				\caption{Exemple de jobs pour l'illustration du fonctionnement de la fonction d'élection}
-				\label{fig:electionfunction_jobs}
+				\input{figures/electionfunction_schedule.tex}
+				\caption{Ordonnancement des jobs selon la politique d'ordonnancement \emph{Earliest Deadline First}}
+				\label{fig:electionfunction_schedule}
 			}
 			\end{figure}
+
+			La figure \ref{fig:electionfunction_schedule} présente comment la politique va ordonnancer les \emph{jobs} $a$ et $b$. La partie supérieure de la figure présente un plan d'ordonnancement erroné des deux \emph{jobs} : les \emph{jobs} sont exécutés dès l'arrivée de leur \emph{release date}. Cet ordonnancement n'est pas correct, car il est prévu que les deux \emph{jobs} s'exécutent simultanément sur la période suivant la \emph{release date} du \emph{job} $b$ (ce conflit est indiqué par un point d'exclamation rouge). Ainsi, la politique doit choisir entre l'exécution du \emph{job} $a$ et du \emph{job} $b$ sur cette période. La politique \emph{Earliest Deadline First} privilégie alors le \emph{job} ayant l'échéance la plus proche, dans notre exemple le \emph{job} $b$. L'exécution du \emph{job} $a$ est alors suspendue jusqu'à la terminaison du \emph{job} $b$, qui survient avant la période d'exécution suivante puisque son budget d'exécution $c_b$ n'est que d'une seule période d'exécution. L'exécution du \emph{job} $a$ reprend alors, comme indiqué dans la partie inférieure de la figure \ref{fig:electionfunction_schedule}.
+
+			La figure \ref{fig:electionfunction_timeline} montre les résultats retournés par la fonction d'élection lors d'appels à des instants $t$ différents. À $t = 1$, ni le \emph{job} $a$, ni le \emph{job} $b$ ne sont prêts à être exécutés ; la fonction d'élection retourne alors une valeur nulle. À $t = 2$, la \emph{release date} du \emph{job} $a$ est atteinte, ainsi il est prêt à être exécuté ; l'appel à la fonction d'élection retourne le \emph{job} $a$. À $t = 3$, la \emph{release date} du \emph{job} $b$ est atteinte, ainsi le \emph{job} $a$ et le \emph{job} $b$ sont prêts à être exécutés. C'est alors que le rôle de la fonction d'élection prend son sens et choisi le \emph{job} $b$, conformément à la politique \emph{Earliest Deadline First}. À $t = 4$, le \emph{job} $b$ a terminé son exécution : il a épuisé son budget d'exécution $c_b$. Ainsi, la fonction d'élection retourne le \emph{job} $a$, seul \emph{job} pouvant encore être exécuté.
 
 			\begin{figure}[!ht]
 			\centering{
@@ -60,7 +73,7 @@
 
 		La première raison en faveur d'une implémentation de l'ordonnanceur dans une partition de Pip concerne la méthode de conception des logiciels autour de Pip. En effet, placer l'ordonnanceur en espace utilisateur lui fait implicitement profiter des propriétés d'isolation des partitions de Pip. Ce choix est en adéquation avec la vision de Pip du système, conçu comme une tour de virtualisation. Une tour de virualisation dont chaque étage devient partie prenante de la base de confiance (TCB) des étages supérieurs. Dans le modèle de Pip, les différents logiciels se construisent les uns au dessus des autres, profitant des propriétés prouvées sur le logiciel sous-jacent.
 
-		La seconde raison est une conséquence directe de ce choix, relatif à l'effort de preuve. Si l'ordonnanceur avait été implémenté dans Pip, alors il aurait fallu montrer que l'ordonnanceur respecte les propriétés d'isolation de Pip. \textcolor{red}{Inclure les métriques pour argumenter que cet effort serait non négligeable}. De plus, l'ordonnanceur développé dans cet contribution a été conçu autour de la politique d'ordonnancement EDF. Ce choix est arbitraire, et il serait tout à fait pertinent d'utiliser une autre politique d'ordonnancement pour Pip. Ainsi, il faudrait prouver les propriétés d'isolation de Pip pour chaque variante de l'ordonnanceur engendrée par chaque politique souhaitée.
+		La seconde raison est une conséquence directe de ce choix, relatif à l'effort de preuve. Si l'ordonnanceur avait été implémenté dans Pip, alors il aurait fallu montrer que l'ordonnanceur respecte les propriétés d'isolation de Pip. À titre de comparaison, la preuve de préservation de l'isolation initialement écrite sur le service décrit dans le chapitre précédent a nécessité plus de 2500 lignes de preuves, alors même que le service ne modifie pas les structures du noyau, et n'introduit pas de nouvelle propriété de consistence. Produire une telle preuve sur l'ordonnanceur aurait sans doute requis un effort d'un tout autre ordre de grandeur, simplement pour prouver la propriété d'isolation. De plus, l'ordonnanceur développé dans cet contribution a été conçu autour de la politique d'ordonnancement EDF. Ce choix est arbitraire, et il serait tout à fait pertinent de le munir d'une autre politique d'ordonnancement. Ainsi, cet effort aurait été requis pour chaque autre variante de l'ordonnanceur engendrée par chaque politique souhaitée -- encore une fois uniquement pour garantir l'isolation. Cette propriété est \emph{donnée} dès lors que l'ordonnanceur est sorti du code du noyau.
 
 		\subsection{Décomposition des éléments de l'ordonnanceur}
 		\label{sec:project_overview}
@@ -86,14 +99,14 @@
 			Comme indiqué dans la sous-section précédente, la fonction d'élection effectue des modifications sur l'état ou observe l'environnement grâce à l'interface et aux oracles. Cette interface est \emph{nécessaire} car elle permet de définir les opérations qui doivent être supportées par l'état, et donc par ses deux représentations (le code exécutable et le modèle). Sans cette interface, certaines opérations pourraient être possible dans une des deux représentations sans qu'elle soit possible dans l'autre.
 			L'interface ainsi que les oracles sont composés de types opaques, implémentés de manière indépendante dans les modèles ou dans le code exécutable. Ces types sont munis de fonctions elles aussi pourvues d'une implémentation exécutable ainsi que d'un modèle.
 
-			Les oracles sont une partie de l'interface spécifique. Les oracles sont la partie de l'interface qui permet à la fonction d'élection d'observer les phénomènes extérieurs qui lui sont extérieurs, plus précisément la terminaison du \emph{job} précédemment exécuté et la liste des nouveaux \emph{jobs} à ordonnancer. Bien qu'ils disposent aussi de deux représentations, leur modèle ne décrit pas réellement les résultats que l'oracle doit produire, mais plutôt des contraintes sur les résultats produits. Le modèle va se contenter de décrire l'ensemble des résultats possibles, plutôt que d'en désigner un en particulier. Par exemple, une des contraintes sur la liste des nouveaux jobs est que leur date d'arrivée ne peut pas être supérieure à la date courante. 
+			Les oracles sont une partie de l'interface spécifique. Les oracles sont la partie de l'interface qui permet à la fonction d'élection d'observer les phénomènes extérieurs, plus précisément la terminaison du \emph{job} précédemment exécuté et la liste des nouveaux \emph{jobs} à ordonnancer. Bien qu'ils disposent aussi de deux représentations, leur modèle ne décrit pas réellement les résultats que l'oracle doit produire, mais plutôt des contraintes sur les résultats produits. Le modèle va se contenter de décrire l'ensemble des résultats possibles, plutôt que d'en désigner un en particulier. Par exemple, une des contraintes sur la liste des nouveaux jobs est que leur date d'arrivée ne peut pas être supérieure à la date courante. 
 
 		\subsubsection{Back-ends}
 		\label{sec:back-ends}
 
 		Nous avons vu que l'état est composé en partie d'une partie non mutable, appelée l'environnement. Les informations contenues dans l'environnement sont mises à jour par le \emph{back-end}. Le \emph{back-end} est aussi chargé d'appeler la fonction d'élection et d'exécuter le \emph{job} qui aura été élu.
 
-		Cette contribution est munie de deux \emph{back-ends}.
+		Cette contribution est munie de deux \emph{back-ends} à choisir au moment de la compilation de l'ordonnanceur.
 		\begin{itemize}
 			\item Le premier back-end est conçu comme une simulation permettant d'exécuter la fonction d'élection dans un simple processus Linux, afin de fournir des informations sur l'état interne de l'ordonnanceur. Ce back-end appelle la fonction d'élection, affiche le \emph{job} choisi pour exécution et autres informations d'intérêt sur l'état interne de la fonction d'élection tels que la liste des \emph{jobs} en attente, etc ;
 
@@ -615,7 +628,7 @@ void State_insert_new_active_entry
 		La partie technique de cette contribution est le fruit de 9 mois de travail de deux personnes à temps plein, aidés ponctuellement par d'autres membres de nos équipes de recherche respectives. La présentation de l'ordonnanceur en conférence et la publication du papier ont eu lieu un an et demi après le premier commit sur le dépôt de code du projet.
 
 			\subsubsection{Implémentation}
-			La fonction d'élection, écrite en Gallina, compte à elle seule environ 150 lignes de code. L'implémentation de l'état, des types opaques et des fonctions formant l'interface avec l'état compte environ 350 lignes de code C, composé majoritairement de fichiers \emph{headers} particulièrement verbeux.
+			La fonction d'élection, écrite en Gallina, compte à elle seule environ 150 lignes de code Gallina ; sans surprise, le nombre de lignes de code C produit lors de la compilation est équivalent. L'implémentation de l'état, des types opaques et des fonctions formant l'interface avec l'état compte environ 350 lignes de code C, composé majoritairement de fichiers \emph{headers} particulièrement verbeux.
 
 			Concernant le back-end de \emph{simulation} de l'ordonnanceur, celui-ci a requis environ 100 lignes de code C. L'implémentation de la partition de Pip contenant l'ordonnanceur préemptif temps réel, sans compter la fonction d'élection ni l'implémentation de l'état et de l'interface, compte pour environ 1150 lignes de code. Sont pris en compte, les fichiers de code C et leur \emph{headers}, les fichiers de code assembleur, mais aussi les scripts d'édition de liens. En revanche, ce nombre de lignes ne contient pas les lignes de la librairie utilisateur de Pip. Sur ces 1150 lignes, environ 900 lignes sont requises par Pip pour créer les partitions de l'ordonnanceur et des \emph{jobs}, ainsi que pour mapper leur code dans leur espace d'adressage respectifs. Les 250 lignes restantes sont dédiées au fonctionnement de l'ordonnanceur en lui-même.
 
@@ -643,7 +656,7 @@ void State_insert_new_active_entry
 
 Il existe des hypothèses universelles, présentes dans la base de confiance de l'intégralité de la communauté de vérification formelle de code.
 
-Les premières de ces hypothèses sont celles de l'outil utilisé pour vérifier la preuve formelle : dans notre cas, l'assistant de preuve Coq. Sa partie critique est circonscrite par son noyau -- la partie minimiale de l'assistant qui vérifie si une tentative de preuve est valide au sens formel. On pourrait accroitre notre confiance dans le noyau en le vérifiant formellement ; c'est ce que le projet MetaCoq \textcolor{red}{REF} vise à atteindre, en formalisant le noyau de Coq dans Coq.
+Les premières de ces hypothèses sont celles de l'outil utilisé pour vérifier la preuve formelle : dans notre cas, l'assistant de preuve Coq. Sa partie critique est circonscrite par son noyau -- la partie minimiale de l'assistant qui vérifie si une tentative de preuve est valide au sens formel. On pourrait accroitre notre confiance dans le noyau en le vérifiant formellement ; c'est ce que le projet MetaCoq \cite{metacoq} vise à atteindre, en formalisant le noyau de Coq dans Coq.
 
 Néanmoins, il existe, dans la base de confiance commune, d'autres hypothèses plus fortes par plusieurs ordres de grandeur : la spécification du matériel exécutant le code vérifié. On peut découper cet argument en deux parties :
 
@@ -666,8 +679,7 @@ Par ailleurs, nous souhaitons revenir sur l'existence même de cette discussion 
 
 \subsubsection{Raisonnement sur le code Gallina et confiance dans le code compilé}
 
-Une chaîne d'outils qui propage les propriétés jusqu'au code compilé est le modèle d'excellence qu'il faut chercher à atteindre dans le monde des preuves formelles. Nous nous efforçons d'atteindre ce but, et cette sous-section présentera l'état de notre base de confiance sur ce sujet.
-
-Comme mentionné dans l'état de l'art, la chaîne de compilation de Pip utilise soit Digger, soit $\partial x$ pour compiler le code Gallina \emph{shallow embedded} vers du code C classique. Aucun de ces deux outils n'est pour l'instant muni de preuve de préservation de la sémantique.
+Une chaîne d'outils qui propage les propriétés jusqu'au code compilé est le modèle d'excellence que chaque projet muni de preuve formelle sur du code devrait chercher à atteindre. Nous nous efforçons d'atteindre ce but. Comme mentionné dans l'état de l'art, la chaîne de compilation de Pip utilise soit Digger, soit $\partial x$ pour compiler le code Gallina \emph{shallow embedded} vers du code C classique. Aucun de ces deux outils n'est pour l'instant muni de preuve de préservation de la sémantique ; $\partial x$ a cependant été développé pour poursuivre ce but.
+\textcolor{red}{Passer le reste du paragraphe de comparaison avec l'état de l'art dans le chapitre de l'état de l'art ?}\\
 
 		\textcolor{red}{Résumer les claims et introduire la contribution suivante}
