@@ -1,5 +1,11 @@
 \chapter{Ajout incrémental de propriétés sur le code prouvé}
 
+	La section de discussion du premier chapitre a mis en avant le fait que l'ensemble de Pip était conçu autour des propriétés d'isolation à prouver. Le modèle des fonctions de l'interface et de l'état, jusqu'à la monade intégrée au code, sont liés aux propriétés d'isolation. Cette forte proximité est une conséquence de la philosophie de conception minimaliste de Pip, qui nous a poussé à ne définir que les éléments strictement nécessaires à l'établissement de le preuve de préservation de l'isolation. Cette approche nous a permis de minimiser l'effort de preuve pour la propriété d'isolation, mais présente un désavantage majeur : le code des services de Pip n'est pas indépendant des modèles sur lesquels il repose.
+
+	Ainsi, il n'existe qu'un modèle unique dans Pip qui ne peut évoluer que de manière itérative. Chaque évolution rend caduques les propriétés établies sur l'ancien modèle, et implique de produire une nouvelle preuve des mêmes propriétés avec le nouveau modèle. Le moindre ajout de chaque itération rendant de plus en plus difficile l'établissement la preuve à produire.
+	Ceci est un frein considérable à la vérification de nouvelles propriétés sur le code de Pip, telle que la preuve fonctionnelle du service présenté dans le premier chapitre. Si les nouvelles propriétés impliquent des changements trop importants sur le modèle, l'effort de preuve à fournir deviendrait inatteignable après seulement quelques itérations.
+
+	Dans ce chapitre, nous présentons une preuve de concept d'abstraction des
 	\section{Motivations}
 		\subsection{Généraliser / modulariser la méthodologie de preuve de Pip}
 
@@ -7,24 +13,139 @@
 		% Description informelle des propriétés
 	
 
-	\section{Abstraction de la monade dans le code prouvé}
+	\section{Architecture actuelle de Pip}
 
-		\subsection{Illustration du problème de la monade}
-		% Monade hardcodée dans le code et liée aux propriétés d'isolation
+		\subsection{Définition du code et des modèles actuels}
 
-		\subsection{Définition d'une monade générique}
-		% Code paramétré par la monade
+			\subsubsection{Vue générale}
 
-		\subsection{Méthode de preuve avec une monade générique}
-		% Instantiation de la monade pour raisonner sur les propriétés à prouver
+			\begin{listing}[!ht]
+				\input{figures/current_pip_architecture.tex}
+				\caption{Architecture actuelle de Pip}
+				\label{fig:switchContextCont}
+			\end{listing}
+
+			\subsubsection{Code dépendant du modèle d'isolation}
+
+			Actuellement, le code de Pip est totalement enchevétré avec les modèles
+
+			\begin{listing}[!ht]
+				\coqcode{code/switchContextCont.v}
+				\caption{Code du bloc de continuation \texttt{switchContextCont} du service de transfert de flot d'exécution}
+				\label{code:switchContextCont}
+			\end{listing}
+
+			\subsubsection{Monade dépendant de l'état}
+
+		Le code retourne une valeur monadique \texttt{LLI yield\_checks}. La monade est définie par l'unique modèle tel que décrit dans la figure \ref{code:LLImonad}
+		\begin{listing}[!ht]
+			\coqcode{code/LLIMonad.v}
+			\caption{Définition du type de la monade d'état \texttt{LLI} dans le modèle actuel de Pip}
+			\label{code:LLImonad}
+		\end{listing}
+
+		Cette monade est définie en fonction de l'état du modèle relatif à l'isolation, comme décrit dans le listing \ref{code:CurrentIsolationState}.
+		\begin{listing}[!ht]
+			\coqcode{code/CurrentIsolationState.v}
+			\caption{Définition de l'état \texttt{state} dans le modèle actuel de Pip}
+			\label{code:CurrentIsolationState}
+		\end{listing}
 		
-	\section{Illustration sur la fonction Yield de Pip}
-		% Preuve fonctionnelle de Yield
-		\subsection{Définition des propriétés de bon fonctionnement du Yield}
-		\subsection{Modélisation de l'état nécessaire au bon fonctionnement de Yield}
-		\subsection{Sketch of proof / Déroulé de la preuve}
+		Ensuite, le modèle de l'état ainsi que le code des différents services dépend des types décrits par le modèle actuel de Pip.
 
-	\section{Discussion}
+		\begin{listing}[!ht]
+			\coqcode{code/CurrentTypesModel.v}
+			\caption{Définition des types nécessaires à la fonction \texttt{switchContextCont} dans le modèle actuel de Pip}
+			\label{code:CurrentTypesModel}
+		\end{listing}
+
+		Enfin, le code intéragit avec l'état au travers de fonctions dont le modèle est lié au modèle de l'état et au modèle des types.
+
+		\begin{listing}[!ht]
+			\coqcode{code/CurrentFunctionsModel.v}
+			\caption{Définition des fonctions de l'interface avec l'état nécessaire à la fonction \texttt{switchContextCont} dans le modèle actuel de Pip}
+			\label{code:CurrentFunctionsModel}
+		\end{listing}
+
+		\subsection{Processus actuel de preuve}
+
+			\subsubsection{Définition des fonctions nécessaires à l'écriture de propriétés}
+
+			\subsubsection{Définition des propriétés à prouver}
+
+			\subsubsection{Définition des \emph{Weakest Preconditions} et des invariants}
+
+		\subsection{Extraction de code}
+
+		
+	\section{Abstraction des modèles dans le code prouvé}
+
+		\subsection{Définition de code générique indépendant des modèles}
+
+			\subsubsection{Vue générale}
+
+			\subsubsection{Abstraction du modèle types utilisés par Pip}
+
+			\begin{listing}[!ht]
+				\coqcode{code/TypesParameters.v}
+				\caption{Définition de l'interface des types nécessaires à la fonction \texttt{switchContextCont}}
+				\label{code:TypesParameter}
+			\end{listing}
+
+			\subsubsection{Abstraction du modèle de l'état}
+
+			\begin{listing}[!ht]
+				\coqcode{code/StateModel.v}
+				\caption{Définition de l'interface de l'état}
+				\label{code:StateParameter}
+			\end{listing}
+
+			\subsubsection{Définition d'une monade d'état agnostique du modèle de l'état}
+
+			\begin{listing}[!ht]
+				\coqcode{code/StateAgnosticMonad.v}
+				\caption{Définition de la monade d'état}
+				\label{code:StateAgnosticMonad}
+			\end{listing}
+
+			\subsubsection{Abstraction du modèle des fonctions de l'interface avec l'état}
+
+			\begin{listing}[!ht]
+				\coqcode{code/InterfaceParameters.v}
+				\caption{Définition de l'interface des la monade d'état}
+				\label{code:InterfaceParameters}
+			\end{listing}
+
+			\subsubsection{Code agnostique des modèles}
+
+			\begin{listing}[!ht]
+				\coqcode{code/ModelAgnosticCode.v}
+				\caption{Définition du code affranchi de toute dépendance aux modèles}
+				\label{code:ModelAgnosticCode}
+			\end{listing}
+
+		\subsection{Définition du modèle d'isolation s'interfaçant avec le code générique}
+			\subsubsection{Définition du modèle des types du modèle de l'isolation}
+
+			\subsubsection{Définition du modèle de l'état du modèle d'isolation}
+
+			\subsubsection{Instanciation de la monade d'état relative au modèle d'isolation}
+
+			\subsubsection{Définition du modèle des fonctions de l'interface avec l'état}
+
+		\subsection{Méthode de preuve sur le code générique}
+		% Instantiation de la monade pour raisonner sur les propriétés à prouver
+
+		\subsection{Extraction de code}
+
+	%\section{Illustration sur la fonction Yield de Pip}
+	%	% Preuve fonctionnelle de Yield
+	%	\subsection{Définition des propriétés de bon fonctionnement du Yield}
+	%	\subsection{Modélisation de l'état nécessaire au bon fonctionnement de Yield}
+	%	\subsection{Sketch of proof / Déroulé de la preuve}
+
+	\section{Perspectives de recherche et discussion}
+		\subsection{Établissement d'un modèle alternatif permettant de prouver les propriétés fonctionnelles du service de transfert de flôt d'exécution}
 		\subsection{Lien entre la preuve de bon fonctionnement et le back end de l'ordonnanceur}
 		\subsection{Discussion de la méthodologie}
 			% Conduire les deux preuves indépendamment est différent de conduire deux preuves l'une après l'autre (en oubliant la première)

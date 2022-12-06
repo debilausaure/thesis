@@ -476,3 +476,72 @@ address = {USA}
   year={2020},
   publisher={Springer}
 }
+
+@inproceedings{oeuf,
+author = {Mullen, Eric and Pernsteiner, Stuart and Wilcox, James R. and Tatlock, Zachary and Grossman, Dan},
+title = {Oeuf: Minimizing the Coq Extraction TCB},
+year = {2018},
+isbn = {9781450355865},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+doi = {10.1145/3167089},
+abstract = {Verifying systems by implementing them in the programming language of a proof assistant (e.g., Gallina for Coq) lets us directly leverage the full power of the proof assistant for verifying the system. But, to execute such an implementation requires extraction, a large complicated process that is in the trusted computing base (TCB). This paper presents undefineduf, a verified compiler from a subset of Gallina to assembly. undefineduf’s correctness theorem ensures that compilation preserves the semantics of the source Gallina program. We describe how oeuf’s specification can be used as a foreign function interface to reason about the interaction between compiled Gallina programs and surrounding shim code. Additionally, undefinedufmaintains a small TCB for its front-end by reflecting Gallina programs to undefinedufsource and automatically ensuring equivalence using computational denotation. This design enabled us to implement some early compiler passes (e.g., lambda lifting) in the untrusted reflection and ensure their correctness via translation validation. To evaluate undefineduf, we compile Appel’s SHA256 specification from Gallina to x86 and write a shim for the generated code, yielding a verified sha256sum implementation with a small TCB.},
+booktitle = {Proceedings of the 7th ACM SIGPLAN International Conference on Certified Programs and Proofs},
+pages = {172–185},
+numpages = {14},
+keywords = {Coq, Formal Verification, Compilers, Verified Systems},
+location = {Los Angeles, CA, USA},
+series = {CPP 2018}
+}
+
+@inproceedings{anand2017certicoq,
+  title={CertiCoq: A verified compiler for Coq},
+  author={Anand, Abhishek and Appel, Andrew and Morrisett, Greg and Paraskevopoulou, Zoe and Pollack, Randy and Belanger, Olivier Savary and Sozeau, Matthieu and Weaver, Matthew},
+  booktitle={The third international workshop on Coq for programming languages (CoqPL)},
+  year={2017}
+}
+
+@inproceedings{refinedC,
+author = {Sammler, Michael and Lepigre, Rodolphe and Krebbers, Robbert and Memarian, Kayvan and Dreyer, Derek and Garg, Deepak},
+title = {RefinedC: Automating the Foundational Verification of C Code with Refined Ownership Types},
+year = {2021},
+isbn = {9781450383912},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3453483.3454036},
+doi = {10.1145/3453483.3454036},
+abstract = {Given the central role that C continues to play in systems software, and the difficulty
+of writing safe and correct C code, it remains a grand challenge to develop effective
+formal methods for verifying C programs. In this paper, we propose a new approach
+to this problem: a type system we call RefinedC, which combines ownership types (for
+modular reasoning about shared state and concurrency) with refinement types (for encoding
+precise invariants on C data types and Hoare-style specifications for C functions).
+RefinedC is both automated (requiring minimal user intervention) and foundational
+(producing a proof of program correctness in Coq), while at the same time handling
+a range of low-level programming idioms such as pointer arithmetic. In particular,
+following the approach of RustBelt, the soundness of the RefinedC type system is justified
+semantically by interpretation into the Coq-based Iris framework for higher-order
+concurrent separation logic. However, the typing rules of RefinedC are also designed
+to be encodable in a new “separation logic programming” language we call Lithium.
+By restricting to a carefully chosen (yet expressive) fragment of separation logic,
+Lithium supports predictable, automatic, goal-directed proof search without backtracking.
+We demonstrate the effectiveness of RefinedC on a range of representative examples
+of C code.},
+booktitle = {Proceedings of the 42nd ACM SIGPLAN International Conference on Programming Language Design and Implementation},
+pages = {158–174},
+numpages = {17},
+keywords = {Coq, Iris, ownership types, refinement types, proof automation, C programming language, separation logic},
+location = {Virtual, Canada},
+series = {PLDI 2021}
+}
+
+@article{cao2018vst,
+  title={VST-Floyd: A separation logic tool to verify correctness of C programs},
+  author={Cao, Qinxiang and Beringer, Lennart and Gruetter, Samuel and Dodds, Josiah and Appel, Andrew W},
+  journal={Journal of Automated Reasoning},
+  volume={61},
+  number={1},
+  pages={367--422},
+  year={2018},
+  publisher={Springer}
+}

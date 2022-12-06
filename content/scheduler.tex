@@ -81,7 +81,7 @@ b\begin{figure}[!b]
 			\begin{figure}[!ht]
 			    \centering
 			    \input{figures/scheduler_overview.tex}
-			    \caption{Overview of the scheduler components and their interactions}
+			    \caption{Vue générale de l'ensemble des composants de l'ordonnanceur et de leurs interactions}
 			    \label{fig:project_overview}
 			\end{figure}
 
@@ -176,9 +176,9 @@ b\begin{figure}[!b]
 	La première couche d'abstraction, la plus abstraite de toutes, est celle de la politique d'ordonnancement. Elle est définie de la manière suivante : pour tout \emph{job} $j$, et à n'importe quel instant $t$, si le \emph{job} $j$ s'exécute à l'instant $t$, alors pour chaque autre \emph{job} $j'$ qui aurait pu être exécuté à la place, on a $d_j \leq d_{j'}$.
 
 	De manière formelle,
-	\begin{equation*}
+	\begin{equation}
 		\forall j, \forall t, [...]~\mathtt{run}~j~t~~\implies~~\forall j',~\mathtt{waiting}~j'~t~~\implies~~d_j \leq d_{j'}.
-	\end{equation*}
+	\end{equation}
 \indent avec :
 	\begin{align*}
 		j, j'&\text{, deux identifiants de job},\\
@@ -190,11 +190,13 @@ b\begin{figure}[!b]
 	La \emph{propriété de correction} pour la politique d'ordonnancement EDF est décrite de la manière suivante.
 	Étant donné un ensemble ordonnançable de \emph{jobs} (c'est à dire satisfaisant l'hypothèse d'ordonnancement \ref{eq:schedulability}), si la politique d'ordonnancement EDF est appliquée, alors aucun \emph{job} de l'ensemble ne dépassera son échéance.
 	
-	\begin{gather*}
-		\textit{ordonnançable} \implies\\
-  		\forall j, \forall t.~~~\text{EdfPolicyUpTo}~t \implies\\
-		\neg \text{overdue}~j~t.
-	\end{gather*}
+	\begin{equation}
+	\begin{split}
+		\textit{or}&\textit{donnançable} \implies\\
+		\forall j, \forall t.~~&~\text{EdfPolicyUpTo}~t \implies\\
+		           &\neg \text{overdue}~j~t.
+	\end{split}
+	\end{equation}
 \indent	avec :
 	\begin{align*}
 		\text{EdfPolicyUpTo}~t&\text{ signifie que la politique a été appliquée jusqu'à l'instant}~t\\
@@ -205,10 +207,12 @@ b\begin{figure}[!b]
 	\label{sec:functional}
 
 	La première étape du raffinement est de montrer que la fonction d'élection idéalisée \texttt{functional\_scheduler\_star} implémente la politique d'ordonnancement EDF. La propriété suivante établie que si la fonction d'élection idéalisée est exécutée jusqu'à un certain instant $t$, alors la politique EDF a été appliquée jusqu'à cet instant.
-	\begin{gather*}
-		\forall t, \forall o, \forall s.~~~\texttt{functional\_scheduler\_star}~(t) = (o,s) \implies\\
-		\text{EdfPolicyUpTo}~(\text{now}~s).
-	\end{gather*}
+	\begin{equation}
+	\begin{split}
+		\forall t, \forall o, \forall s.~~~\texttt{funct}&\texttt{ional\_scheduler\_star}~(t) = (o,s) \implies\\
+		&\text{EdfPolicyUpTo}~(\text{now}~s).
+	\end{split}
+	\end{equation}
 \indent	avec :
 	\begin{align*}
 		s&\text{, l'état du programme après avoir exécuté la fonction}\\
@@ -221,11 +225,13 @@ b\begin{figure}[!b]
 	De cela, on peut déduire la propriété de correction de la fonction d'élection idéalisée :
 	étant donné un ensemble de \emph{job} ordonnançable, alors pour tout \emph{job} $j$ de cet ensemble, ce \emph{job} ne dépassera pas son échéance à l'instant $t$ si la fonction a été appelée à chaque instant jusqu'à l'instant $t$
 
-	\begin{gather*}
-		\textit{ordonnançable} \implies\\
-		\forall t, \forall o, \forall s.~~~\texttt{functional\_scheduler\_star}~(t) = (o,s) \implies\\
-		\forall i.~~~\neg \text{overdue}~i~(\text{now}~s).
-	\end{gather*}
+	\begin{equation}
+	\begin{split}
+		&\textit{ordonnançable} \implies\\
+		\forall t, \forall o, \forall s.~~~\texttt{functio}&\texttt{nal\_scheduler\_star}~(t) = (o,s) \implies\\
+		\forall i.&~~~\neg \text{overdue}~i~(\text{now}~s).
+	\end{split}
+	\end{equation}
 
 	\subsubsection{Fonction d'élection monadique raffinant la fonction d'élection idéalisée}
 	\label{sec:monadic}
@@ -234,31 +240,34 @@ b\begin{figure}[!b]
 	Les préconditions de la propriété sont paramétrés par un environnement observable \texttt{env} et par un état mutable $s$. Les postconditions sont paramétrées par la valeur de retour $o$ du programme $x$, et un état $s'$, le résultat de l'exécution du programme $c$ sur l'état $s$.
 
 	Cette étape de raffinement peut être décrite de la manière suivante : pour tout instant $t$, si $(o, s')$ sont les valeurs retournées par la fonction d'élection monadique \texttt{scheduler\_star} sur l'environnement $E$ et l'état initial \texttt{init}, alors $(o, s')$ sont aussi les valeurs retournées par la fonction d'élection idéalisée \texttt{functional\_scheduler\_star} à l'instant $t$. Le triplet de Hoare correspondant est le suivant :
-	\begin{gather*}
-		\forall t.\\
+	\begin{equation}
+	\begin{split}
+		\forall& t.\\
 		\{
-		~\lambda~\mathtt{env}~s.~~~\mathtt{env} = E~~\land~~s = \mathtt{init}~
+		~\lambda~\mathtt{env}~s.~~~\mathtt{env} =&~E~~\land~~s = \mathtt{init}~
 		\}\\
-		\texttt{scheduler\_star}~(t)\\
+		\texttt{schedule}&\texttt{r\_star}~(t)\\
 		\{
-		~\lambda~o~s'.~~~\texttt{functional\_scheduler\_star}~(t) = (o,s')~
+		~\lambda~o~s'.~~~\texttt{functional\_sch}&\texttt{eduler\_star}~(t) = (o,s')~
 		\}
-	\end{gather*}
+	\end{split}
+	\end{equation}
 
 	À partir de ce triplet, on peut déduire le triplet de Hoare exprimant la propriété de correction de la fonction d'élection monadique.
 
-	\begin{gather*}
-		\textit{ordonnançable} \implies\\
-		\forall t.\\
+	\begin{equation}
+	\begin{split}
+		\textit{ordonnan}&\textit{çable} \implies\\
+		\forall& t.\\
 		\{
-		~\lambda~\mathtt{env}~s.~~~\mathtt{env} = E~~\land~~s = \mathtt{init}~
+		~\lambda~\mathtt{env}~s.~~~\mathtt{env} =& ~E~~\land~~s = \mathtt{init}~
 		\}\\
-		\texttt{scheduler\_star}~(t)\\
+		\texttt{schedule}&\texttt{r\_star}~(t)\\
 		\{
-		~\lambda~\_~s'.~~~\forall i.~~~\neg \text{overdue}~i~(\text{now}~s') ~
+		~\lambda~\_~s'.~~~\forall i.~~~\neg \text{ov}&\text{erdue}~i~(\text{now}~s') ~
 		\}
-	\end{gather*}
-
+	\end{split}
+	\end{equation}
 
 	\subsection{Hypothèses et déroulement de la preuve en Coq}
 
@@ -288,15 +297,14 @@ b\begin{figure}[!b]
 	La dernière étape de raffinement permet de montrer que la fonction d'élection exécutable raffine la fonction d'élection idéalisée. Elle consiste à montrer que l'ensemble des états atteignables par la fonction d'élection exécutable est inclus dans l'ensemble des états atteignables par la fonction d'élection idéalisée. 
 	La différence notable entre les deux fonctions d'élection est que la fonction d'élection idéalisée calcule en une grosse itération ce que la fonction d'élection exécutable calcule en plusieurs petites itérations. La fonction d'élection idéalisée n'est pas assujettie à de telles contraintes et peut de ce fait factoriser ces longues séquences de petites itérations en une seule grosse itération. Ce faisant, la fonction d'élection idéalisée nous avait épargné la preuve d'invariants supplémentaires à propos des états intermédiaires générés par la fonction d'élection exécutable, qu'il a fallu prouver dans cette étape de raffinement.
 
-	La conclusion globale indiquant la fonction d'élection exécutable est correcte découle de la propriété de correction de la politique d'ordonnancement et des preuves des deux raffinements successifs.
+	La conclusion globale indiquant que la fonction d'élection exécutable est correcte découle de la propriété de correction de la politique d'ordonnancement et des preuves des deux raffinements successifs.
 
 	\textcolor{red}{Il faut une transition c'est trop raide}
 
 	\section{Implémentation et modèle de l'état et de son interface}
 
-	Cette section commencera par rappeler le rôle de la monade d'état dans le monde mathématique et de la nécessité de son interface. Elle illustrera ensuite le problème de \emph{dualité} des modèles et de l'objet réel modélisé avec un exemple s'étant présenté pendant l'implémentation.
-	Dans une seconde partie, cette section présentera notre implémentation et les modèles relatifs à l'état et aux fonctions de l'interface.
-	Cette section décrira l'implémentation de l'interface avec la monade d'état, qui permet à la fonction d'élection d'intéragir avec l'état interne du programme.
+	Cette section commence par rappeler le rôle de la monade d'état dans le monde mathématique et de la nécessité de son interface. Elle illustre ensuite le problème de \emph{dualité} des modèles et de l'objet réel modélisé avec un exemple s'étant présenté pendant l'implémentation.
+	Dans une seconde partie, cette section présente notre implémentation et les modèles relatifs à l'état et aux fonctions de l'interface. Elle décrit l'implémentation de l'interface avec la monade d'état, qui permet à la fonction d'élection d'intéragir avec l'état interne du programme.
 		\subsection{Dualité implémentation/modélisation}
 		\label{sec:model_distortion}
 			La monade d'état représente l'état du programme dans le monde fonctionnel du modèle qui en est autrement dépourvu. Les fonctions qui permettent d'interagir avec la monade d'état constituent son interface. Lors de la compilation du code Gallina vers du code C, la monade d'état disparaît, pour laisser place à l'état intrinsèque du monde impératif.
@@ -330,7 +338,8 @@ Afin d'éviter de s'exposer à ce problème de distortion, notre interface ne fo
 	Le modèle de l'état est divisé en deux parties : l'environnement, contenant les valeurs calculées par le back-end sur lesquelles la fonction d'élection n'a aucun contrôle, et la partie de l'état modifiable par la fonction d'élection.
 
 	Le modèle de l'environnement \texttt{Env} est défini comme une fonction qui, en fonction de l'instant passé en paramètre, retourne la liste des \emph{jobs} à ajouter à la liste des \emph{jobs} prêts à être ordonnancés.
-	\begin{minted}{coq}
+\begin{listing}[ht]
+\begin{minted}{coq}
 Record Job  :=
 mk_Job {
     jobid : CNat ;
@@ -341,10 +350,13 @@ mk_Job {
 }.
 
 Definition Env : Type := CNat -> list Job.
-	\end{minted}
+\end{minted}
+\caption{Définitions des modèles de la structure \texttt{Job} et de l'environnement}
+\label{code:job_env_definition}
+\end{listing}
 
 	Le modèle de la partie mutable \texttt{State} est constitué d'une structure avec deux champs. Le premier est un simple compteur de temps, gardant le compte des interruptions d'horloge ; l'autre champ est une liste d'\texttt{entries}. Les \emph{entries} sont des structures qui associent chaque \emph{job} à son budget d'exécution restant et à son échéance relative. Le modèle de cet état mutable est donc défini de la manière suivante :
-\begin{figure}[ht]
+\begin{listing}[ht]
 \begin{minipage}[c]{0.50\linewidth}
 \begin{minted}{coq}
 Record Entry :=
@@ -365,14 +377,19 @@ mk_State {
 
 \end{minted}
 \end{minipage}
-
-\end{figure}
+\caption{Définitions des modèles des structures Entry et de la partie mutable de l'état}
+\label{code:entry_state_definition}
+\end{listing}
 
 	La monade d'état, composé de l'environnement et de la partie mutable, a le type suivant :
+\begin{listing}[ht]
 	\begin{minted}{coq}
 Definition RT (A : Type) : Type :=
     Env -> State -> A * State.
 	\end{minted}
+	\caption{Définition du type de la monade d'état et d'environnement}
+	\label{code:monad_type}
+\end{listing}
 	Dans notre modèle, chaque fonction monadique a un type de retour \texttt{RT A}, et prend donc en paramètre l'environnement et l'état mutable actuel et renvoie une valeur de type arbitraire \texttt{A} ``enrobée'' avec la nouvelle partie mutable de l'état.
 
 	Les paragraphes suivants décrivent comment l'état est implémenté.
@@ -636,7 +653,7 @@ void State_insert_new_active_entry
 			
 			Les modèles de l'état, des types opaques, et des fonctions permettant d'intéragir avec l'état représentent en tout environ 650 lignes de code.
 
-			Pour rappel, la preuve se découpe en trois parties majeures : la définition de la politique d'ordonnancement \emph{Earliest Deadline First} et l'établissement de sa propriété de correction , l'implémentation d'une fonction d'élection idéalisée et de sa preuve de raffinement de la politique d'ordonnancement, puis d'un raffinement vers la fonction d'élection qui sera traduite en C.
+			Pour rappel, la preuve se découpe en trois parties majeures : la définition de la politique d'ordonnancement \emph{Earliest Deadline First} et l'établissement de sa propriété de correction, l'implémentation d'une fonction d'élection idéalisée et de sa preuve de raffinement de la politique d'ordonnancement, puis d'un raffinement vers la fonction qui sera traduite en C, compilée et exécutée.
 
 			La première partie de cette preuve concernant la correction de la politique d'ordonnancement est relativement courte. L'écriture de la politique d'ordonnancement, avec sa preuve de correction représente environ 1100 lignes de code et de preuve. Ce nombre de lignes relativement restreint est dû au haut niveau d'abstraction, profitant à l'établissement de la preuve : cela permet de se concentrer sur l'essentiel sans s'encombrer de détails d'implémentation.
 		
@@ -680,6 +697,20 @@ Par ailleurs, nous souhaitons revenir sur l'existence même de cette discussion 
 \subsubsection{Raisonnement sur le code Gallina et confiance dans le code compilé}
 
 Une chaîne d'outils qui propage les propriétés jusqu'au code compilé est le modèle d'excellence que chaque projet muni de preuve formelle sur du code devrait chercher à atteindre. Nous nous efforçons d'atteindre ce but. Comme mentionné dans l'état de l'art, la chaîne de compilation de Pip utilise soit Digger, soit $\partial x$ pour compiler le code Gallina \emph{shallow embedded} vers du code C classique. Aucun de ces deux outils n'est pour l'instant muni de preuve de préservation de la sémantique ; $\partial x$ a cependant été développé pour poursuivre ce but.
-\textcolor{red}{Passer le reste du paragraphe de comparaison avec l'état de l'art dans le chapitre de l'état de l'art ?}\\
+
+De nombreux travaux existent déjà à ce sujet.
+Œuf \cite{oeuf} permet de compiler un grand sous-ensemble de code Gallina idiomatique vers du code C, avec la garantie que :
+\begin{quote}
+    \emph{des appels valides aux fonctions compilées par Œuf auront un comportement équivalent à l'implémentation originale en Gallina} -- \cite{oeuf}, Section 2.1
+\end{quote}
+Le programme Gallina est compilé vers la représentation \texttt{Cminor} de CompCert, et peut donc être compilé vers du code assembleur avec CompCert.
+D'une manière assez similaire, le projet CertiCoq \cite{anand2017certicoq} vise à vérifier la compilation de \emph{n'importe quel} programme Gallina en \texttt{Clight}, qui peut donc être compilé à nouveau vers du code assembleur par n'importe quel compilateur C -- y compris CompCert.
+
+Ces deux contributions de la communauté ont un point commun : elles ajoutent un ramasse-miette au code C compilé. Un ramasse-miette est un logiciel complexe permettant au développeur de ne pas se préoccuper de libérer la mémoire allouée dynamiquement lorsqu'il n'en a plus besoin. Ce logiciel fait parti de l'environnement d'exécution de Gallina, mais n'est pas nativement inclus avec le langage C ou disponible sur du matériel. L'utilisation d'un ramasse-miette a généralement un impact négatif sur les performances, et peu engendrer une surconsommation de mémoire. De plus, l'inclusion d'un ramasse-miette dans le code compilé ajoute un bout de logiciel complexe (et non-prouvé) dans la base de confiance. Le compromis apporté par l'inclusion d'un tel logiciel contraste avec les contraintes typiques des systèmes embarqués, qui s'accomodent plutôt de logiciels légers munis d'un minimum de dépendances.
+
+D'autres travaux ont abordé le problème avec une méthodologie opposée, partant du code C pour le vérifier formellement. RefinedC \cite{refinedC}, la contribution la plus récente du projet RustBelt, utilise des annotations de code C pour créer des spécifications et automatiser la plupart des preuves de programmes. Le code C est compilé vers un langage appelé Caesium, qui est représenté sous la forme d'un \emph{deep-embedding} en Gallina, et sur lequel la preuve est vérifiée.
+Le code source initial étant du C, il peut être compilé directement sans inclure de ramasse-miette. Néanmoins, tout comme notre propre méthodologie, cette méthodologie suppose que leur outil de compilation de C vers Gallina est correct et que la sémantique de Caesium est correcte.
+
+Le projet \emph{VST} (pour \emph{Verified Software Toolchain} a suivi la même approche. Leur contribution la plus récente est VST-Floyd \cite{cao2018vst}. VST-Floyd est un écosystème de lemmes et de tactiques conçues pour faciliter l'utilisation de \emph{Verifiable C}, une logique de séparation d'ordre supérieur. \emph{Verifiable C} est prouvé correct selon la sémantique opérationnelle de \texttt{Clight}, formalisé dans Coq. Cela permet de raisonner sur n'importe quel programme \texttt{Clight}, procurant outils et méthodes pour faciliter la vérification de programmes.
 
 		\textcolor{red}{Résumer les claims et introduire la contribution suivante}
