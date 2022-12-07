@@ -13,17 +13,20 @@
 		% Description informelle des propriétés
 	
 
-	\section{Architecture actuelle de Pip}
+	\section{Architecture monolithique}
+
+		Cette section décrira synthétiquement les composants actuels de Pip, en essayant de décrire leurs dépendances d'un point de vue logiciel. Elle commencera par donner brièvement une vue d'ensemble du projet. Puis, dans une première partie, elle décrira les dépendances du code des services sur les modèles décrits dans Pip. Elle dépliera les définitions pour mettre en lumière les dépendances qui existent entre les modèles des différents composants. Ensuite, dans une seconde partie, la section détaillera les composants nécessaires à la 
+		
+		\subsection{Vue générale}
+
+			\begin{figure}[!ht]
+				\input{figures/current_pip_architecture.tex}
+				\caption{Organisation actuelle de Pip en tant que projet}
+				\label{fig:switchContextCont}
+			\end{figure}
 
 		\subsection{Définition du code et des modèles actuels}
 
-			\subsubsection{Vue générale}
-
-			\begin{listing}[!ht]
-				\input{figures/current_pip_architecture.tex}
-				\caption{Architecture actuelle de Pip}
-				\label{fig:switchContextCont}
-			\end{listing}
 
 			\subsubsection{Code dépendant du modèle d'isolation}
 
