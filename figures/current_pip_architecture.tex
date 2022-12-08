@@ -1,12 +1,10 @@
 \begin{tikzpicture}[>=triangle 45,font=\sffamily, every text node part/.style={align=center}, scale=1, every node/.style={transform shape}] {
 	%\node[draw, pattern=south west lines, minimum width=5.6cm, minimum height = 3.6cm] at (0, -3.1) {};
-	\node[draw, pattern=south west lines, minimum width=5.6cm, minimum height = 6.2cm] (model) at (0, -1.8) {};
-	\node[below=0cm of model] {Modèle monolithique en Gallina};
-	\node[draw, fill=white, minimum width = 5cm, minimum height =   2cm] (services) at (0,0) {Code des services};
-	\node[draw, fill=white, minimum width = 5cm, minimum height = 0.7cm] (functions_model) at (0, -1.9) {Modèle des fonctions};
-	\node[draw, fill=white, minimum width = 5cm, minimum height = 0.7cm] (types) at (0, -2.7) {Modèle de types};
-	\node[draw, fill=white, minimum width = 5cm, minimum height = 0.7cm] (state_monad) at (0, -3.5) {Monade d'état};
-	\node[draw, fill=white, minimum width = 5cm, minimum height = 0.7cm] (state_model) at (0, -4.3) {Modèle de l'état};
+	%\node[draw, pattern=south west lines, minimum width=5.6cm, minimum height = 6.2cm] (model) at (0, -1.8) {};
+	%\node[below=0cm of model] {Modèle monolithique en Gallina};
+	\node[draw, fill=white, minimum width = 5cm, minimum height = 2cm] (services) at (0,0) {Code des services};
+	\node[draw, fill=white] (models) at (2, -2.3) {Modèle des fonctions,\\des types et de l'état};
+	\node[draw, fill=white] (state_monad) at (-2, -2.3) {Monade\\d'état};
 
 	\node[draw, pattern=south west lines, minimum width=5.6cm, minimum height = 2cm] (impl) at (8, -2.3) {};
 	\node[below=0cm of impl] {Implémentation en C};
@@ -15,6 +13,9 @@
 	\node[draw, fill=white, minimum width=5cm, minimum height = 0.7cm] (types) at (8, -2.7) {Types C};
 
 	\draw[->] (services) -- (Cservices) node[midway, above] {Digger} node[midway, below] {$\partial x$};
+	\draw[<->] (models) to (state_monad) ;
+	\draw[->] (services) to (state_monad) ;
+	\draw[->] (services) to (models) ;
 }
 
 \end{tikzpicture}

@@ -15,44 +15,41 @@
 
 	\section{Architecture monolithique}
 
-		Cette section décrira synthétiquement les composants actuels de Pip, en essayant de décrire leurs dépendances d'un point de vue logiciel. Elle commencera par donner brièvement une vue d'ensemble du projet. Puis, dans une première partie, elle décrira les dépendances du code des services sur les modèles décrits dans Pip. Elle dépliera les définitions pour mettre en lumière les dépendances qui existent entre les modèles des différents composants. Ensuite, dans une seconde partie, la section détaillera les composants nécessaires à la 
+		Cette section décrira de manière synthétique les composants actuels de Pip, en essayant de décrire leurs dépendances d'un point de vue logiciel. Elle commencera par donner brièvement une vue d'ensemble du projet. Puis, dans une première partie, elle décrira les dépendances du code des services sur les modèles décrits dans Pip. Elle dépliera les définitions pour mettre en lumière les dépendances qui existent entre les modèles des différents composants. Ensuite, dans une seconde partie, la section se penchera sur la méthode de preuve nécessaire à l'établissement de la preuve d'isolation. La section se concluera sur le processus de compilation du code, compilant le code des services de Gallina vers du code C.
 		
 		\subsection{Vue générale}
 
 			\begin{figure}[!ht]
 				\input{figures/current_pip_architecture.tex}
-				\caption{Organisation actuelle de Pip en tant que projet}
+				\caption{Architecture actuelle de Pip et dépendances des composants}
 				\label{fig:switchContextCont}
 			\end{figure}
-
-		\subsection{Définition du code et des modèles actuels}
-
-
-			\subsubsection{Code dépendant du modèle d'isolation}
-
-			Actuellement, le code de Pip est totalement enchevétré avec les modèles
-
 			\begin{listing}[!ht]
 				\coqcode{code/switchContextCont.v}
 				\caption{Code du bloc de continuation \texttt{switchContextCont} du service de transfert de flot d'exécution}
 				\label{code:switchContextCont}
 			\end{listing}
 
-			\subsubsection{Monade dépendant de l'état}
+		\subsection{Dépendance du code au modèle d'isolation}
 
-		Le code retourne une valeur monadique \texttt{LLI yield\_checks}. La monade est définie par l'unique modèle tel que décrit dans la figure \ref{code:LLImonad}
+			\subsubsection{Monade dépendante du modèle de l'état}
+
+			Dans l'architecture actuelle de Pip, le code des services repose directement sur les définitions de la monade, en utilisant le type monadique \texttt{LLI}, et les fonctions \texttt{bind} et \texttt{ret} pour représenter la mise en séquence des instructions des services. Dans l'exemple présenté en listing \ref{code:switchContextCont}, la fonction retourne un type monadique \texttt{LLI yield\_checks}, utilise la fonction \texttt{bind} au travers du sucre syntaxique \texttt{perform [...] := [...] ;}, et indique sa valeur de retour grâce à la fonction \texttt{ret}.
+			Malheureusement, le type monadique \texttt{LLI}, décrit en listing \ref{code:LLImonad}, dépend de l'état \texttt{state}, décrit en listing \ref{code:CurrentIsolationState}. \texttt{state} est le modèle de l'état conçu pour la preuve de préservation de l'isolation. Ceci est une preière dépendance du code au modèle d'isolation.
+
 		\begin{listing}[!ht]
 			\coqcode{code/LLIMonad.v}
 			\caption{Définition du type de la monade d'état \texttt{LLI} dans le modèle actuel de Pip}
 			\label{code:LLImonad}
 		\end{listing}
 
-		Cette monade est définie en fonction de l'état du modèle relatif à l'isolation, comme décrit dans le listing \ref{code:CurrentIsolationState}.
 		\begin{listing}[!ht]
 			\coqcode{code/CurrentIsolationState.v}
 			\caption{Définition de l'état \texttt{state} dans le modèle actuel de Pip}
 			\label{code:CurrentIsolationState}
 		\end{listing}
+
+			\subsubsection{Code dépendant des modèles des types}
 		
 		Ensuite, le modèle de l'état ainsi que le code des différents services dépend des types décrits par le modèle actuel de Pip.
 
@@ -70,7 +67,7 @@
 			\label{code:CurrentFunctionsModel}
 		\end{listing}
 
-		\subsection{Processus actuel de preuve}
+		\subsection{Processus de preuve sur le code dépendant du modèle}
 
 			\subsubsection{Définition des fonctions nécessaires à l'écriture de propriétés}
 
