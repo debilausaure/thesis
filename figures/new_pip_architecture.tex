@@ -1,0 +1,39 @@
+\begin{tikzpicture}[>=triangle 45,font=\sffamily, every text node part/.style={align=center}, scale=1, every node/.style={transform shape}] {
+	%\node[draw, pattern=south west lines, minimum width=5.6cm, minimum height = 3.6cm] at (0, -3.1) {};
+	%\node[draw, pattern=south west lines, minimum width=5.6cm, minimum height = 6.2cm] (model) at (0, -1.8) {};
+	%\node[below=0cm of model] {Modèle monolithique en Gallina};
+	
+	\node[draw, pattern=south west lines, minimum width=4.6cm, minimum height = 3.6cm] (models) at (0, -3.1) {};
+	\node[below=0cm of models] {Interface agnostique\\des modèles};
+	\node[draw, fill=white, minimum width = 4cm, minimum height = 2cm] (services) at (0, 0) {Code des services};
+	\node[draw, fill=white, minimum width = 4cm, minimum height = 0.7cm] (functions_interface) at (0, -1.9) {Interface des fonctions};
+	\node[draw, fill=white, minimum width = 4cm, minimum height = 0.7cm] (types_interface) at (0, -2.7) {Interface des types};
+	\node[draw, fill=white, minimum width = 4cm, minimum height = 0.7cm] (state_monad) at (0, -3.5) {Monade d'état générique};
+	\node[draw, fill=white, minimum width = 4cm, minimum height = 0.7cm] (state_interface) at (0, -4.3) {Interface de l'état};
+	%\node[draw, fill=white] (models) at (2, -2.3) {Modèle des fonctions,\\des types et de l'état};
+	%\node[draw, fill=white] (state_monad) at (-2, -2.3) {Monade\\d'état};
+
+	\node[draw, pattern=south west lines, minimum width=4.6cm, minimum height = 3.6cm] (models) at (-5, -3.1) {};
+	\node[below=0cm of models] {Modèles d'isolation};
+	\node[draw, fill=white, minimum width = 4cm, minimum height = 2cm] (proofs) at (-5, 0) {Fonctions ``fictives''\\Triplets de Hoare\\Scripts de preuve};
+	\node[draw, fill=white, minimum width = 4cm, minimum height = 0.7cm] (functions_model) at (-5, -1.9) {Modèles de fonctions};
+	\node[draw, fill=white, minimum width = 4cm, minimum height = 0.7cm] (types_model) at (-5, -2.7) {Modèles de types};
+	\node[draw, fill=white, minimum width = 4cm, minimum height = 0.7cm] (derived_monad) at (-5, -3.5) {Monade spécifique};
+	\node[draw, fill=white, minimum width = 4cm, minimum height = 0.7cm] (state_model) at (-5, -4.3) {Modèle de l'état};
+
+	\node[draw, pattern=south west lines, minimum width=4.6cm, minimum height = 2cm] (impl) at (5, -2.3) {};
+	\node[below=0cm of impl] {Implémentation exécutable};
+	\node[draw, fill=white, minimum width=4cm, minimum height=2cm] (Cservices) at (5,0) {Code des services\\(Compilé en C)};
+	\node[draw, fill=white, minimum width=4cm, minimum height = 0.7cm] (functions) at (5, -1.9) {Fonctions sur l'état};
+	\node[draw, fill=white, minimum width=4cm, minimum height = 0.7cm] (types) at (5, -2.7) {Types};
+
+	\draw[->] (services) -- (Cservices);
+	\draw[->, dashed] (functions_model) to (functions_interface) ;
+	\draw[<-] (derived_monad) to (state_monad) ;
+	\draw[->, dashed] (types_model) to (types_interface) ;
+	\draw[->, dashed] (state_model) to (state_interface) ;
+	\draw[->, dashed] (types) to (types_interface) ;
+	\draw[->, dashed] (functions) to (functions_interface) ;
+}
+
+\end{tikzpicture}

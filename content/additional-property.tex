@@ -3,7 +3,7 @@
 	La section de discussion du premier chapitre a mis en avant le fait que l'ensemble de Pip était conçu autour des propriétés d'isolation à prouver. Le modèle des fonctions de l'interface et de l'état, jusqu'à la monade intégrée au code, sont liés aux propriétés d'isolation. Cette forte proximité est une conséquence de la philosophie de conception minimaliste de Pip, qui nous a poussé à ne définir que les éléments strictement nécessaires à l'établissement de le preuve de préservation de l'isolation. Cette approche nous a permis de minimiser l'effort de preuve pour la propriété d'isolation, mais présente un désavantage majeur : le code des services de Pip n'est pas indépendant des modèles sur lesquels il repose.
 
 	Ainsi, il n'existe qu'un modèle unique dans Pip qui ne peut évoluer que de manière itérative. Chaque évolution rend caduques les propriétés établies sur l'ancien modèle, et implique de produire une nouvelle preuve des mêmes propriétés avec le nouveau modèle. Le moindre ajout de chaque itération rendant de plus en plus difficile l'établissement la preuve à produire.
-	Ceci est un frein considérable à la vérification de nouvelles propriétés sur le code de Pip, telle que la preuve fonctionnelle du service présenté dans le premier chapitre. Si les nouvelles propriétés impliquent des changements trop importants sur le modèle, l'effort de preuve à fournir deviendrait inatteignable après seulement quelques itérations.
+	Ceci est un frein considérable à la vérification de nouvelles propriétés sur le code de Pip, telle que la preuve fonctionnelle du service présentée dans le premier chapitre. Si les nouvelles propriétés impliquent des changements trop importants sur le modèle, l'effort de preuve à fournir deviendrait inatteignable après seulement quelques itérations.
 
 	Dans ce chapitre, nous présentons une preuve de concept d'abstraction des
 	\section{Motivations}
@@ -22,7 +22,7 @@
 			\begin{figure}[!ht]
 				\input{figures/current_pip_architecture.tex}
 				\caption{Architecture actuelle de Pip et dépendances des composants}
-				\label{fig:switchContextCont}
+				\label{fig:currentPipArchitecture}
 			\end{figure}
 			\begin{listing}[!ht]
 				\coqcode{code/switchContextCont.v}
@@ -35,47 +35,59 @@
 			\subsubsection{Monade dépendante du modèle de l'état}
 
 			Dans l'architecture actuelle de Pip, le code des services repose directement sur les définitions de la monade, en utilisant le type monadique \texttt{LLI}, et les fonctions \texttt{bind} et \texttt{ret} pour représenter la mise en séquence des instructions des services. Dans l'exemple présenté en listing \ref{code:switchContextCont}, la fonction retourne un type monadique \texttt{LLI yield\_checks}, utilise la fonction \texttt{bind} au travers du sucre syntaxique \texttt{perform [...] := [...] ;}, et indique sa valeur de retour grâce à la fonction \texttt{ret}.
-			Malheureusement, le type monadique \texttt{LLI}, décrit en listing \ref{code:LLImonad}, dépend de l'état \texttt{state}, décrit en listing \ref{code:CurrentIsolationState}. \texttt{state} est le modèle de l'état conçu pour la preuve de préservation de l'isolation. Ceci est une preière dépendance du code au modèle d'isolation.
+			Malheureusement, le type monadique \texttt{LLI}, décrit en listing \ref{code:LLImonad}, dépend de l'état \texttt{state}, décrit en listing \ref{code:CurrentIsolationState}. \texttt{state} est le modèle de l'état conçu pour la preuve de préservation de l'isolation. Ceci est une première dépendance du code au modèle d'isolation.
 
-		\begin{listing}[!ht]
-			\coqcode{code/LLIMonad.v}
-			\caption{Définition du type de la monade d'état \texttt{LLI} dans le modèle actuel de Pip}
-			\label{code:LLImonad}
-		\end{listing}
+			\begin{listing}[!ht]
+				\coqcode{code/LLIMonad.v}
+				\caption{Définition du type de la monade d'état \texttt{LLI} dans le modèle actuel de Pip}
+				\label{code:LLImonad}
+			\end{listing}
 
-		\begin{listing}[!ht]
-			\coqcode{code/CurrentIsolationState.v}
-			\caption{Définition de l'état \texttt{state} dans le modèle actuel de Pip}
-			\label{code:CurrentIsolationState}
-		\end{listing}
+			\begin{listing}[!ht]
+				\coqcode{code/CurrentIsolationState.v}
+				\caption{Définition de l'état \texttt{state} dans le modèle actuel de Pip}
+				\label{code:CurrentIsolationState}
+			\end{listing}
 
-			\subsubsection{Code dépendant des modèles des types}
-		
-		Ensuite, le modèle de l'état ainsi que le code des différents services dépend des types décrits par le modèle actuel de Pip.
+			\subsubsection{Code dépendant des modèles de types}
 
-		\begin{listing}[!ht]
-			\coqcode{code/CurrentTypesModel.v}
-			\caption{Définition des types nécessaires à la fonction \texttt{switchContextCont} dans le modèle actuel de Pip}
-			\label{code:CurrentTypesModel}
-		\end{listing}
+			D'autres dépendances du code aux modèles d'isolation passent par la représentation des types. Le code dépend des types utilisés pour représenter ses propres arguments, et valeur de retour enrobée par le type monadique \texttt{LLI}, mais aussi les arguments et valeur de retour des fonctions de l'interface. Par exemple, la fonction \texttt{switchContextCont} décrite dans le listing \ref{code:switchContextCont}, dépend du modèle des types \texttt{page}, \texttt{interruptMask}, \texttt{contextAddr} et \texttt{yield\_checks}. Les modèles de ces types sont représentés dans le listing \ref{code:CurrentTypesModel}.
 
-		Enfin, le code intéragit avec l'état au travers de fonctions dont le modèle est lié au modèle de l'état et au modèle des types.
+			\begin{listing}[!ht]
+				\coqcode{code/CurrentTypesModel.v}
+				\caption{Définition des types nécessaires à la fonction \texttt{switchContextCont} dans le modèle actuel de Pip}
+				\label{code:CurrentTypesModel}
+			\end{listing}
 
-		\begin{listing}[!ht]
-			\coqcode{code/CurrentFunctionsModel.v}
-			\caption{Définition des fonctions de l'interface avec l'état nécessaire à la fonction \texttt{switchContextCont} dans le modèle actuel de Pip}
-			\label{code:CurrentFunctionsModel}
-		\end{listing}
+			\subsubsection{Code dépendant des modèles des fonctions intéragissant avec l'état}
+			Enfin, la dernière dépendance du code aux modèles est par le biais des fonctions intéragissant avec l'état. Le code des services fait directement appel aux modèles de ces fonctions. Ainsi, la fonction \texttt{switchContextCont} présentée dans le listing \ref{code:switchContextCont}, est dépendant des modèles des fonctions \texttt{setInterruptMask}, \texttt{updateMMURoot}, \texttt{updateCurPartition}, \texttt{getInterruptMaskFromCtx}, \texttt{getPageRootPartition}, \texttt{noInterruptRequest} et \texttt{loadContext}.
+
+			\begin{listing}[!ht]
+				\coqcode{code/CurrentFunctionsModel.v}
+				\caption{Définition des fonctions de l'interface avec l'état nécessaire à la fonction \texttt{switchContextCont} dans le modèle actuel de Pip}
+				\label{code:CurrentFunctionsModel}
+			\end{listing}
 
 		\subsection{Processus de preuve sur le code dépendant du modèle}
 
-			\subsubsection{Définition des fonctions nécessaires à l'écriture de propriétés}
+			Cette sous-section sera dédiée à la structure actuelle de la preuve d'isolation sur le code des services, mettant en avant les dépendances des différents groupes de fichiers nécessaires à chaques preuves.
 
-			\subsubsection{Définition des propriétés à prouver}
+			\subsubsection{Définition des propriétés d'isolation et des fonctions nécessaires à la définition des propriétés}
 
-			\subsubsection{Définition des \emph{Weakest Preconditions} et des invariants}
+			Les premiers fichiers nécessaires à l'établissement de la preuve sont ceux contenant les définitions nécessaires à l'expression des propriétés d'isolation sur le noyau. Ces définitions additionnelles sont totalement fictives ; elles n'ont pas vocation à être exprimées en C. Elles servent de fondation à l'expression des triplets de Hoare d'isolation à montrer par la preuve formelle. Par exemple, ces fonctions peuvent permettre de définir des ensembles nécessaires à certaines propriétés d'isolation. C'est le cas de la fonction \texttt{getAccessibleMappedPages} qui récupère les pages mappées et accessibles dans l'espace d'adressage d'une partition, nécessaire à la propriété d'isolation noyau \texttt{kernelDataIsolation}. Ces fonctions peuvent aussi être des miroirs purement fonctionnels de code monadique présent dans les services de Pip, telle que la fonction \texttt{readPhysical} permettant de lire l'adresse d'une page mémoire ; ces fonctions sont parfois requises par les définitions des fonctions précédemment mentionnées. Ces définitions servent ensuite à définir les propriétés d'isolation souhaitées. Ces fonctions dépendent des modèles d'isolation, que ce soit le modèle des types, de l'état, ou des fonctions de l'interface.
+
+			\subsubsection{Définition des triplets de Hoare, des lemmes intermédiaires et des scripts de preuve}
+
+			Une fois que ces définitions établies, il est possible d'exprimer les triplets de Hoare sur le code des services. À titre d'exemple, le listing \ref{code:switchContextCont_triplet} décrit le triplet de Hoare de la fonction \texttt{switchContextCont}. Sous chaque triplet (et chaque lemme intermédiaire) se trouve un script de preuve, décrivant les règles d'inférence (ou tactiques) à appliquer successivement pour faire progresser Coq vers la conclusion. Les triplets de Hoare dépendent du code des services, des fonctions fictives utiles à la définition des propriétés, et dépendent donc à fortiori des modèles d'isolation.
+			\begin{listing}[!ht]
+				\coqcode{code/switchContextCont_triplet.v}
+				\caption{Définition du triplet de Hoare de la fonction \texttt{switchContextCont} pour la preuve de préservation de l'isolation de Pip}
+				\label{code:switchContextCont_triplet}
+			\end{listing}
 
 		\subsection{Extraction de code}
+
+			Cette dernière sous-section présente le processus d'extraction de code
 
 		
 	\section{Abstraction des modèles dans le code prouvé}
@@ -83,6 +95,11 @@
 		\subsection{Définition de code générique indépendant des modèles}
 
 			\subsubsection{Vue générale}
+			\begin{figure}[!ht]
+				\input{figures/new_pip_architecture.tex}
+				\caption{Nouvelle architecture de Pip et dépendances des composants}
+				\label{fig:new_pip_architecture}
+			\end{figure}
 
 			\subsubsection{Abstraction du modèle types utilisés par Pip}
 
