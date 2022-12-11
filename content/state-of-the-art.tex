@@ -162,7 +162,7 @@ Plusieurs contre-mesures ont émergé pour rendre plus difficile le ROP.
 \label{aslr}
 L'ASLR (pour \emph{Address Space Layout Randomization}) rend imprédictible l'adresse des différentes zones de mémoire au sein d'un espace d'adressage virtuel. Les adresses du binaire, de la pile, du tas, des librairies, du noyau, etc. sont rendus aléatoires à chaque nouvelle exécution. L'ASLR est de ce fait un frein considérable au développement d'un shellcode en ROP, puisqu'il est impossible de prédire où se situeront les gadgets lors de la prochaine exécution.
 
-L'ASLR n'est cependant pas parfait. Les adresses des zones mémoire restantes peuvent être révélées par des pointeurs dans les zones mémoires controlées par l'attaquant \cite{bypasskaslr}, ou grâce à des attaques micro-architecturales \cite{microarchitecturalbypass}.
+L'ASLR n'est cependant pas parfait. Les adresses des zones mémoire restantes peuvent être révélées par des pointeurs dans les zones mémoires controlées par l'attaquant \cite{bypasskaslr}, ou grâce à des attaques micro-architecturales \cite{kaslrbypass, microarchitecturalbypass}.
 
 \paragraph{Vérification de l'intégrité du flôt d'exécution}
 \label{cfi}
