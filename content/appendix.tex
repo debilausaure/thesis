@@ -36,3 +36,37 @@
 	\caption{Fonction de récupération des arguments après une faute}
 	\label{code:faultInterruptHandler}
 \end{codeenv}
+
+\chapter{Annexes de la dernière contribution}
+
+\section{Implémentation du modèle d'isolation}
+\begin{codeenv}
+	\coqcode{code/IsolationState.v}
+	\caption{Définition du modèle d'isolation de l'état selon la nouvelle architecture}
+	\label{code:IsolationState}
+\end{codeenv}
+
+\begin{codeenv}
+	\coqcode{code/StateAgnosticMonad.v}
+	\caption{Définition de la monade d'état}
+	\label{code:StateAgnosticMonad}
+\end{codeenv}
+
+\begin{codeenv}
+	\coqcode{code/IsolationTypes.v}
+	\caption{Définition du modèle d'isolation des types selon la nouvelle architecture}
+	\label{code:IsolationTypes}
+\end{codeenv}
+
+\begin{codeenv}
+	\coqcode{code/IsolationFunctions.v}
+	\caption{Définition des modèles d'isolation des fonctions selon la nouvelle architecture}
+	\label{code:IsolationFunctions}
+\end{codeenv}
+
+\begin{codeenv}
+	\coqcode{code/switchContextCont_triple.v}
+	\caption{Définition du triplet de Hoare de la fonction \texttt{switchContextCont} instanciant le code générique avec les modèles d'isolation}
+	\label{code:switchContextCont_agn_triple}
+\end{codeenv}
+

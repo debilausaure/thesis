@@ -13,9 +13,6 @@ Definition getInterruptMaskFromCtx (context : contextAddr)
            : LLI interruptMask :=
   ret int_mask_d.
 
-Definition setInterruptMask (mask : interruptMask) : LLI unit :=
-  ret tt.
-
 Definition getPageRootPartition : LLI page :=
   ret pageRootPartition.
 
