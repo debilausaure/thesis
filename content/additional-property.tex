@@ -1,19 +1,17 @@
 \chapter{Ajout incrémental de propriétés sur le code prouvé}
 
-	Ce chapitre présente une preuve de concept affranchissant le code des services de Pip de toutes ses dépendances au modèle actuel d'isolation. Ces travaux n'ont pas été publiés, mais sont néanmoins consultables sur la branche \texttt{state\_abstraction} du projet Pip, disponible sur le dépôt accessible à l'adresse suivante : \url{https://gitlab.univ-lille.fr/2xs/pip/pipcore}. Cette branche contient une implémentation imparfaite et restreinte à la fonction \texttt{switchContextCont} des idées exposées dans ce chapitre.
+	Ce chapitre présente une preuve de concept affranchissant le code des services de Pip de toutes ses dépendances au modèle actuel d'isolation. Ces travaux n'ont pas été publiés, mais sont néanmoins consultables sur la branche \texttt{state\_abstraction} du projet Pip, disponible sur le dépôt accessible à l'adresse suivante : \url{https://gitlab.univ-lille.fr/2xs/pip/pipcore}. Cette branche contient une implémentation imparfaite des idées exposées dans ce chapitre, et restreinte à la fonction \texttt{switchContextCont}.
 
-	Ce chapitre aborde de manière très superficielle certains objets issus de la théorie des catégories, qui pourraient attiser votre curiosité. Je souhaite mentionner ici \cite{categorytheoryforprogrammers}, un livre (grauit !) qui aborde selon le point de vue d'un programmeur des concepts de la théorie des catégories. Cette lecture vous permettra certainement de mieux cerner -- entre autres -- le concept de foncteur ou encore de monade.
+	Par ailleurs, ce chapitre aborde de manière très superficielle certains objets issus de la théorie des catégories, qui pourraient attiser votre curiosité. Je souhaite mentionner ici \cite{categorytheoryforprogrammers}, un livre (grauit !) qui aborde selon le point de vue d'un programmeur des concepts de la théorie des catégories. Cette lecture vous permettra certainement de mieux cerner -- entre autres -- le concept de foncteur ou encore de monade.
 
 	\section{Motivations}
-		\subsection{Modularisation de la méthodologie de preuve de Pip}
+
 	La section de discussion du premier chapitre a mis en avant le fait que Pip était conçu autour des propriétés d'isolation formellement prouvées. Le modèle des fonctions de l'interface et de l'état, jusqu'à la monade intégrée au code, sont liés aux propriétés d'isolation. Cette forte proximité est une conséquence de la philosophie de conception minimaliste de Pip, qui a incité à ne définir que les éléments strictement nécessaires à l'établissement de le preuve de préservation de l'isolation. Cette approche a permis de minimiser l'effort de preuve permettant de garantir la propriété d'isolation, mais présente un désavantage majeur : le code des services de Pip n'est pas indépendant des modèles sur lesquels il repose.
 
 	Ainsi, il n'existe qu'un modèle unique dans Pip qui ne peut évoluer que de manière itérative. Chaque évolution rend caduques les propriétés établies sur l'ancien modèle, et implique de produire une nouvelle preuve des mêmes propriétés avec le nouveau modèle. Le moindre ajout de chaque itération rendant de plus en plus difficile l'établissement la preuve à produire.
 	Ceci est un frein considérable à la vérification de nouvelles propriétés sur le code de Pip, telle que la preuve fonctionnelle du service évoquée dans le second chapitre. Si les nouvelles propriétés impliquent des changements trop importants sur le modèle, l'effort de preuve à fournir deviendrait inatteignable après seulement quelques itérations.
 
-		\subsection{Raisonner sur le lien entre le Yield et la fonction d'élection}
-		% Description informelle des propriétés
-	
+	Ce constat a motivé la preuve de concept developpée dans ce chapitre, qui propose une solution au problème de la croissance exponentielle de l'effort de preuve.
 
 	\section{Architecture monolithique}
 
@@ -161,7 +159,7 @@ Cette dépendance renforce les liens entre le modèle d'isolation de Pip et le c
 				\label{code:ModelAgnosticCode}
 			\end{listing}
 
-		\subsection{Extraction de code}
+		\subsection{Extraction de l'\emph{AST} du code des services}
 
 		Pour que la preuve de concept présentée dans ce chapitre soit pertinente, il faut que le code des services puisse être compilé vers du code C. Comme évoqué dans les chapitres précédents, Pip est conçu pour s'interfacer avec deux outils permettant la compilation de code Gallina \emph{shalow-embedded} vers du code C : Digger ou $\partial x$.
 
@@ -182,10 +180,15 @@ Cette dépendance renforce les liens entre le modèle d'isolation de Pip et le c
 		Ainsi, la seule différence notable relative à la méthodologie de preuve apportée par cette preuve de concept est la nécessité de créer les modèles au travers de \emph{Modules}.
 
 	\section{Perspectives de recherche et discussion}
-		\subsection{Établissement d'un modèle alternatif permettant de prouver les propriétés fonctionnelles du service de transfert de flôt d'exécution}
-		\subsection{Lien entre la preuve de bon fonctionnement et le back end de l'ordonnanceur}
-		\subsection{Discussion de la méthodologie}
-			% Conduire les deux preuves indépendamment est différent de conduire deux preuves l'une après l'autre (en oubliant la première)
-			% Lever les interrogations 
-				% - preuve en meme temps aide à débusquer les incohérences / simplifications abusives
-				% - mais trop complexe : explosion des termes -> trop couteux
+		Cette preuve de concept, bien qu'incomplète, montre qu'il est possible d'adapter le code des services de Pip et le modèle d'isolation actuel afin que le code des services devienne indépendant des modèles d'isolation. Cette indépendance permettrait à Pip d'intégrer de nouveaux modèles conçus pour raisonner sur d'autres aspects du code que ceux abordés par le modèle actuel. Cette section commencera par évoquer des perspectives de recherche à court terme pouvant émerger de cette preuve de concept, puis discutera des limites apportées par les preuves de propriétés sur des modèles parallèles.
+		\subsection{Perspectives de recherche liées au développement d'un modèle alternatif}
+		Comme évoqué dans le début de chapitre, l'établissement d'un modèle du code dédié à une preuve fonctionnelle des services est une perspective 
+		\subsubsection{Lien entre la preuve de bon fonctionnement et le back end de l'ordonnanceur}
+		\subsection{Discussion sur la coexistence de preuve sur des modèles distincts}
+
+		La preuve de concept présentée dans ce chapitre permet de faire coexister plusieurs modèles décrivant le code des services dans le but de conduire des preuves formelles sur ce code. Une question se pose alors : quelle est la relation de deux preuves formelles conduites sur des modèles différents et que disent-elles du code qui s'exécutera finalement sur la machine ?
+
+		La réponse est simple : les preuves formelles menées sur des modèles différents \emph{ne sont aucunement reliées}, et ne \emph{garantissent rien} sur le code exécutable. Au risque d'enfoncer une porte déjà ouverte dans les chapitres précédents, les modèles décrivant un objet du monde réel ne sont pas intrinsèquement équivalents à l'objet modélisé. Chaque preuve formelle propose une vérité absolument indéniable dans un monde féérique décrit par des modèles mathématiques ; transposer ces modèles au monde réel transfère inévitablement aux conclusions de la preuve formelle l'incertitude que les modèles décrivent correctement l'objet étudié. Ce fait n'enlève rien à l'utilité des modèles qui permettent d'étudier l'objet décrit. Il est cependant important de garder à l'esprit que les modèles sont une source d'erreur.
+
+		Cet argument s'applique aussi aux modèles entre eux : des modèles différents décrivent des univers mathématiques différents. Ainsi, prétendre que les propriétés prouvées sur un modèle le sont aussi sur un autre introduit le même type d'incertitude. C'est pourquoi cette méthodologie n'est pas strictement équivalente à la méthodogie de preuve de propriétés n'impliquant qu'un unique modèle. Dans le cas d'un unique modèle, les propriétés doivent être prouvées \emph{conjointement} sur le modèle unique. Une seule incertitude s'applique donc dans ce cas : il faut que le modèle unique décrive correctement l'objet étudié. Dans le cas de modèles parallèles, les propriétés sont prouvées indépendamment les unes des autres sur des modèles différents. Dans ce cas, il existe autant d'incertitude concernant la correction des modèles qu'il existe de modèles.
+
