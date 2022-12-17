@@ -3,7 +3,7 @@ The work described in this document is related to formal proofs on operating sys
 
 The first breakthrough in the domain was the SeL4 project ; demonstrating that producing a complete proof on a microkernel was achievable, albeit very costly. 
 In order to bring the proof's cost down, the CertikOS project showcased a more layered and modular approach, leveraging \emph{refinements}.
-The Pip kernel team tackled the problem from the opposite side, by using a \emph{shallow embedding} methodology and getting rid of refinement altogether. This thesis' contributions are more specifically tied to the Pip kernel.
+The Pip kernel team tackled the problem from the opposite side, focusing on minimalism, using a \emph{shallow embedding} methodology and getting rid of refinement altogether. This thesis' contributions are more specifically tied to the Pip kernel.
 
 Previous work on the Pip protokernel focused on providing an isolation proof to Pip's services manipulating the system's memory. Yet, another critical aspect of the kernel -- handling the execution flow transfer from a partition to another -- remained to be designed.
 

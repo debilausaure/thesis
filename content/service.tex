@@ -334,7 +334,7 @@ Plus simplement, les services de chaque partition sont définis dans leur \emph{
 
 		Cette section a pour but de décrire le processus d'établissement de la preuve d'isolation de Pip sur le service. La première sous-section décrira tout d'abord les nouvelles fonctions introduites dans l'interface de la monade d'état ainsi que la raison de leur inclusion. Ces fonctions sont accompagnées de nouveaux types, qui seront aussi explicités. La seconde sous-section fera un rappel des propriétés d'isolation de Pip. La dernière sous-section décrira le processus d'établissement de la preuve.\\
 
-		\textbf{Note importante :} Dans un souci de transparence et d'intégrité scientifique, je souhaite mentionner que la preuve d'isolation reposant sur les modèles présentés dans cette section n'est pas encore complète. Les travaux initiaux sur ce service ont conduit à une preuve de préservation de l'isolation. Tout au long de ma thèse, j'ai cependant été amené à améliorer le service, notamment en enrichissant certains modèles pour refléter de manière plus précise les comportements de fonctions. Une des fonctions notables est \texttt{writeContext}. Ces nouveaux modèles ont rendus caduques la preuve d'isolation établie sur l'ancien modèle ; il me semble néanmoins plus pertinent de présenter les modèles les plus récents, qui sont plus précis et -- à mon sens -- plus intéressants. Ces nouveaux modèles ne changent en rien l'implémentation réelle des fonctions : ces changements sont cantonnés au monde des mathématiques. Dans cette section, je m'efforcerai donc de vous convaincre que la preuve du maintient de l'isolation reste tout à fait atteignable. Elle n'a pas été établie par manque de temps entre les dernières modifications de modèles et l'écriture de ce document (et par manque de place dans la marge). Nous reviendrons cependant sur l'aspect itératif des modèles dans la section suivante, qui révèle la subtilité de l'établissement de preuves au travers de modèles.
+		\textbf{Note importante :} Dans un souci de transparence et d'intégrité scientifique, je souhaite mentionner que la preuve d'isolation reposant sur les modèles présentés dans cette section n'est pas encore complète. Les travaux initiaux sur ce service ont conduit à une preuve de préservation de l'isolation. Tout au long de ma thèse, j'ai cependant été amené à améliorer le service, notamment en enrichissant certains modèles pour refléter de manière plus précise les comportements de fonctions. Une des fonctions notables est \texttt{writeContext}. Ces nouveaux modèles ont rendus caduques la preuve d'isolation établie sur l'ancien modèle ; il me semble néanmoins plus pertinent de présenter les modèles les plus récents, qui sont plus précis et -- à mon sens -- plus intéressants. Ces nouveaux modèles ne changent en rien l'implémentation réelle des fonctions : ces changements sont cantonnés au monde des mathématiques. Dans cette section, je m'efforcerai donc de vous convaincre que la preuve du maintien de l'isolation reste tout à fait atteignable. Elle n'a pas été établie par manque de temps entre les dernières modifications de modèles et l'écriture de ce document (et par manque de place dans la marge). Nous reviendrons cependant sur l'aspect itératif des modèles dans la section suivante, qui révèle la subtilité de l'établissement de preuves au travers de modèles.
 
 		\subsection{Définition de l'interface avec la monade}
 
@@ -496,7 +496,9 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 		\subsection{Rappel des propriétes d'isolation de Pip}
 
-		Comme exprimé dans la section \ref{sec:pip}, la preuve d'isolation de Pip repose sur trois propriétés fondamentales : la propriété d'\emph{isolation horizontale}, la propriété d'\emph{isolation noyau} ainsi que la propriété de \emph{partage verticale}. Ces trois propriétés principales sont accompagnées d'une multitude de propriétés liées à la cohérence du noyau. Certaines de ces propriétés seront mises en avant dans ce document, puisqu'elle seront discutées dans la section suivante traitant de l'établissement de la preuve du service.
+		Comme exprimé dans la section \ref{sec:pip}, la preuve d'isolation de Pip repose sur trois propriétés fondamentales : la propriété d'\emph{isolation horizontale}, la propriété d'\emph{isolation noyau} ainsi que la propriété de \emph{partage verticale}. Ces trois propriétés principales sont accompagnées d'une multitude de propriétés liées à la cohérence des structures du noyau. Certaines de ces propriétés seront mises en avant dans ce document, puisqu'elle seront discutées dans la section suivante traitant de l'établissement de la preuve du service.
+
+		Les propriétés présentées dans cette sous-section sont parfois décrites grâce à des fonctions dites <<~fictives~>>, comme par exemple la fonction \texttt{getPartitions}. Ces fonctions permettent entre autres de spécifier des ensembles ou des résultats retournés par des fonctions du code des services. Ces fonctions n'ont pas vocation à être compilées, elles n'existent qu'à des fins de spécifications.
 
 			\subsubsection{Isolation horizontale}
 
@@ -552,9 +554,9 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 				Pour toutes pages mémoire \texttt{parent} et \texttt{child}, si \texttt{parent} fait partie de la liste des descripteurs de partitions et que \texttt{child} est dans la liste des descripteurs de partitions enfant de \texttt{parent}, alors l'ensemble des pages relatives à \texttt{child} est inclus dans l'ensemble des pages mappées dans l'espace d'adressage de la partition \texttt{parent}.
 			\end{theorem}
 
-			\subsubsection{Propriétés de cohérence du noyau}
+			\subsubsection{Propriétés de cohérence des structures du noyau}
 
-			Dans Pip, il y a 25 propriétés annexes, qui décrivent comment sont organisées les structures de données internes de Pip. Ces propriétés sont appelées les propriétés de cohérence du noyau. Ces propriétés ne seront pas détaillées ici, car seules certaines d'entre elles présentent un intérêt dans la preuve de préservation de l'isolation. Elles seront introduites au fil de l'eau dans les sections suivantes aux endroits pertinents.
+			Dans Pip, il y a 25 propriétés annexes, qui décrivent comment sont organisées les structures de données internes de Pip. Ces propriétés sont appelées les propriétés de cohérence des structures du noyau. Ces propriétés ne seront pas détaillées ici, car seules certaines d'entre elles présentent un intérêt dans la preuve de préservation de l'isolation. Elles seront introduites au fil de l'eau dans les sections suivantes aux endroits pertinents.
 
 		\subsection{Déroulement de la preuve d'isolation}
 
@@ -573,7 +575,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 				\label{code:updateCurPartition}
 			\end{listing}
 
-			Cette fonction est \emph{monadique}, ce qui implique qu'elle est une fonction partielle sur l'état. C'est une fonction d'écriture, elle décrit donc comment est modifié l'état lors de son exécution. Cette fonction prend en argument une page mémoire arbitraire \texttt{phyPartition} et remplace la composante \texttt{currentPartition} de l'état par le paramètre \texttt{phyPartition}. Ainsi, après l'exécution de \texttt{updateCurPartition}, si on nomme $s'$ le nouvel état produit à partir de l'état initial $s$, alors : \\
+			Cette fonction est \emph{monadique}, et a donc accès à l'état au travers de la monade. C'est une fonction d'écriture, elle décrit donc comment est modifié l'état lors de son exécution. Cette fonction prend en argument une page mémoire arbitraire \texttt{phyPartition} et remplace la composante \texttt{currentPartition} de l'état par le paramètre \texttt{phyPartition}. Ainsi, après l'exécution de \texttt{updateCurPartition}, si on nomme $s'$ le nouvel état produit à partir de l'état initial $s$, alors : \\
 
 			\mintinline{coq}{s' := {| currentPartition := phyPartition ; memory := (memory s) |}}.\\
 
@@ -591,7 +593,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 			\begin{listing}[!ht]
 				\coqcode{code/curPartProperties.v}
-				\caption{Propriétés supplémentaires nécessaires pour montrer la préservation de deux propriétés de cohérence du noyau après exécution de la fonction \texttt{updateCurPartition}}
+				\caption{Propriétés supplémentaires nécessaires pour montrer la préservation de deux propriétés de cohérence après exécution de la fonction \texttt{updateCurPartition}}
 				\label{code:curPartProperties}
 			\end{listing}
 
@@ -946,7 +948,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 			\begin{listing}[!ht]
 				\coqcode{code/writeContextPreconditions.v}
-				\caption{Préconditions de la fonction \texttt{writeContext}}
+				\caption{Préconditions de la fonction \texttt{writeContext} et ses paramètres}
 				\label{code:writeContextPreconditions}
 			\end{listing}
 
@@ -962,7 +964,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 		Le nombre de lignes de code permettant d'appeler le code du service représente environ 1000 lignes de code C et assembleur sur l'architecture Intel x86 (en incluant les commentaires). Néanmoins, ce code est \emph{particulièrement peu dense} de par sa complexité ; en moyenne, pour chaque ligne de code ou instruction assembleur, il y a environ deux lignes de commentaires. 
 		Pour rappel, ce service permet de gérer tous les transferts de flot d'exécution au sein d'un système. 
 
-		La preuve permettant de prouver le maintien des propriétés d'isolation sur l'état après exécution du service représente actuellement un peu plus de 4000 lignes de preuve en comptant les définitions de modèles et les scripts d'établissement de la preuve. Ce chiffre est dérisoire comparé aux plus de 80 000 lignes relatives à la preuve déjà écrites pour Pip. De plus, l'établissement de la preuve d'isolation de ce service n'a duré ``que'' quelques semaines, alors que je n'avais aucune expérience dans ce domaine. Ces chiffres semblent montrer que l'effort de preuve diminue avec la proportion de preuve déjà existente, indiquant une forte réutilisation des preuves déjà établies. De plus, le temps \emph{relativement} restreint passé sur la preuve initiale du service semble indiquer que la méthodologie de preuve proposée par Pip est efficace et permet aux novices de conduire efficacement un raisonnement sur du code.
+		La preuve permettant de prouver le maintien des propriétés d'isolation sur l'état après exécution du service représente actuellement un peu plus de 4000 lignes de preuve en comptant les définitions de modèles et les scripts d'établissement de la preuve. Ce chiffre est dérisoire comparé aux plus de 80 000 lignes relatives à la preuve déjà écrites pour Pip. De plus, l'établissement de la preuve d'isolation de ce service n'a duré ``que'' quelques semaines, alors que je n'avais aucune expérience dans ce domaine. Ces chiffres semblent montrer que l'effort de preuve diminue avec la proportion de preuve déjà existante, indiquant une forte réutilisation des preuves déjà établies. De plus, le temps \emph{relativement} restreint passé sur la preuve initiale du service semble indiquer que la méthodologie de preuve proposée par Pip est efficace et permet aux novices de conduire efficacement un raisonnement sur du code.
 
 		\subsection{Modélisation}
 

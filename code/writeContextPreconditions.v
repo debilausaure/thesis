@@ -1,8 +1,9 @@
+(* Paramètres *)
 (sourcePartDesc, ctxMMUPage, ctxEndMMUPage : page)
 (contextSaveAddr, contextEndSaveAddr : vaddr)
 (idxCtxMMUPage, idxCtxEndMMUPage : index)
+(s : state)
 
-{{ fun s : state =>
    (* Propriété d'isolation *)
    partitionsIsolation s
 /\ kernelDataIsolation s
@@ -31,5 +32,3 @@
 /\ isPE ctxEndMMUPage idxCtxEndMMUPage s
 /\ entryPresentFlag ctxEndMMUPage idxCtxEndMMUPage true s
 /\ entryUserFlag ctxEndMMUPage idxCtxEndMMUPage true s
-
-}}

@@ -6,32 +6,35 @@
 
 \subsection{Humain}
 
-Université de Lille
+Cette thèse a été menée à l'Université de Lille, en collaboration avec le \emph{Centre de Recherche en Informatique, Signal et Automatique de Lille} (communement abrégé en laboratoire CRIStAL). Cette thèse a été financée par une dotation de l'Université de Lille.
 
-Ou placer l'IRCICA ?
+Cette thèse a été dirigée par Gilles Grimaud, directeur de l'équipe <<~\emph{eXtra Small, eXtra Safe}~>> (abrégé 2XS) du CRIStAL. L'équipe se spécialise dans la conception de logiciels et matériels apportant sécurité, fiabilité et efficacité aux systèmes embarqués fortement contraints. Les travaux menés dans l'équipe portent sur la conception d'un noyau de système d'exploitation munis de preuves formelles de propriétés d'isolation de la mémoire, sur les moyens d'attaque physique sur du logiciel (Bluetooth, LoRa, analyse de la consommation, ...), sur la détection de malware et obfuscation d'applications Android, mais aussi sur des objets mathématiques plus théoriques comme par exemple les fonctions corécursives et leur représentation dans un assistant de preuve.
 
-CRIStAL
-	SEAS
-		Émeraude
-			
-			Vlad Rusu, Giuseppe Lipari
-		2XS
-			Attaques du logiciel par des moyens physiques
-			Hautes garanties sur les systèmes par le biais de preuves de programme
+\emph{2XS} a des relations privilégiées avec d'autres équipes du laboratoire, notamment celles faisant partie du même groupe thématique <<~\emph{Systèmes embarqués adaptables et sécurisés}~>>. Cette thèse a notamment tiré profit d'une forte proximité avec l'équipe \emph{SyCoMoRES}, dont les travaux portent sur la conception et l’analyse des systèmes embarqués temps réel, basé sur l’analyse symbolique de composants paramétriques. La seconde contribution de cette thèse est le fruit de cette collaboration.
 
-Transition sur Pip
+Par ailleurs, l'équipe \emph{2XS} est hébergée à l'\emph{Institut de Recherche sur les Composants logiciels et matériels pour l’Information et la Communication Avancée} (abrégé IRCICA). L'IRCICA est un établissement conçu pour favoriser la recherche interdisciplinaire, ce qui a notamment permis à l'équipe de saisir de nombreuses opportunités de collaboration avec l'\emph{Institut d'Électronique, de Microélectronique et de Nanotechnologies} (abrégé laboratoire IEMN), et plus particulièrement avec le groupe de recherche \emph{CSAM} notamment sur les travaux relatifs à l'attaque de logiciel au travers de moyens physiques.
+
+Les travaux présentés dans cette thèse sont liés au noyau de système d'exploitation nommé Pip développé dans l'équipe \emph{2XS}.
 
 \subsection{Pip}
 
-Noyau de système d'exploitation minimal utilisant une Memory Management Unit, muni de preuves formelles de sécurité.
+Pip est un noyau de système d'exploitation \emph{minimal} dont le seul but est de garantir l'isolation d'applications s'exécutant sur le système. Pour ce faire, Pip est muni de preuves formelles que ses services préservent les propriétés d'isolation lors de leur exécution. Pip utilise la mémoire virtuelle comme moyen de garantir ces propriétés.
 
-3 thèses déjà produites sur le projet (Narjes, Quentin, Mahiedinne), un post doc embauché,
-Thèse sur la partie théorique formelle du noyau, thèse sur les aspects systèmes, intégration de Pip à des systèmes embarqués
+Le projet Pip a démarré avec trois thèses fondatrices :
+\begin{itemize}
+	\item La thèse de Narjes Jomaa, soutenue en décembre 2018, a porté sur l'aspect formel du noyau. Narjes a développé une méthodologie permettant de raisonner sur le code des services de Pip, ainsi qu'une méthodologie de co-design du code des services avec les preuves formelles afin d'alléger l'effort de preuve global. Narjes est à l'origine des preuves de préservation de l'isolation fournies par Pip ;
+	\item La thèse de Quentin Bergougnoux, soutenue en juin 2019, a porté sur l'implémentation du noyau sur l'architecture Intel x86, en particulier sur le code des services actuellement présents dans le noyau. Ses travaux ont aussi porté sur des preuves de concept explorant les possibilités de portage de Pip sur un environnement multicœur ;
+	\item La thèse de Mahiedinne Yaker, soutenue en décembre 2019, a porté sur l'implémentation de Pip sur une plateforme embarquée basée sur l'architecture Intel, offrant des perspectives de travail sur les systèmes embarqués. Ces travaux ont aussi portés sur des réflexions autour de la conception de systèmes où les entités y demeurant ne se font pas mutuellement confiance.
+\end{itemize}
 
-3 nouvelles thèses démarrées : 
-- application des propriétés de sécurité de Pip à un système muni d'une MPU
-- preuve de conservation de la sémantique lors du passage du code Coq au code C
-- formalisation du transfert du flot d'exécution
+De ces travaux fondateurs ont émergé de nouvelles opportunités de recherche, dont certains se sont transformés en sujets de thèse. Trois nouvelles thèses ont été pourvues, portant sur des sujets étendants les travaux fondateurs :
+\begin{itemize}
+	\item La thèse de Nicolas Dejon, soutenue en décembre 2022, qui porte sur l'application des propriétés d'isolation de Pip aux systèmes dépourvus de mémoire virtuelle, mais pouvant restreindre l'accès à certaines portions de mémoire grâce à une \emph{MPU}. Ces caractéristiques sont courantes sur des systèmes beaucoup plus modestes, et se prêtent particulièrement bien à de l'\emph{IoT} ;
+	\item Les travaux initiaux de Sofia Santiago Fernandez qui portent sur la preuve de préservation de la sémantique du code des services lors de la compilation du code Gallina \emph{shallow-embedded} vers du code C ;
+	\item Mes propres travaux de thèse, présentés dans ce document, portant sur la formalisation du transfert de flôt d'exécution au sein du noyau et de travaux préliminaires relatifs à l'ajout de nouvelles propriétés non relatives à l'isolation.
+\end{itemize}
+
+Les doctorants n'ont pas été les seules personnes recrutées pour participer au développement de Pip : c'est par exemple le cas de Damien Amara, recruté en tant qu'ingénieur de recherche. Damien a contribué de manière significative à l'implémentation de Pip sur l'architecture Armv7, ainsi qu'à la version de Pip pour les systèmes munis d'une \emph{MPU}. Pip a aussi été au cœur de nombreuses collaborations industrielles par exemple dans le cadre de projets européens, notamment avec Orange.
 
 \section{Objet}
 
