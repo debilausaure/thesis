@@ -209,14 +209,28 @@ De nombreux travaux ont été menés afin de détecter les situations de concurr
 		Le transfert de flot d'exécution est au coeur du fonctionnement de systèmes complexes, par exemple lors de l'ordonnancement au sein d'un système informatique. L'ordonnancement dans un système d'exploitation permet à plusieurs programmes de s'exécuter de manière concurrentielle sur le même processeur, en alternant leur exécution. L'ordonnanceur décide quel programme sera le prochain à s'exécuter sur une unité de calcul donnée, qu'il décide selon une \emph{politique d'ordonnancement}. Ces politiques sont multiples et visent à satisfaire des contraintes diverses, pouvant par exemple viser à exécuter les programmes interactifs de manière prioritaire, ou plus simplement à exécuter chaque programme l'un après l'autre. L'ordonnancement permet ainsi d'optimiser l'utilisation du processeur pour un objectif particulier. 
 
 			\subsection{Partage équitable du CPU}
-		Une des fonctions principales de l'ordonnancement est le partage du temps CPU. En effet, les programmes s'exécutant à sur un système ne collaborent pas forcément avec le système pour permettre aux autres programmes de s'exécuter. Il revient alors au système d'exploitation d'interrompre les programmes à intervalles réguliers, grâce aux interruptions déclenchées par l'horloge par exemple, pour ne pas créer de situation de \emph{famine}. Lorsque le programme est interrompu, le système appelle l'ordonnanceur, qui choisira le meilleur programme à exécuter selon sa politique.
+		Une des fonctions principales de l'ordonnancement est le partage du temps CPU. En effet, les programmes s'exécutant à sur un système ne collaborent pas forcément avec le système pour permettre aux autres programmes de s'exécuter. Il revient alors au système d'exploitation d'interrompre les programmes à intervalles réguliers, grâce aux interruptions déclenchées par l'horloge par exemple, pour que chaque programme puisse avoir une chance de bénéficier d'un créneau d'exécution. Lorsque le programme est interrompu, le système appelle l'ordonnanceur, qui choisira le meilleur programme à exécuter selon sa politique.
 		Plusieurs indicateurs permettent d'évaluer les politiques d'ordonnancement dans les systèmes classiques, notamment :
 		\begin{itemize}
 			\item{le débit, mesurant le nombre de tâches terminées sur une certaine période}
 			\item{le temps d'attente, mesurant le temps moyen entre le moment où la tâche a été créée et le moment où elle a commencé à être exécutée}
-			\item{l'équité, mesurant la différence entre les temps CPU accordés à chaque processus}
-			\item{la latence, mesurant le temps d'attente moyen entre la soumission de la tache et la production des premières sorties par la tache}
+			\item{l'équité, mesurant la différence entre les temps CPU accordés à chaque processus comparé à leurs besoins}
+			\item{la latence, mesurant le temps d'attente moyen entre la soumission de la tache et sa terminaison}
 		\end{itemize}
+
+		\subsubsection{Exemples de politiques d'ordonnancement}
+
+		Les politiques d'ordonnancement se divisent en deux catégories : les politiques d'ordonnancement temps-réel et les autres. Les politiques d'ordonnancement temps réel sont dédiées au respect de contraintes temporelles associées aux processus à ordonnancer. Les autres politiques d'ordonnancement privilègient d'autres critères qui peuvent complètement varier selon les objectifs ciblés par la politique d'ordonnancement.
+
+		De nombreuses politiques d'ordonnancement existent :
+		\begin{itemize}
+			\item{tourniquet, fair-share, foreground-background }
+			\item{shortest job next, shortest remaining time (famine)}
+			\item{Highest response ratio next (variante de shortest job next proposant une réponse aux problèmes de famine)}
+			\item{Multilevel feedback queue (ancien, prix turing)}
+			\item{YDS (politique visant à minimiser la consommation énergétique, optimal quelques conditions)}
+		\end{itemize}
+
 
 			\subsection{Respect des contraintes de temps}
 
@@ -232,21 +246,13 @@ De nombreux travaux ont été menés afin de détecter les situations de concurr
 		\subsubsection{Vérification du respect des échéances}
 		La vérification du respect des contraintes temporelles s'effectue \emph{avant} la mise en fonctionnement du système temps réel. Lors de la conception du système, un modèle du fonctionnement du système doit être créé, associant une durée (ou une borne supérieure associée à la durée) à chaque action réalisée par le système, ainsi qu'un modèle spécifiant à quel moment chaque action doit être effectuée. Une fois ce modèle créé, il doit faire l'objet d'une \emph{analyse d'ordonnançabilité}, vérifiant que chaque action entreprise pourra se terminer dans le temps imparti.
 
-		Lorsque l'analyse d'ordonnançabilité a été effectuée, et qu'elle atteste qu'il sera toujours possible d'ordonnancer les différents jobs du système en respectant les échéances, il existe deux méthodes permettant d'ordonnancer les jobs. La première méthode consiste à précalculer l'ordonnancement des jobs, et à l'inclure de manière statique dans le système. Cette méthode de calcul hors ligne (ou \emph{offline} en anglais) du plan d'ordonnancement, a pour avantages d'affranchir le système temps réel du coût de l'ordonnancement ``en direct''. Le système n'aura pas à choisir lui même la prochaine tâche à effectuer ; elle lui a été précalculée. Cependant, il n'est pas toujours possible de savoir à chaque instant du fonctionnement d'un système temps réel quels seront les jobs à exécuter par exemple dans le cas de tâches sporadiques ou apériodiques. En effet, certaines actions des sytèmes temps réels peuvent être liées à des stimuli externes, comme par exemple l'action de maintenir l'assiette d'un avion en vol lorsqu'il tangue sous l'effet de turbulences. Dans ce genre de cas, le système temps réel doit pouvoir s'accomoder de telles variations, et en conséquence le plan d'ordonnancement doit pouvoir être modifié pendant le fonctionnement du système. Il n'est alors plus possible de précalculer le plan d'ordonnancement ; le système temps réel doit intégrer un ordonnanceur pour faire face à ces aléas.
+		Lorsque l'analyse d'ordonnançabilité a été effectuée, et qu'elle atteste qu'il sera toujours possible d'ordonnancer les différents jobs du système en respectant les échéances, il existe deux méthodes permettant d'ordonnancer les jobs. La première méthode consiste à précalculer l'ordonnancement des jobs, et à l'inclure de manière statique dans le système. Cette méthode de calcul hors ligne (ou \emph{offline} en anglais) du plan d'ordonnancement, a pour avantages d'affranchir le système temps réel du coût de l'ordonnancement ``en direct''. Le système n'aura pas à choisir lui même la prochaine tâche à effectuer ; elle lui a été précalculée. Cependant, il n'est pas toujours possible de savoir à chaque instant du fonctionnement d'un système temps réel quels seront les jobs à exécuter par exemple dans le cas de tâches sporadiques ou apériodiques. En effet, certaines actions des sytèmes temps réels peuvent être liées à des stimuli externes, comme par exemple l'action de maintenir l'assiette d'un avion en vol lorsqu'il tangue sous l'effet de turbulences. Dans ce genre de cas, le système temps réel doit pouvoir s'accomoder de telles variations, et en conséquence le plan d'ordonnancement doit pouvoir être modifié pendant le fonctionnement du système. Il n'est alors plus possible de précalculer le plan d'ordonnancement ; le système temps réel doit intégrer un ordonnanceur pour faire face à ces aléas. Il convient alors de vérifier aussi les résultats produits par l'ordonnanceur.
 
-		\subsubsection{Vérification des résultats produits par l'ordonnanceur}
-		\textcolor{red}{plasticité des politiques et comment on ne peut savoir ce qu'on devra prouver sur notre politique. Une ou deux phrases sur les politiques d'ordonnancement, certaines doivent respecter des contraintes temps réels, d'autres doivent maximiser des objectifs.}
-		De nombreuses politiques d'ordonnancement existent :
-		\begin{itemize}
-			\item{tourniquet, fair-share, foreground-background }
-			\item{Rate monotonic (ancien et fondateur, liu et layland)}
-			\item{Deadline monotonic (optimal sous quelques hypothèses)}
-			\item{earliest deadline first (optimal)}
-			\item{shortest job next, shortest remaining time (famine)}
-			\item{Highest response ratio next (variante de shortest job next proposant une réponse aux problèmes de famine)}
-			\item{Multilevel feedback queue (ancien, prix turing)}
-			\item{YDS (politique visant à minimiser la consommation énergétique, optimal quelques conditions)}
-		\end{itemize}
+		\subsubsection{Exemples de politique d'ordonnancement temps réel}
+
+		On peut distinguer deux types de politiques dans les politiques d'ordonnancement temps réel : les politiques à priorité fixe, c'est à dire dont l'ordre des priorités est préétabli et n'évolue pas avec le temps, et les politiques à priorité dynamiques, dont l'ordre des priorités est recalculé tout au long de l'exécution. On retrouve dans les politiques à priorités fixes l'ordonnancement \emph{rate monotonic} \cite{liu1973scheduling}, qui associe la plus haute priorité aux tâches dont la période est la plus courte. La politique d'ordonnancement \emph{deadline monotonic} \cite{audsley1990deadline} fait aussi partie des politiques d'ordonnancement à priorité fixe et associe la plus haute priorité aux tâches dont l'échéance relative est la plus courte. La politique d'ordonnancement \emph{rate-monotonic} est la politique à priorités fixes la plus efficace pour des tâches strictement périodiques ; le pire taux d'utilisation du processeur étant d'environ 69\% sur des ensembles de tâches particuliers, et en moyenne de 88\%. La politique \emph{deadline monotonic} est quand à elle optimale sur un ensemble de tâches périodiques ou sporadiques \cite{leung1982complexity}.
+
+		Dans les politiques d'ordonnancement temps réel à priorité dynamique, on retrouve notamment la politique d'ordonnancement \emph{Earliest Deadline First} \cite{liu1973scheduling}, qui priorise les processus ayant actuellement l'échéance la plus proche. La politique \emph{Earliest Deadline First} est optimale sur les tâches périodiques et apériodiques, pouvant atteindre 100\% de taux d'utilisation du processeur contrairement aux politiques d'ordonnacement à priorité fixe \cite{buttazzo2011hard}.
 
 	\section{Preuve de code}
 

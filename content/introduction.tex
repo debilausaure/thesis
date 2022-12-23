@@ -36,17 +36,34 @@ De ces travaux fondateurs ont émergé de nouvelles opportunités de recherche, 
 
 Les doctorants n'ont pas été les seules personnes recrutées pour participer au développement de Pip : c'est par exemple le cas de Damien Amara, recruté en tant qu'ingénieur de recherche. Damien a contribué de manière significative à l'implémentation de Pip sur l'architecture Armv7, ainsi qu'à la version de Pip pour les systèmes munis d'une \emph{MPU}. Pip a aussi été au cœur de nombreuses collaborations industrielles par exemple dans le cadre de projets européens, notamment avec Orange.
 
-\section{Objet}
+\section{Objets d'étude}
+
+Cette thèse est développée autour de trois objets d'études principaux qui transparaissent dans l'état de l'art et les chapitres de contribution.
+
+\subsection{Ordonnancement}
+
+Un des objets d'étude de cette thèse est l'ordonnancement. Dans un système où des entités ont besoin de ressources pour accomplir certaines actions et où les ressources disponibles sont limitées, l'ordonnancement est le fait d'arbitrer quelles entités disposeront d'un accès aux ressources ainsi que les périodes à laquelle elles en disposeront. Le logiciel réalisant l'ordonnancement au sein d'un système est appelé l'ordonnanceur. Le processus d'ordonnancement est omniprésent dans nos ordinateurs modernes, par exemple lorsqu'ils doivent choisir -- plusieurs centaines de fois par seconde -- le prochain programme à exécuter parmi la centaine de programmes attendant leur tour. Cette décision est orientée par la politique d'ordonnancement qui dicte à l'ordonnanceur selon quels critères distribuer les ressources. Certaines politiques s'attachent plus particulièrement au respect de contraintes temporelles : on parle alors de politique d'ordonnancement temps réel.
 
 \subsection{Transfert de flot d'exécution}
 
-\subsection{Ordonnanceur}
+Un autre objet d'étude connexe dont il sera abondamment question dans ce document est le transfert de flôt d'exécution. La notion de transfert de flot d'execution est similaire à celle de la commutation de contexte. Lorsqu'un programme est interrompu et qu'un autre s'exécute à sa place, par exemple sous l'effet de l'ordonnancement des programmes du système, il se déroule un transfert de flot d'exécution. Le système se charge de sauvegarder tous les paramètres qui permettront de restaurer le programme interrompu comme s'il n'avait jamais été interrompu, puis charge le programme qui continuera son exécution.
 
-\subsection{Preuve}
+Ce mécanisme et le processus d'ordonnancement au sein d'un système permettent d'exécuter de multiples programmes de manière concurrente et efficace. Ils sont notamment à l'oeuvre lorsque vous travaillez avec de nombreux logiciels simultanément sur votre ordinateur, lorsque vous visionnez une vidéo sur votre téléphone, ou lorsque vous prenez l'avion et qu'il navigue en pilote automatique.
+
+\subsection{Preuve de programmes}
+
+Le dernier objet d'étude principal, omniprésent dans ce document, est la preuve de programmes. La preuve de programmes est une technique permettant d'apporter de très fortes garanties sur le fonctionnement du programme étudié par le biais de démonstrations mathématiques. Apporter de telles garanties sur un programme est néanmoins \emph{extrêmement} coûteux, et n'est généralement entrepris que pour les systèmes dont un dysfonctionnement logiciel pourrait mettre en péril des vies humaines, ou pourrait engendrer la perte d'une quantité astronomique d'argent. De tels systèmes sont courants dans certains secteurs d'activités tels que l'aérospatial ou le transport.
 
 \section{Présentation du document}
 
 \subsection{Plan}
+
+La lecture de ce document a été découpée en 5 chapitres principaux. Le premier chapitre, que vous êtes en train de lire, est un chapitre d'introduction proposant une mise en contexte des travaux de thèses ainsi qu'une brève introduction aux objets d'étude principaux. Ce chapitre se termine par une exposition du plan et propose différents axes de lecture en fonction des sujets d'intérêts du lecteur.
+
+Le second chapitre fait un état de l'art des sujets abordés dans cette thèse. Cet état de l'art se contente de décrire les notions nécessaires à la compréhension des travaux de thèse. Il est décomposé en trois parties, qui reflètent les objets d'étude principaux. La première partie de l'état de l'art concerne les transferts de flot d'exécution. Elle en donnera une définition qui les classifiera et décrira ses implications en terme de logiciel et de sécurité, plus particulièrement au travers du prisme de l'architecture Intel x86. La seconde partie de l'état de l'art, plus modeste, sera dédiée à l'ordonnancement. Elle en fera une présentation générale, discutera des politiques d'ordonnancement en proposant des métriques pour les évaluer, puis discutera plus particulièrement des systèmes temps réel, dont elle développera juste la théorie nécessaire à la compréhension des travaux de cette thèse. Cet état de l'art s'achève sur une partie concernant la preuve de programmes. L'état de l'art sur cette partie commencera par décrire le processus de raisonnement mathématique dans sa généralité, axée sur la vérification automatique du raisonnement grâce aux assistants de preuve, en prenant l'exemple de l'assistant de preuve Coq. Dans un second temps, cette partie décrira les méthodes particulières permettant de raisonner sur des programmes, puis concluera sur les exemples les plus probants de l'application de ces techniques sur des systèmes d'exploitation.
+
+Le troisième chapitre présente la première contribution décrite dans cette thèse, un service de transfert de flot d'exécution unifié au sein du noyau Pip. Le chapitre commence par donner quelques motivations à l'écriture de ce nouveau service. Il décrit ensuite les idées derrière le service puis en décrit l'implémentation détaillée au sein de l'architecture Intel x86, en montrant comment les différents transferts de flot d'exécution ont été unifiés. Le chapitre se poursuit sur l'établissement de la preuve d'isolation traditionnelle de Pip sur ce service en décrivant les ajouts à l'interface avec la monade et détaillant fortement certaines portions du raisonnement, points clés de la preuve complète. Ce chapitre se terminera sur une courte section de retours d'expérience, proposant certaines métriques à propos de ce service et proposant des réflexions sur le résultat produit. 
+
 
 \subsection{Axes de lecture}
 

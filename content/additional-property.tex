@@ -1,4 +1,4 @@
-\chapter{Ajout incrémental de propriétés sur le code prouvé}
+\chapter{Méthode d'ajout de nouvelles propriétés sur le code des services}
 
 	Ce chapitre présente une preuve de concept affranchissant le code des services de Pip de toutes ses dépendances au modèle actuel d'isolation. Ces travaux n'ont pas été publiés, mais sont néanmoins consultables sur la branche \texttt{state\_abstraction} du projet Pip, disponible sur le dépôt accessible à l'adresse suivante : \url{https://gitlab.univ-lille.fr/2xs/pip/pipcore}. Cette branche contient une implémentation imparfaite des idées exposées dans ce chapitre, et restreinte à la fonction \texttt{switchContextCont}.
 
@@ -9,11 +9,12 @@
 	La section de discussion du premier chapitre a mis en avant le fait que Pip était conçu autour des propriétés d'isolation formellement prouvées. Le modèle des fonctions de l'interface et de l'état, jusqu'à la monade intégrée au code, sont liés aux propriétés d'isolation. Cette forte proximité est une conséquence de la philosophie de conception minimaliste de Pip, qui a incité à ne définir que les éléments strictement nécessaires à l'établissement de le preuve de préservation de l'isolation. Cette approche a permis de minimiser l'effort de preuve permettant de garantir la propriété d'isolation, mais présente un désavantage majeur : le code des services de Pip n'est pas indépendant des modèles sur lesquels il repose.
 
 	Ainsi, il n'existe qu'un modèle unique dans Pip qui ne peut évoluer que de manière itérative. Chaque évolution rend caduques les propriétés établies sur l'ancien modèle, et implique de produire une nouvelle preuve des mêmes propriétés avec le nouveau modèle. Le moindre ajout de chaque itération rendant de plus en plus difficile l'établissement la preuve à produire.
+
 	Ceci est un frein considérable à la vérification de nouvelles propriétés sur le code de Pip, telle que la preuve fonctionnelle du service évoquée dans le second chapitre. Si les nouvelles propriétés impliquent des changements trop importants sur le modèle, l'effort de preuve à fournir deviendrait inatteignable après seulement quelques itérations.
 
-	Ce constat a motivé la preuve de concept developpée dans ce chapitre, qui propose une solution au problème de la croissance exponentielle de l'effort de preuve.
+De plus, il n'est pas possible d'utiliser la composition verticale des propriétés telle que proposée dans le chapitre précédent. Ici, il n'est pas question d'apporter des garanties formelles à un nouvel élément logiciel ; on souhaite apporter de nouvelles garanties formelles à du logiciel existant. On pourrait par exemple reprendre le constat du premier chapitre sur la pertinence de la preuve de préservation de l'isolation sur le code du service de transfert de flôt d'exécution (\ref{sec:proof_limits}). On souhaiterait par exemple pouvoir prouver des propriétés relatives à la correction du service en plus des propriétés d'isolation.
 
-	\textcolor{red}{Composition verticale n'est pas possible, illustration avec le yield}
+	Ce constat a motivé la preuve de concept développée dans ce chapitre, qui propose une solution au problème de la croissance exponentielle de l'effort de preuve.
 
 	\section{Architecture monolithique}
 
@@ -159,15 +160,37 @@ Cette dépendance renforce les liens entre le modèle d'isolation de Pip et le c
 
 			\subsubsection{Code agnostique des modèles}
 
-			La création de toutes ces interfaces permet de définir le code des services affranchit de toute dépendance aux modèles. Le code des services (restreint à la seule fonction \texttt{switchContextCont} dans cette preuve de concept) est disponible en listing \ref{code:ModelAgnosticCode}. Le code est défini dans un \emph{Module} dépendant de l'implémentation de trois \emph{Modules} : un \emph{Module} décrivant l'état, un \emph{Module} décrivant les types, et un \emph{Module} décrivant les fonctions monadiques. Ainsi, le code de Pip est devenu un foncteur allant de ces \emph{Modules} vers le \emph{Module} décrivant le code \textbf{spécifique} aux \emph{Modules} dont il dépend. Le code des services décrit comme un foncteur du listing \ref{code:ModelAgnosticCode} est néanmoins identique au code basé directement sur les modèles décrit en listing \ref{code:switchContextCont}.
+			La création de toutes ces interfaces permet de définir le code des services affranchit de toute dépendance aux modèles. Le code des services (restreint à la seule fonction \texttt{switchContextCont} dans cette preuve de concept) est disponible en listing \ref{code:ModelAgnosticCode}. Le code est défini dans un \emph{Module} dépendant de l'implémentation de trois \emph{Modules} : un \emph{Module} décrivant l'état, un \emph{Module} décrivant les types, et un \emph{Module} décrivant les fonctions monadiques. Ainsi, le code de Pip est devenu un foncteur allant de ces \emph{Modules} vers le \emph{Module} décrivant le code \textbf{spécifique} aux \emph{Modules} dont il dépend.
 
-			\textcolor{red}{Montrer les différences sur le type et les inclusions des paramètres}
+Deux différences minimes se dégagent de cette nouvelle manière de représenter le code. La première est la déclaration des modèles paramètres du \emph{Module} du code des services, mis en évidence dans le listing \ref{code:code_parameters}. 
+	\begin{listing}[!ht]
+	\begin{minted}{coq}
+Module ModelAgnosticCode (Export Types : TypesModel)
+                         (Export State : StateModel)
+                         (Export Interface : InterfaceModel Types State).
+	\end{minted}
+	\caption{Déclarations des \emph{Modules} paramètres du \emph{Module} du code des services}
+	\label{code:code_parameters}
+	\end{listing}
 
-			\begin{listing}[!ht]
-				\coqcode{code/ModelAgnosticCode.v}
-				\caption{Définition du code affranchi de toute dépendance aux modèles}
-				\label{code:ModelAgnosticCode}
-			\end{listing}
+La seconde différence de cette nouvelle représentation du code est l'utilisation de la monade agnostique de l'état \texttt{SAM}, à la place de la monade dépendante du modèle de l'état d'isolation \texttt{LLI}, comme décrit dans le listing \ref{code:instanciated_monad}.
+
+	\begin{listing}[!ht]
+	\begin{minted}{coq}
+Definition switchContextCont (* [...] *) : SAM yield_checks :=
+	\end{minted}
+	\caption{Monade instanciée \texttt{SAM}, type de retour de la fonction \texttt{switchContextCont} dans la preuve de concept}
+	\label{code:instanciated_monad}
+	\end{listing}
+
+	Une représentation complète de la fonction \texttt{switchContextCont} est disponible en listing \ref{code:ModelAgnosticCode}. Seules ces deux différences permettent de distinguer le code des services écrit comme un foncteur dans ce listing du code dépendant directement des modèles décrit en listing \ref{code:switchContextCont}.
+
+
+	\begin{listing}[!ht]
+		\coqcode{code/ModelAgnosticCode.v}
+		\caption{Définition du code affranchi de toute dépendance aux modèles}
+		\label{code:ModelAgnosticCode}
+	\end{listing}
 
 		\subsection{Extraction de l'\emph{AST} du code des services}
 
@@ -177,18 +200,51 @@ Cette dépendance renforce les liens entre le modèle d'isolation de Pip et le c
 
 		Malheureusement, il n'est pas possible pour Coq de produire l'\emph{AST} d'un foncteur au moment où j'écris ces lignes. Néanmoins, Coq accepte de produire l'\emph{AST} d'une fonction -- et ce même sans connaître la définition des objets sur lesquels cette fonction repose. Ainsi, il est possible de définir des \emph{Modules} ``creux'', qui se contentent de déclarer qu'ils implémentent les \emph{Modules Type} attendus par le code des services agnostique des modèles, sans préciser d'implémentation. Dès lors, il est possible d'instancier le code avec ces modèles creux, ce qui transforme le code des services en fonctions dont Coq peut extraire l'\emph{AST}. De cette manière, il est possible d'extraire l'\emph{AST} des services de Pip sous la forme proposée par cette preuve de concept sans dépendre d'une implémentation particulière des modèles.
 
-		\textcolor{red}{Comparaison d'une seule ligne du code extrait en Haskell de LLI et SAM}
+	Les listings \ref{code:LLICodeExtraction} et \ref{code:HollowCodeExtraction} présentent la même portion de code extraits avec l'architecture actuelle de Pip ou dans la preuve de concept en instanciant le code de Pip avec les modèles creux. La ligne de code concernée est la suivante : \texttt{updateCurPartition targetPartDesc ;;}, provenant de la fonction \texttt{switchContextCont} décrit en listing \ref{code:switchContextCont}. Dans le listing \ref{code:LLICodeExtraction}, la fonction \texttt{bind} utilisée provient du fichier \texttt{Hardware} où est définie la monade reposant sur le modèle de l'état d'isolation. La fonction \texttt{updateCurPartition} provient du fichier \texttt{MAL}, qui définit une partie des modèles des fonctions intéragissant avec l'état selon le modèle d'isolation.
+
+	Dans le listing \ref{code:HollowCodeExtraction}, la fonction \texttt{bind} provient de la monade générique \texttt{SAMM} instanciée avec le modèle creux de l'état. La fonction \texttt{updateCurPartition} provient de la l'implémentation creuse de l'interface des fonctions intéragissant avec l'état.
+
+	\begin{listing}[!ht]
+	\begin{minted}{coq}
+    (* [...] *)
+Hardware.bind (MAL.updateCurPartition targetPartDesc) (\_ ->
+    (* [...] *)
+	\end{minted}
+	\caption{Fragment de l'\emph{AST} du code de Pip actuel représenté sous forme de code Haskell}
+	\label{code:LLICodeExtraction}
+	\end{listing}
+
+	\begin{listing}[!ht]
+	\begin{minted}{coq}
+    (* [...] *)
+HollowModel._HollowInterface__SAMM__bind
+  (HollowModel._HollowInterface__updateCurPartition targetPartDesc)
+    (\_ ->
+    (* [...] *)
+	\end{minted}
+	\caption{Fragment de l'\emph{AST} du code de Pip instancié sur les modèles creux représenté sous forme de code Haskell}
+	\label{code:HollowCodeExtraction}
+	\end{listing}
+
 		\subsection{Méthode de preuve sur des foncteurs}
 
 		Cette preuve de concept ne serait pas utile s'il n'était pas possible de raisonner formellement sur le code des services. Cette brève sous-section discute de la manière de structurer les nouveaux modèles et les nouvelles preuves afin de pouvoir prouver des propriétés formelles. L'établissement de modèles et la méthode de preuve restent \emph{identiques} aux méthodes utilisées jusqu'à présent.
 
-		Tout d'abord, les instances spécifiques des modèles peuvent (et doivent probablement) dépendre les unes des autres. Par exemple, le modèle d'isolation des fonction monadiques peut dépendre du modèle d'isolation des types ou du modèle d'isolation de l'état : cette dépendance n'affecte en rien le code des services, et n'a de répercussions que sur le monde mathématique. Autrement dit, chaque \emph{Module} implémentant les \emph{Modules Type} (et n'importe quel autre fichier lié à un modèle spécifique) est libre de dépendre de n'importe quel autre fichier. Ce libre réseau de dépendances pour établir un modèle était déjà effectif dans le projet Pip avant l'introduction de cette preuve de concept. Ainsi, la règle nécessaire et suffisante indiquant si un modèle est valide au sens de cette preuve de concept est que ce modèle doit contenir une implémentation des \emph{Modules} de type, d'état et de fonctions sur l'état.
+		Tout d'abord, il est important de souligner que les \emph{Modules} implémentant les \emph{Modules Types} sont libres des choix de leur implémentation : ils peuvent dépendre de n'importe quel modèle et décrire ce que bon leur semble. Pour rappel, ces \emph{Modules} sont une projection de l'implémentation exécutable de l'interface dans le monde des mathématiques. La seule règle que doivent respecter ces \emph{Modules} est qu'ils doivent définir l'ensemble des éléments déclarés dans le \emph{Module Type} qu'ils implémentent.
 
-		Par ailleurs, afin de pouvoir raisonner sur le code des services avec les modèles décrit dans les \emph{Modules}, il est nécessaire de l'instancier avec ces \emph{Modules}. Par exemple, afin de pouvoir exprimer le triplet de Hoare de la fonction \texttt{switchContextCont} sur les modèles et propriétés d'isolation, le code des services doit tout d'abord être instancié avec les modèles d'isolation. La définition du triplet de Hoare de cette fonction est illustrée en annexe \ref{code:switchContextCont_agn_triple}.
+		Dans cette preuve de concept, le code des services a été séparé des modèles. Afin de pouvoir raisonner formellement sur le code des services, il est désormais nécessaire de le spécialiser avec des modèles. Plus précisemment, il est nécessaire d'instancier un \emph{Module} contenant le code des services spécialisé avec les \emph{Modules} décrivant les modèles sur lesquels on souhaite raisonner. Par exemple, afin de pouvoir exprimer le triplet de Hoare de la fonction \texttt{switchContextCont} sur les modèles et propriétés d'isolation, le code des services doit tout d'abord être instancié avec les modèles d'isolation. La définition du triplet de Hoare de cette fonction est illustrée en annexe \ref{code:switchContextCont_agn_triple}.
 
-		\textcolor{red}{On voit dans cette annexe que la définition du triplet est en tout point similaire à la définition. Cette version est une instance.}
+		Ce triplet de Hoare, lié cette preuve de concept, est en tout point similaire à la définition actuelle du triplet de Hoare décrit en listing \ref{code:switchContextCont_triplet} et pour cause : cette définition fait appel \emph{aux mêmes objets} que la définition actuelle du triplet. Pour y parvenir, la preuve de concept \textbf{instancie} le code des services (et donc de la fonction \texttt{switchContextCont}) avec les modèles d'isolation. Le code de la fonction passe alors de l'état de foncteur à l'état de fonction, tel qu'exprimé actuellement dans les preuves de préservation de l'isolation de Pip.
 
-		Comme dans la méthodologie de preuve précédente, il est tout à fait possible de définir des fonctions exclusives aux modèles ; ces fonctions pouvant permettre de définir les propriétés à prouver par exemple.
+		La ligne d'intérêt dans l'annexe \ref{code:switchContextCont_agn_triple}, créant une instance du code des services spécialisés avec les modèles d'isolation, est isolée dans le listing \ref{code:ModuleInstanciation}. Cette ligne crée un nouveau \emph{Module} en appliquant le foncteur du code des services aux \emph{Modules} de type, de l'état et des fonctions d'isolation.
+	\begin{listing}[!ht]
+	\begin{minted}{coq}
+Module IsolationSpecificCode :=
+  ModelAgnosticCode IsolationTypes IsolationState IsolationInterface.
+	\end{minted}
+	\caption{Instanciation du code des services sur les modèles d'isolation}
+	\label{code:ModuleInstanciation}
+	\end{listing}
 
 		Ainsi, la seule différence notable relative à la méthodologie de preuve apportée par cette preuve de concept est la nécessité de créer les modèles au travers de \emph{Modules}.
 

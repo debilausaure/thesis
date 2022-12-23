@@ -972,6 +972,8 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 		\subsection{Prise de recul sur la nature de la preuve}
 
+		\label{sec:proof_limits}
+
 		Le but ultime de l'établissement de cette preuve est de convaincre le plus rapidement possible l'assistant de preuve que la preuve est valide. Cette preuve est donc la preuve la plus rapide et non la preuve la plus didactique, à contrario de ce qui est habituellement recherché dans une preuve mathématique.
 
 		La preuve de maintien de l'isolation pour ce service ne présentait que peu d'intérêt en dehors du contexte dans lequel elle a été réalisée : les écritures étant faites en espace utilisateur, il était évident que le preuve ne présenterait aucun obstacle majeur. Cette preuve me semblait presque être une tautologie des propriétés d'isolation : si Pip écrit dans l'espace d'adressage d'une partition cela brise-t'il les propriétés d'isolation ? Évidemment non, puisque les partitions, isolées et dénuées de privilèges, sont elles mêmes capables d'écrire dans leur propre espace d'adressage.
