@@ -250,9 +250,17 @@ Module IsolationSpecificCode :=
 
 	\section{Perspectives de recherche et discussion}
 		Cette preuve de concept, bien qu'incomplète, montre qu'il est possible d'adapter le code des services de Pip et le modèle d'isolation actuel afin que le code des services devienne indépendant des modèles d'isolation. Cette indépendance permettrait à Pip d'intégrer de nouveaux modèles conçus pour raisonner sur d'autres aspects du code que ceux abordés par le modèle actuel. Cette section commencera par évoquer des perspectives de recherche à court terme pouvant émerger de cette preuve de concept, puis discutera des limites apportées par les preuves de propriétés sur des modèles parallèles.
+
 		\subsection{Perspectives de recherche liées au développement d'un modèle alternatif}
-		Comme évoqué dans le début de chapitre, l'établissement d'un modèle du code dédié à une preuve fonctionnelle des services est une perspective 
+		Comme évoqué dans les motivations de cette contribution en début de chapitre, l'établissement d'un modèle du code dédié à une preuve fonctionnelle des services est une des principales perspectives de cette contribution. On pourrait s'intéresser particulièrement aux propriétés de correction du service de transfert de flot d'exécution, pour lequel les propriétés d'isolation se sont révélées être peu intéressantes.
+
+		De plus, l'établissement de propriétés de bon fonctionnement sur le service de tranfert de flot d'exécution permettrait d'étudier à quel point il est possible de réutiliser les propriétés prouvées formellement sur la base de confiance (\emph{TCB}) afin d'établir de nouvelles propriétés sur un nouvel objet. 
 		\subsubsection{Lien entre la preuve de bon fonctionnement et le back end de l'ordonnanceur}
+		
+		Cette perspective de recherche pourrait se concrétiser sur l'établissement d'une preuve de correction du \emph{back-end} de l'ordonnanceur présenté dans le chapitre précédent reposant sur la preuve de correction du service de transfert de flot d'exécution. Cette preuve se servirait des propriétés sur la sauvegarde et la restauration de contextes du service pour transférer le flot d'exécution aux \emph{jobs} élus par la fonction d'élection, et montrerait que les \emph{jobs} élus par la fonction d'élection sont effectivement exécutés après leur élection.
+
+		Cette perspective de recherche mettrait en évidence une composition verticale de propriétés formellement prouvées, dont le lien entre les morceaux de logiciels munis de propriétés formelles est direct : c'est à dire sans l'intermédiaire de code inclus dans la base de confiance. 
+
 		\subsection{Discussion sur la coexistence de preuve sur des modèles distincts}
 
 		La preuve de concept présentée dans ce chapitre permet de faire coexister plusieurs modèles décrivant le code des services dans le but de conduire des preuves formelles sur ce code. Une question se pose alors : quelle est la relation de deux preuves formelles conduites sur des modèles différents et que disent-elles du code qui s'exécutera finalement sur la machine ?
@@ -263,5 +271,14 @@ Module IsolationSpecificCode :=
 
 		\subsection{Preuve générique applicable à différents modèles}
 
+		Un des rêves initiaux de cette contribution était de proposer une preuve générique, pouvant s'appliquer à tous les modèles. Cette preuve aurait été conçue comme une ``preuve à trous'', dont les morceaux manquants difficiles, et spécifiques à chaque modèles auraient été la partie manuelle de la preuve ; les autres aspects de la preuve ayant été couverts par la preuve générique.
 
+		L'architecture aurait été la suivante : chaque fonction de l'interface aurait été munie d'un invariant paramétrique, à définir et prouver comme des fonctions d'un \emph{Module}. Ces invariants, disponibles pour chacunes des opérations du code, auraient été appliqués successivement par la preuve pour arriver à ses conclusions finales. J'espérais initialement que cette preuve générique allègerait le processus de preuve en faisant disparaître l'aspect répétitif de la preuve de code actuel, où la vaste majorité du raisonnement consiste à récupérer les nouvelles propriétés apportées par l'exécution des fonctions de l'interface, puis à les propager comme des propriétés supplémentaires disponibles lors de l'exécution des instructions suivantes.
 
+		Cette preuve générique est cependant beaucoup moins intéressante qu'initialement espéré. Tout d'abord, cette preuve générique ne simplifie aucunement le processus de preuve de propriétés actuelle. En effet, toute la difficulté de la preuve formelle réside dans la recherche et la preuve d'invariants, ce que cette preuve générique ne nous épargne pas. D'un point de vue personnel, faire disparaître l'application successive des invariants sur les instructions retire une grosse portion du sentiment de progression dans l'établissement de la preuve formelle. De plus, parfois, il est nécessaire d'exécuter plusieurs instructions avant de pouvoir arriver à un invariant simple, notamment dans le cas de modification de structures. Une preuve générique ne se prêterait pas aussi bien à ce genre de cas.
+
+		C'est pourquoi cette idée de preuve générique n'est plus dans les perspectives de recherches : le bénéfice à en tirer ne semble plus aussi clair que lorsque l'idée est apparue.
+
+		\section{Conclusion}
+
+		\textcolor{red}{Résumer la contribution}

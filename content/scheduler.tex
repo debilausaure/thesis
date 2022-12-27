@@ -21,6 +21,8 @@
 
 	\section{Description structurelle}
 
+	\label{sec:sched_struct_desc}
+
 		Cette section décrit la structure générale de l'ordonnanceur. Elle commencera par sa partie phare, la fonction d'élection. Cette section en donnera une description fonctionnelle, ainsi que son prototype. Cette section décrira ensuite la place de l'ordonnancement dans Pip. Elle discutera du choix de placer l'ordonnanceur dans une partition, et des différences principales avec un système d'exploitation classique tel que Linux. Enfin, cette section détaillera les composants de l'ordonnanceur, leur fonction ainsi que leurs interactions.
 
 		\subsection{Définition prototype et oracle de la fonction d'élection}
@@ -297,11 +299,13 @@ b\begin{figure}[!b]
 	La dernière étape de raffinement permet de montrer que la fonction d'élection exécutable raffine la fonction d'élection idéalisée. Elle consiste à montrer que l'ensemble des états atteignables par la fonction d'élection exécutable est inclus dans l'ensemble des états atteignables par la fonction d'élection idéalisée. 
 	La différence notable entre les deux fonctions d'élection est que la fonction d'élection idéalisée calcule en une grosse itération ce que la fonction d'élection exécutable calcule en plusieurs petites itérations. La fonction d'élection idéalisée n'est pas assujettie à de telles contraintes et peut de ce fait factoriser ces longues séquences de petites itérations en une seule grosse itération. Ce faisant, la fonction d'élection idéalisée nous avait épargné la preuve d'invariants supplémentaires à propos des états intermédiaires générés par la fonction d'élection exécutable, qu'il a fallu prouver dans cette étape de raffinement.
 
-	La conclusion globale indiquant que la fonction d'élection exécutable est correcte découle de la propriété de correction de la politique d'ordonnancement et des preuves des deux raffinements successifs.
+	La conclusion globale indiquant que la fonction d'élection exécutable est correcte découle de la propriété de correction de la politique d'ordonnancement et des preuves des deux raffinements successifs.\\
 
-	\textcolor{red}{Il faut une transition c'est trop raide}
+	Ainsi s'achève la section sur la conduite de la preuve de correction de la fonction d'élection de notre ordonnanceur. La prochaine section décrira l'implémentation de l'interface et de l'état interne de l'ordonnanceur.
 
 	\section{Implémentation et modèle de l'état et de son interface}
+
+	\label{sec:sched_impl}
 
 	Cette section commence par rappeler le rôle de la monade d'état dans le monde mathématique et de la nécessité de son interface. Elle illustre ensuite le problème de \emph{dualité} des modèles et de l'objet réel modélisé avec un exemple s'étant présenté pendant l'implémentation.
 	Dans une seconde partie, cette section présente notre implémentation et les modèles relatifs à l'état et aux fonctions de l'interface. Elle décrit l'implémentation de l'interface avec la monade d'état, qui permet à la fonction d'élection d'intéragir avec l'état interne du programme.

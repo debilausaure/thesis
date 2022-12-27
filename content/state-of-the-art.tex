@@ -206,6 +206,8 @@ De nombreux travaux ont été menés afin de détecter les situations de concurr
 
 		\section{Ordonnancement}
 
+		\label{sec:scheduling_sota}
+
 		Le transfert de flot d'exécution est au coeur du fonctionnement de systèmes complexes, par exemple lors de l'ordonnancement au sein d'un système informatique. L'ordonnancement dans un système d'exploitation permet à plusieurs programmes de s'exécuter de manière concurrentielle sur le même processeur, en alternant leur exécution. L'ordonnanceur décide quel programme sera le prochain à s'exécuter sur une unité de calcul donnée, qu'il décide selon une \emph{politique d'ordonnancement}. Ces politiques sont multiples et visent à satisfaire des contraintes diverses, pouvant par exemple viser à exécuter les programmes interactifs de manière prioritaire, ou plus simplement à exécuter chaque programme l'un après l'autre. L'ordonnancement permet ainsi d'optimiser l'utilisation du processeur pour un objectif particulier. 
 
 			\subsection{Partage équitable du CPU}
@@ -222,15 +224,11 @@ De nombreux travaux ont été menés afin de détecter les situations de concurr
 
 		Les politiques d'ordonnancement se divisent en deux catégories : les politiques d'ordonnancement temps-réel et les autres. Les politiques d'ordonnancement temps réel sont dédiées au respect de contraintes temporelles associées aux processus à ordonnancer. Les autres politiques d'ordonnancement privilègient d'autres critères qui peuvent complètement varier selon les objectifs ciblés par la politique d'ordonnancement.
 
-		De nombreuses politiques d'ordonnancement existent :
-		\begin{itemize}
-			\item{tourniquet, fair-share, foreground-background }
-			\item{shortest job next, shortest remaining time (famine)}
-			\item{Highest response ratio next (variante de shortest job next proposant une réponse aux problèmes de famine)}
-			\item{Multilevel feedback queue (ancien, prix turing)}
-			\item{YDS (politique visant à minimiser la consommation énergétique, optimal quelques conditions)}
-		\end{itemize}
+		La politique d'ordonnancement la plus simple est celle du tourniquet (\emph{round-robin scheduling}) : une unique file des processus en attente d'exécution est maintenue par l'ordonnanceur, qui exécute le premier processus de la file. Au bout d'un certain temps, l'ordonnanceur arrête l'exécution du processus et le place à la fin de cette file, puis exécute le suivant. Cette politique favorise grandement l'équité entre les processus, en considérant que tous les processus ont la même priorité. Certaines variantes de cette politique existe, comme par exemple la politique \emph{fair-share}, qui divise équitablement le temps CPU entre les utilisateurs ou les groupes plutôt qu'entre les processus \cite{kay1988fair}. La politique \emph{foreground-background} \cite{nuyens2008foreground} permet aux processus nouvellement créés de bénéficier d'une période d'exécution prioritaire, et sont placés dans la file \emph{foreground}. À la fin de cette période d'exécution, le processus est placé dans la file \emph{background} qui est ordonnancée comme tous les autres processus avec une politique d'ordonnancement à tourniquet.
 
+		La politique \emph{shortest job next} ou sa version préemptive \emph{shortest remaining time next} exécutera en priorité les processus les plus courts ou ayant presque complété leur exécution. Cette politique maximise le débit, au détriment de l'équité. Cette politique se montre efficace pour ordonnancer le traitement de requêtes sur un serveur web \cite{alsa2008shortest}.
+
+		De très nombreuses politiques sont disponibles, chacunes conçues pour maximiser des objectifs particulier. Pour conclure ces exemples avec une politique créé pour maximiser un objectif peu commun, on pourrait par exemple citer la politique d'ordonnancement \emph{YDS} \cite{yao1995scheduling}, conçue pour minimiser l'énergie dépensée par le processeur à exécuter les processus.
 
 			\subsection{Respect des contraintes de temps}
 
@@ -255,6 +253,7 @@ De nombreux travaux ont été menés afin de détecter les situations de concurr
 		Dans les politiques d'ordonnancement temps réel à priorité dynamique, on retrouve notamment la politique d'ordonnancement \emph{Earliest Deadline First} \cite{liu1973scheduling}, qui priorise les processus ayant actuellement l'échéance la plus proche. La politique \emph{Earliest Deadline First} est optimale sur les tâches périodiques et apériodiques, pouvant atteindre 100\% de taux d'utilisation du processeur contrairement aux politiques d'ordonnacement à priorité fixe \cite{buttazzo2011hard}.
 
 	\section{Preuve de code}
+	\label{sec:proof_sota}
 
 	Cette section va décrire les notions et travaux nécessaires à la compréhension des contributions sur la preuve formelle de code décrits dans les chapitres suivants. La première sous-section décrira le processus de vérification automatique de preuves, en décrivant d'abord le processus de raisonnement automatique et introduisant les notions d'axiomes, d'hypothèses, ainsi que le déroulement de la preuve avec les règles d'inférence. Cette description sera ensuite illustrée par l'exemple de l'assistant de preuve Coq, outil de l'état de l'art que j'ai utilisé pour mes contributions. Enfin, la sous-section décrira les deux méthodes principales de raisonnement : la preuve directe et la preuve par raffinement.
 
@@ -470,4 +469,5 @@ $\partial x$ \cite{partialx, partialxrepo}, un autre outil récemment paru, perm
 
 	\section{Conclusion}
 
+	Ceci achève l'état de l'art présenté dans ce document. Les prochains chapitres décrivent les contributions de cette thèse, qui sont liés aux sujets présentés dans ce chapitre. En particulier, les 
 	\textcolor{red}{Montrer comment ces notions sont reliées par les travaux présentés par la suite}

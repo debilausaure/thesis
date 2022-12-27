@@ -29,6 +29,7 @@ La dernière section de ce chapitre reviendra sur la conception de ce service d'
 		Ces différents modes de transferts -- à priori différents -- reposent en réalité sur les mêmes abstractions de sauvegarde et de chargement de contextes d'exécutions et peuvent donc être factorisés. Cette factorisation est la dernière motivation majeure, réduisant l'ensemble des transferts de flot d'exécution à un simple fil d'exécution générique. Elle s'inscrit dans le courant minimaliste de Pip et permet d'éprouver sa méthodologie de co-design -- le but final de cette méthodologie étant de minimiser l'effort de preuve sur les services.
 
 	\section{Description du service}
+	\label{sec:service_desc}
 
 	Avant toute chose, il faut définir ce qu'on attend du service, sa spécification. En particulier, il s'agit de spécifier les transferts de flot de contrôle valides au sein du système, que ce soit pour les transferts explicites tels que les appels systèmes ou les transferts implicites comme les fautes ou les interruptions. Cette spécification doit pouvoir accomoder tous les cas d'usage de transfert de flot d'exécution au sein d'un noyau tel que Pip, conçu comme une tour de virtualisation.
 	
@@ -331,6 +332,7 @@ Plus simplement, les services de chaque partition sont définis dans leur \emph{
 		\end{figure}
 		\newpage
 	\section{Preuve d'isolation}
+	\label{sec:service_proof}
 
 		Cette section a pour but de décrire le processus d'établissement de la preuve d'isolation de Pip sur le service. La première sous-section décrira tout d'abord les nouvelles fonctions introduites dans l'interface de la monade d'état ainsi que la raison de leur inclusion. Ces fonctions sont accompagnées de nouveaux types, qui seront aussi explicités. La seconde sous-section fera un rappel des propriétés d'isolation de Pip. La dernière sous-section décrira le processus d'établissement de la preuve.\\
 
@@ -559,6 +561,8 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 			Dans Pip, il y a 25 propriétés annexes, qui décrivent comment sont organisées les structures de données internes de Pip. Ces propriétés sont appelées les propriétés de cohérence des structures du noyau. Ces propriétés ne seront pas détaillées ici, car seules certaines d'entre elles présentent un intérêt dans la preuve de préservation de l'isolation. Elles seront introduites au fil de l'eau dans les sections suivantes aux endroits pertinents.
 
 		\subsection{Déroulement de la preuve d'isolation}
+
+		\label{sec:service_proof_establish}
 
 		Il pourrait exister une multitude de preuves permettant d'arriver aux propriétés d'isolation. Cette section décrit la stratégie que j'ai utilisé pour conduire cette preuve.
 
@@ -968,13 +972,16 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 		\subsection{Modélisation}
 
-		\textcolor{red}{Parler des problèmes de modélisation ?}
+		Tous les modèles utilisés pour représenter l'objet étudié nous permettent de mieux comprendre l'objet réel. Le raisonnement est guidé par la représentation que nous avons de l'objet, qui évolue avec notre compréhension de l'objet. Ainsi, lorsque l'étude de l'objet avance, les modèles utilisés pour l'étude peuvent finalement représenter une vision partielle ou même erronnée de l'objet étudié : cette vision ayant été améliorée et élargie lors de son étude.
+
+	En ce sens, les modèles nous incitent à toujours apporter des modifications reflétant l'état actuel de notre compréhension de l'objet, puis dévoilants leurs nouvelles limites au fur et à mesure de l'étude de l'objet qu'ils représentent. Cette course sans fin est à l'origine des nouveaux modèles des fonctions et de la preuve exposée dans la section \ref{sec:service_proof}.
+
 
 		\subsection{Prise de recul sur la nature de la preuve}
 
 		\label{sec:proof_limits}
 
-		Le but ultime de l'établissement de cette preuve est de convaincre le plus rapidement possible l'assistant de preuve que la preuve est valide. Cette preuve est donc la preuve la plus rapide et non la preuve la plus didactique, à contrario de ce qui est habituellement recherché dans une preuve mathématique.
+		Le but ultime de l'établissement de cette preuve est de convaincre le plus rapidement et le plus robustement possible l'assistant de preuve que la preuve est valide. Cette preuve est donc la preuve la plus rapide et non la preuve la plus didactique, à contrario de ce qui est habituellement recherché dans une preuve mathématique.
 
 		La preuve de maintien de l'isolation pour ce service ne présentait que peu d'intérêt en dehors du contexte dans lequel elle a été réalisée : les écritures étant faites en espace utilisateur, il était évident que le preuve ne présenterait aucun obstacle majeur. Cette preuve me semblait presque être une tautologie des propriétés d'isolation : si Pip écrit dans l'espace d'adressage d'une partition cela brise-t'il les propriétés d'isolation ? Évidemment non, puisque les partitions, isolées et dénuées de privilèges, sont elles mêmes capables d'écrire dans leur propre espace d'adressage.
 
