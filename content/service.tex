@@ -992,8 +992,9 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 		Une alternative à cette démarche serait de réécrire des modèles en limitant le plus possible l'effort d'implémentation et le portage des anciennes preuves sur celui-ci. En particulier, si les propriétés à prouver (qui ne relèvent que du monde des mathématiques) diffèrent et sont amenées à évoluer, le code et l'interface de la monade restent constant dans tous ces modèles. Il serait alors intéressant de pouvoir garder intactes les preuves d'anciennes propriétés sur d'anciens modèles, tout en proposant de nouvelles propriétés sur de nouvelles implémentations du modèle. Cette piste de travail a mené à la troisième contribution de cette thèse.
 
-	\section{Conclusion}
-	- complète le travail de preuve initial
-	- valide l'approche en co-design, pertinence de la factorisation du code
-	- valide la méthodologie de preuve
-	- ce moyen fiable de transférer le flot d'exécution permet de s'intéresser à des problèmes plus complexes
+	\section{Synthèse du travail effectué et des contributions de ce chapitre}
+
+	Cette brève section vise à résumer les contributions des travaux présentés dans ce chapitre. Ce chapitre a présenté un service de transfert de flot d'exécution unifié au sein du noyau Pip dont la propriété formelle classique de Pip sur la préservation de l'isolation a été établie. Le service permet de gérer de manière unifiée les transferts explicites de flot d'exécution, les interruptions logicielles, les fautes, ainsi que les interruptions matérielles au travers de points d'entrées placés de manière opportune le long d'un fil d'exécution unique. Ce service de transfert de flot d'exécution, présenté ici pour l'architecture Intel x86, n'est cependant pas spécifique à cette architecture, et a notamment été implémenté sur l'architecture Armv7.
+	Les modèles ayant permis la preuve de préservation de l'isolation initiale ont été enrichis, décrivant de manière plus précise les comportements du service ; ce document présente une ébauche détaillée de preuve de préservation de l'isolation sur ces modèles.
+
+	De plus, ces travaux viennent contribuer à la complétion de la preuve de préservation de l'isolation sur l'ensemble des services de Pip. Ils corroborent les résultats de la méthodologie de co-design de Pip, visant à fournir les services strictement nécessaires à un système fonctionnel tout en réduisant l'effort de preuve requis.

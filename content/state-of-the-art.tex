@@ -178,7 +178,7 @@ Il est parfois reproché à cette fonctionnalité qu'elle relève de la sécurit
 
 Ces contre-mesures, sans cesse contournées par de nouvelles méthodes d'attaque, supposent qu'il existera toujours des vulnérabilités dans le logiciel comme dans le matériel et tentent donc de limiter au maximum leur impact sur les systèmes affectés. Une toute autre classe de mesures essaie de régler le problème en s'attaquant à l'existence même des vulnérabilités, plutôt que d'essayer minimiser leurs conséquences.
 
-On pourrait citer les méthodes d’analyse statique \cite{ball2006thorough}, les méthodes d’exécution symbolique \cite{baldoni2018survey}, de fuzzing \cite{schumilo2017kafl}, et plus particulièrement le langage Rust \cite{matsakis2014rust, rustwebsite} conçu pour éradiquer ces vulnérabilités par conception. Par ailleurs, de récents travaux ont commencé à s'intéresser formellement aux fonctionnalités de Rust \cite{jung2017rustbelt}.
+Les méthodes formelles, qui feront l'objet d'une section à part entière dans cet été de l'art (voir \ref{sec:proof_sota}), en font partie. On pourrait aussi citer les méthodes d’analyse statique \cite{ball2006thorough}, les méthodes d’exécution symbolique \cite{baldoni2018survey}, de fuzzing \cite{schumilo2017kafl}, et plus particulièrement le langage Rust \cite{matsakis2014rust, rustwebsite} conçu pour éradiquer ces vulnérabilités par conception. Par ailleurs, de récents travaux ont commencé à s'intéresser formellement aux fonctionnalités de Rust \cite{jung2017rustbelt}.
 
 		\subsection{Sécurité relative aux transferts de flot d'exécution externes}
 
@@ -467,7 +467,12 @@ $\partial x$ \cite{partialx, partialxrepo}, un autre outil récemment paru, perm
 	\paragraph{Méthodologie de preuve} Pip a pris le contrepied des projets majeurs du domaine en utilisant un \emph{shallow embedding} de C plutôt que d'utiliser un \emph{deep embedding}. Ce \emph{shallow embedding} nécessite l'utilisation d'une monade d'état en Coq (voir \ref{monad}) et d'un outil spécifique (voir $\partial x$ \ref{compilation}) afin de reconstruire l'AST ou le code source du noyau pour produire un binaire exécutable.
 	Le pari de cette méthodologie est de pouvoir se concentrer sur la sémantique des programmes à prouver afin d'alléger l'effort de preuve général par rapport aux méthodologies utilisant un \emph{deep embedding}. Par ailleurs, les propriétés de préservation de l'isolation de Pip ont été prouvées directement plutôt que par raffinement.
 
-	\section{Conclusion}
+	\section{Relation entre l'état de l'art et les chapitres de contribution}
 
-	Ceci achève l'état de l'art présenté dans ce document. Les prochains chapitres décrivent les contributions de cette thèse, qui sont liés aux sujets présentés dans ce chapitre. En particulier, les 
-	\textcolor{red}{Montrer comment ces notions sont reliées par les travaux présentés par la suite}
+	Ceci achève l'état de l'art présenté dans ce document. Les prochains chapitres décrivent les contributions de cette thèse, qui sont liés aux sujets présentés dans ce chapitre.
+
+	En particulier, les notions relatives au transfert de flot d'exécution ainsi que le fonctionnement des droits et des élévations de privilèges sur l'architecture Intel x86 sont exploitées dans le chapitre suivant par la première contribution, présentant le service de transfert de flot d'exécution de Pip sur l'architecture Intel x86. Ce chapitre se sert aussi des notions sur la preuve de propriétés formelles sur du code présentées dans la section \ref{sec:proof_sota}, afin de décrire le déroulement de la preuve de préservation de l'isolation sur ce service.
+
+	Le second chapitre de contribution, décrivant un ordonnanceur \emph{Earliest Deadline First} dont la fonction d'élection est prouvée correcte, repose sur les notions d'ordonnancement présentées en section \ref{sec:scheduling_sota}. Ce chapitre se sert aussi de certaines notions décrites dans la section \ref{sec:proof_sota} pour relater le déroulement de la preuve de correction de la fonction d'élection.
+
+	Le dernier chapitre de contribution, décrivant une évolution de l'architecture de Pip séparant la définition des modèles d'isolation du code des services de Pip, repose intégralement sur la section \ref{sec:proof_sota}.
