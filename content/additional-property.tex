@@ -105,9 +105,7 @@ Cette dépendance renforce les liens entre le modèle d'isolation de Pip et le c
 		
 	\section{Abstraction des modèles dans le code des services de Pip}
 
-	\textcolor{red}{FUTUR !}
-
-	Cette section détaillera l'objet de la preuve de concept mise à l'honneur dans ce chapitre : la modularisation des modèles et preuves des services de Pip, ainsi que l'autonomie du code des services vis à vis des modèles. Elle commencera par donner une vue globale de la nouvelle architecture du projet, indiquant les nouvelles relations entre les différents composants du projet. Dans un second temps, elle détaillera les interfaces créées, en illustrant les changements apportés à Pip du point de vue de la fonction \texttt{switchContextCont}, utilisée comme exemple dans la section précédente. Cette section mettra en évidence les différences avec l'implémentation précédente dépendantes des modèles. Cette seconde partie décrira aussi le processus d'extraction de l'\emph{AST} du code des services. Dans une dernière partie, cette section décrira la nouvelle structure des fichiers de preuve, en illustrant les différences (plus conceptuelles) avec l'architecture précédente.
+	Cette section détaille l'objet de la preuve de concept mise à l'honneur dans ce chapitre : la modularisation des modèles et preuves des services de Pip, ainsi que l'autonomie du code des services vis à vis des modèles. Elle commence par donner une vue globale de la nouvelle architecture du projet, indiquant les nouvelles relations entre les différents composants du projet. Dans un second temps, elle détaille les interfaces créées, en illustrant les changements apportés à Pip du point de vue de la fonction \texttt{switchContextCont}, utilisée comme exemple dans la section précédente. Cette section met en évidence les différences avec l'implémentation précédente dépendantes des modèles. Cette seconde partie décrit aussi le processus d'extraction de l'\emph{AST} du code des services. Dans une dernière partie, cette section décrit la nouvelle structure des fichiers de preuve, en illustrant les différences (plus conceptuelles) avec l'architecture précédente.
 		
 		\subsection{Vue générale}
 
@@ -259,11 +257,9 @@ Module IsolationSpecificCode :=
 		De plus, l'établissement de propriétés de bon fonctionnement sur le service de tranfert de flot d'exécution permettrait d'étudier à quel point il est possible de réutiliser les propriétés prouvées formellement sur la base de confiance (\emph{TCB}) afin d'établir de nouvelles propriétés sur un nouvel objet. 
 		\subsubsection{Lien entre la preuve de bon fonctionnement et le back end de l'ordonnanceur}
 	
-		\textcolor{red}{Rappel composition vetticale}
-
 		Cette perspective de recherche pourrait se concrétiser sur l'établissement d'une preuve de correction du \emph{back-end} de l'ordonnanceur présenté dans le chapitre précédent reposant sur la preuve de correction du service de transfert de flot d'exécution. Cette preuve se servirait des propriétés sur la sauvegarde et la restauration de contextes du service pour transférer le flot d'exécution aux \emph{jobs} élus par la fonction d'élection, et montrerait que les \emph{jobs} élus par la fonction d'élection sont effectivement exécutés après leur élection.
 
-		Cette perspective de recherche mettrait en évidence une composition verticale de propriétés formellement prouvées, dont le lien entre les morceaux de logiciels munis de propriétés formelles est direct : c'est à dire sans l'intermédiaire de code inclus dans la base de confiance. 
+		Cette perspective de recherche mettrait en évidence une composition verticale de propriétés formellement prouvées. Pour rappel, la composition verticale consiste à faire profiter aux logiciels ayant des dépendances des propriétés prouvées sur leurs dépendances. La particularité intéressante de cette composition verticale est que le lien entre les morceaux de logiciels munis de propriétés formelles serait direct : c'est à dire sans l'intermédiaire de code inclus dans la base de confiance. 
 
 		\subsection{Discussion sur la coexistence de preuve sur des modèles distincts}
 
