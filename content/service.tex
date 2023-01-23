@@ -515,9 +515,9 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 			La fonction \texttt{getPartitions} récupère les pages contenant les descripteurs de partitions. La fonction \texttt{getChildren} recupère la liste des pages contenant les descripteurs de partitions de tous les enfants de la partition passée en paramètre. La fonction \texttt{getUsedPages} récupère l'ensemble des pages mémoires renseignées dans les structures de données de la partition passée en paramètre. Cela inclus les structures internes de Pip ainsi que la description de l'espace d'adressage de la partition.
 
 			La propriété peut être lue de la sorte :
-			\begin{theorem}
+			\begin{property}
 				Pour toutes pages de mémoire \texttt{parent}, \texttt{child1} et \texttt{child2}. Si \texttt{parent} est dans la liste des descripteurs de partitions, si \texttt{child1} et \texttt{child2} sont tous deux dans la liste des partitions enfant de \texttt{parent}, et si \texttt{child1} et \texttt{child2} sont différents, alors l'ensemble des pages utilisées par la partition \texttt{child1} est disjoint de l'ensemble des pages utilisées par la partition \texttt{child2}.
-			\end{theorem}
+			\end{property}
 
 			\subsubsection{Isolation noyau}
 			\label{sec:kernel_isolation}
@@ -534,9 +534,9 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 			La fonction \texttt{getAccessibleMappedPages} permet de récupérer les pages de mémoire renseignées comme accessibles sans privilège dans l'espace d'adressage de la partition passée en paramètre. La fonction \texttt{getConfigPages} permet de récupérer l'ensemble des pages de mémoire de la partition passée en paramètre contenant les structures internes à Pip.
 
 			La propriété peut être lue de la sorte :
-			\begin{theorem}
+			\begin{property}
 				Pour toutes pages de mémoire \texttt{partition1} et \texttt{partition2}. Si \texttt{partition1} et \texttt{partition2} sont toutes deux dans la liste des descripteurs de partitions, alors l'ensemble des pages contenant les structures internes de Pip relatives à la \texttt{partition2} est disjoint de l'ensemble des pages accessibles à la \texttt{partition1}.
-			\end{theorem}
+			\end{property}
 
 			\subsubsection{Partage vertical}
 
@@ -552,9 +552,9 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 			La propriété peut être lue de la manière suivante :
 
-			\begin{theorem}
+			\begin{property}
 				Pour toutes pages mémoire \texttt{parent} et \texttt{child}, si \texttt{parent} fait partie de la liste des descripteurs de partitions et que \texttt{child} est dans la liste des descripteurs de partitions enfant de \texttt{parent}, alors l'ensemble des pages relatives à \texttt{child} est inclus dans l'ensemble des pages mappées dans l'espace d'adressage de la partition \texttt{parent}.
-			\end{theorem}
+			\end{property}
 
 			\subsubsection{Propriétés de cohérence des structures du noyau}
 
@@ -649,9 +649,9 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 				\mathtt{contextEndPage} &\in \mathtt{getAccessibleMappedPages}~p~s
 			\end{align*}
 
-			\begin{theorem}
+			\begin{property}
 				Il existe une partition $p$ valide dans l'état $s$, telle que les pages \texttt{contextPage} et \texttt{contextEndPage} sont dans l'espace d'adressage de $p$ et accessibles sans privilège, comme calculé par la fonction \texttt{getAccessibleMappedPages}.
-			\end{theorem}
+			\end{property}
 
 			\paragraph{Démonstration que les pages n'appartiennent pas aux pages de configuration}
 
@@ -663,10 +663,10 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 				\mathtt{contextEndPage}~&\notin~\mathtt{getConfigPages}~p~s
 			\end{align*}
 
-			\begin{theorem}
+			\begin{property}
 				Pour toute partition $p$ valide dans l'état $s$, les pages \texttt{contextPage} et \texttt{contextEndPage} ne sont pas dans l'ensemble des pages de configuration de la partition $p$, comme calculé par la fonction \texttt{getConfigPages}.
 			\label{prop:pagesnotconfig}
-			\end{theorem}
+			\end{property}
 
 			Cette propriété peut être déduite de la propriété d'isolation du noyau \texttt{kernelDataIsolation} que voici :
 
@@ -699,10 +699,10 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 				        e~&=~(\mathtt{contextEndPage}~i)~*~\mathtt{defaultVAddr}
 			\end{align*}
 
-			\begin{theorem}
+			\begin{property}
 				Il existe un ensemble $E$ de couples d'adresses et de valeurs, tel que la mémoire de l'état $s'$ peut être représentée par l'union de la mémoire de l'état $s$ avec l'ensemble $E$, et pour toute paire d'adresse et de valeur $e$ appartenant à l'ensemble $E$, alors il existe un indice $i$, tel que $e$ est constitué d'une adresse pointant vers la page \texttt{contextPage} à l'indice $i$ ou la page \texttt{contextEndPage} et l'indice $i$, et dont la valeur à cette adresse est une valeur par défaut.
 			\label{prop:s'redef}
-			\end{theorem}
+			\end{property}
 
 			Cette propriété se déduit de l'appel à la fonction \texttt{writeContext} (voir listing \ref{code:writeContextModel}), et plus particulièrement de la fonction \texttt{storeVirtual}. Cette fonction simule l'activité de la MMU en traduisant l'adresse virtuelle passée en paramètre et en écrivant à cette adresse. C'est pourquoi cette preuve requiert des préconditions supplémentaires à celles déjà identifiées. Une première garantit que l'adresse virtuelle de sauvegarde de contexte \texttt{sourceContextSaveVAddr} passée à la fonction \texttt{writeContext} correspond à la page de mémoire réelle \texttt{contextPage}. La seconde garantit que la dernière adresse virtuelle du contexte \texttt{sourceContextEndSaveVAddr} correspond bien à la page de mémoire réelle \texttt{contextEndPage}, afin de pouvoir fournir la preuve que la page reste accessible même si les écritures de \texttt{writeContext} débordent sur la page suivante. On suppose aussi que la taille d'un contexte d'exécution est inférieure à celle d'une page mémoire, cette propriété est ajoutée en tant qu'axiome.
 
@@ -715,10 +715,10 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 				\mathtt{getConfigPages}~p~s~&=~\mathtt{getConfigPages}~p~s'
 			\end{align*}
 
-			\begin{theorem}
+			\begin{property}
 				\label{prop:sameconfigpages}
 				Pour toute partition $p$ valide dans l'état $s$, l'ensemble des pages de configuration de la partition $p$ dans l'état $s$ est égal à l'ensemble des pages de configuration de la partition dans l'état $s'$.
-			\end{theorem}
+			\end{property}
 
 			Cette propriété se déduit de la propriété \ref{prop:s'redef} précédente redéfinissant $s'$ en définissant l'ensemble $E$ contenant toutes les écritures de la fonction \texttt{writeContext}, et de la propriété \ref{prop:pagesnotconfig} indiquant que les pages \texttt{contextPage} et \texttt{contextEndPage} ne font partie des pages de configuration d'aucune partition valide dans l'état $s$.
 			De cette manière, on pourrait réaliser une preuve par récurrence sur l'ensemble E pour raisonner de manière générique sur chaque élément. L'hypothèse de récurrence est la suivante :
