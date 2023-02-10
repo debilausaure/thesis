@@ -8,7 +8,7 @@
 
 		\subsection{Définitions}
 
-		\paragraph{Flôt d'exécution}
+		\paragraph{Flot d'exécution}
 
 \label{context}
 			Un flot d'exécution est une trame de modifications successives de l'état de la machine, animée par la récupération et l'exécution machinale d'instructions assembleur contigües par le processeur. Cette trame est l'œuvre d'une entité qui a conçu le code et les conditions d'exécution nécessaires permettant d'aboutir à un résultat. Ces conditions d'exécution (ou \emph{contexte d'exécution}) peuvent comprendre n'importe quel sous-ensemble de l'état de la machine, comme l'état de certains registres du processeur ou l'état d'une partie de la mémoire par exemple. Une certaine notion de confiance est liée à chaque fil d'exécution, qui peut se refléter sur les droits accordés à celui-ci.
@@ -83,9 +83,9 @@ pour qu'il utilise une certaine plage de niveaux d'interruption, ou pour qu'il m
 
 \paragraph{Fonctionnement de la \emph{MMU} sur l'architecture Intel 32 bits}
 \label{sec:intel_mmu}
-Sur l'architecture Intel x86, mais aussi sur toutes les autres architectures supportant une \emph{MMU} (pour \emph{Memory Management Unit}), il est possible d'associer des droits d'accès spécifiques à chaque pages de mémoire configurée dans l'espace d'adressage virtuel.
+Sur l'architecture Intel x86, mais aussi sur toutes les autres architectures supportant une \emph{MMU} (pour \emph{Memory Management Unit}), il est possible d'associer des droits d'accès spécifiques à chaque page de mémoire configurée dans l'espace d'adressage virtuel.
 
-Le concept de traduction d'adresse virtuelle vers l'adresse réelle est le suivant. Les bits de poids fort de l'adresse virtuelle servent à traverser les tables de la MMU (sur l'architecture Intel x86, le \emph{Page Directory} et les \emph{Page Tables}). Les bits de poids faible, quand à eux, correspondent à l'emplacement de l'adresse désirée dans la page réelle obtenue après traduction (souvent appelé \emph{offset}).
+Le concept de traduction d'adresse virtuelle vers l'adresse réelle est le suivant. Les bits de poids fort de l'adresse virtuelle servent à traverser les tables de la MMU (sur l'architecture Intel x86, le \emph{Page Directory} et les \emph{Page Tables}). Les bits de poids faible, quant à eux, correspondent à l'emplacement de l'adresse désirée dans la page réelle obtenue après traduction (souvent appelé \emph{offset}).
 
 En particulier, sur Intel x86 et en mode de pagination 32 bits pour des pages de 4 Kio, les espaces d'adressage sont configurés par une structure de données arborescente de pages de 4 Kio. Cette structure de données a deux étages : la racine appelée PD pour \emph{Page Directory}, et les feuilles appelées PT (pour \emph{Page Tables}). Le développeur renseigne l'adresse du Page Directory à utiliser dans le registre \texttt{CR3} du processeur ; cette adresse est alignée sur 4 Kio, les 12 bits de poids faible (11-0) sont ignorés ou réservés pour un autre usage.
 
@@ -171,7 +171,7 @@ Une autre approche permettant de réduire la marge de manoeuvre de l'attaquant e
 
 \paragraph{eXecute Only Memory}
 \label{execute_only_memory}
-Le XOM (pour \emph{eXecute Only Memory}), est une fonctionnalité de certain processeurs permettant de déclencher une faute lorsqu'un accès en lecture est fait sur les pages mémoires configurées comme étant exécutables. Avant cette fonctionnalité, aucune distinction n'était faite entre le processus de récupération des instructions par le processeur et la lecture de données par l'utilisateur. Cette fonctionnalité rend considérablement pour difficile la recherche de gadgets, puisqu'il est impossible pour l'attaquant de lire le code qu'il souhaite compromettre directement sur la cible.
+Le XOM (pour \emph{eXecute Only Memory}), est une fonctionnalité de certains processeurs permettant de déclencher une faute lorsqu'un accès en lecture est fait sur les pages mémoires configurées comme étant exécutables. Avant cette fonctionnalité, aucune distinction n'était faite entre le processus de récupération des instructions par le processeur et la lecture de données par l'utilisateur. Cette fonctionnalité rend considérablement plus difficile la recherche de gadgets, puisqu'il est impossible pour l'attaquant de lire le code qu'il souhaite compromettre directement sur la cible.
 Il est parfois reproché à cette fonctionnalité qu'elle relève de la sécurité par l'obscurité, et qu'elle n'est pas réellement efficace.
 
 \paragraph{\blockquote{Mieux vaut prévenir que guérir}}
@@ -406,7 +406,7 @@ CompCert compile le programme source $S$ à partir de son \emph{Abstract Syntax 
 
 À ce jour, le projet CompCert a prouvé 90\% de la chaîne de compilation, notamment les algorithmes d'optimisation et de génération de code assembleur. Les 10\% restants à prouver incluent l'assemblage et la phase d'édition des liens \cite{compcert_online}.
 
-Les projets ayant recours à la vérification de programme par \emph{deep embedding} ont l'avantage de pouvoir aisément reconstruire l'\emph{AST} du programme et de le compiler grâce à CompCert. Cependant, pour les projets utilisant un \emph{shallow embedding} et n'explicitant pas l'\emph{AST} du programme vérifié, l'étape de reconstruction du programme n'est pas triviale.
+Les projets ayant recours à la vérification de programme par \emph{deep embedding} ont l'avantage de pouvoir aisément reconstruire l'\emph{AST} du programme et de le compiler, notamment grâce à CompCert. Cependant, pour les projets utilisant un \emph{shallow embedding} et n'explicitant pas l'\emph{AST} du programme vérifié, l'étape de reconstruction du programme n'est pas triviale.
 
 \emph{Digger}~\cite{digger} est un outil écrit en Haskell qui transforme le code shallow embedded écrit en Gallina en code source C. Digger n'est pas muni de preuve formelle de préservation de la sémantique. Cet outil ne permet pas de prouver l'équivalence entre le code shallow embedded et le code finalement exécuté.
 

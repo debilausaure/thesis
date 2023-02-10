@@ -243,9 +243,7 @@ Plus simplement, les services de chaque partition sont définis dans leur \emph{
 			\label{code:getParentPartDescCont}
 		\end{listing}
 
-		Cependant, l'appel de ce bloc de code n'est pas trivial après une faute, car les paramètres attendus par le bloc de code \texttt{getParentPartDescCont} ne sont pas immédiatemment disponibles à Pip. En effet, ces arguments ne sont en aucun cas fournis par la partition fautive, à contrario des arguments attendus par le service lors d'un appel explicite. La prémière étape pour Pip est donc de récupérer ces arguments. 
-
-		La prémière étape pour Pip est donc de récupérer ces arguments. 
+		Cependant, l'appel de ce bloc de code n'est pas trivial après une faute, car les paramètres attendus par le bloc de code \texttt{getParentPartDescCont} ne sont pas immédiatemment disponibles à Pip. En effet, ces arguments ne sont en aucun cas fournis par la partition fautive, à contrario des arguments attendus par le service lors d'un appel explicite. La première étape pour Pip est donc de récupérer ces arguments. 
 
 		Il s'agit d'abord de récupérer le contexte d'exécution de la partition fautive. Comme expliqué précédemment dans la section \ref{sec:faults}, lorsqu'une faute survient, le processeur va chercher la \emph{gate} installée dans l'\emph{IDT} dont le numéro correspond au niveau de la faute. Dans Pip, ces \emph{gates} sont toutes des \emph{interrupt gates}, qui s'exécutent en mode privilégié.
 
@@ -366,7 +364,7 @@ Record interruptMask := {
 
 		Certaines de ces nouvelles fonctions font partie de l'interface des nouveaux types présentés dans les paragraphes précédent. Tout d'abord le type \texttt{userValue} a engendré deux nouvelles fonctions :
 		\paragraph{\mintinline{c}{bool checkIndexPropertyLTB(userValue userIndex);}}~\\
-		Cette fonction retourne vrai si la valeur passée en paramètre respecte la contrainte du type \texttt{index} ; la valeur doit être inférieure au nombre de mots mémoire dans une page. Voici son modèle :
+		Cette fonction retourne vrai si la valeur passée en paramètre respecte la contrainte du type \texttt{index} ; la valeur doit être inférieure au nombre de mots mémoire dans une page. Son modèle est disponible en listing \ref{code:checkIndexPropertyLTB}.
 
 		\begin{listing}[!ht]
 			\begin{minted}{coq}
@@ -374,6 +372,7 @@ Definition checkIndexPropertyLTB (userIndex : userValue) : LLI bool :=
 ret (Nat.ltb userIndex tableSize).
 			\end{minted}
 			\caption{Modèle de la fonction \texttt{checkIndexPropertyLTB}}
+			\label{code:checkIndexPropertyLTB}
 		\end{listing}
 		Cette fonction de l'interface a cependant été maladroitement choisie, car le choix de la valeur de la comparaison \texttt{tableSize} relève de la responsabilité de l'implémentation, alors qu'elle aurait pu rester dans le code du service. La fonction pertinente à ajouter dans l'interface au lieu de celle-ci aurait dû être la fonction de comparaison entre une \texttt{userValue} et un \texttt{index}.
 
@@ -620,7 +619,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 				\label{code:kernelIsolationUpdateCurPartUnfold}
 			\end{listing}
 
-			Cette propriété utilise trois fonctions sur l'état : \texttt{getPartitions}, \texttt{getAccessibleMappedPages} et \texttt{getConfigPages}. La première étape est de montrer que le résultat produit par ces fonctions ne dépend pas du champ \texttt{currentPartition} de l'état. Par exemple pour la fonction \texttt{getPartitions}, on veut montrer :
+			Cette propriété utilise trois fonctions sur l'état : \texttt{getPartitions}, \texttt{getAccessibleMappedPages} et \texttt{getConfigPages}. La première étape est de montrer que le résultat produit par ces fonctions ne dépend pas du champ \texttt{currentPartition} de l'état. Par exemple pour la fonction \texttt{getPartitions}, on veut montrer la propriété décrite en listing \ref{code:partitionTreeRemains}.
 
 			\begin{listing}[!ht]
 				\coqcode{code/partitionTreeRemains.v}
@@ -963,7 +962,7 @@ Fixpoint writeContextAux (contextSaveAddr : vaddr) (currIdx : index)
 
 		\subsection{Métriques}
 
-		Le nouveau service compte 417 lignes de code Coq. Ce code est très peu dense, et a été écrit pour maximiser la lisibilité. Par exemple, certains appels de fonction se retrouvent sur plusieurs lignes et des commentaires parsèment le code. À titre de comparaison, le code C généré par Digger comprend 471 lignes ; ce code comprend un appel de fonction, un argument, ou une accolade par ligne, sans commentaire.
+		Le nouveau service compte 417 lignes de code Coq. Ce code est très peu dense, et a été écrit pour maximiser la lisibilité. Par exemple, certains appels de fonction se retrouvent sur plusieurs lignes et des commentaires parsèment le code. À titre de comparaison, le code C généré par Digger (l'outil permettant de compiler notre code shallow-embedded vers du C, voir section \ref{compilation}) comprend 471 lignes ; ce code comprend un appel de fonction, un argument, ou une accolade par ligne, sans commentaire.
 
 		Le nombre de lignes de code permettant d'appeler le code du service représente environ 1000 lignes de code C et assembleur sur l'architecture Intel x86 (en incluant les commentaires). Néanmoins, ce code est \emph{particulièrement peu dense} de par sa complexité ; en moyenne, pour chaque ligne de code ou instruction assembleur, il y a environ deux lignes de commentaires. 
 		Pour rappel, ce service permet de gérer tous les transferts de flot d'exécution au sein d'un système. 

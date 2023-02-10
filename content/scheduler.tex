@@ -386,7 +386,8 @@ mk_State {
 \end{listing}
 
 	La monade d'état, composé de l'environnement et de la partie mutable, a le type suivant :
-\begin{listing}[ht]
+
+\begin{listing}[!ht]
 	\begin{minted}{coq}
 Definition RT (A : Type) : Type :=
     Env -> State -> A * State.
@@ -394,6 +395,7 @@ Definition RT (A : Type) : Type :=
 	\caption{Définition du type de la monade d'état et d'environnement}
 	\label{code:monad_type}
 \end{listing}
+
 	Dans notre modèle, chaque fonction monadique a un type de retour \texttt{RT A}, et prend donc en paramètre l'environnement et l'état mutable actuel et renvoie une valeur de type arbitraire \texttt{A} ``enrobée'' avec la nouvelle partie mutable de l'état.
 
 	Les paragraphes suivants décrivent comment l'état est implémenté.
@@ -401,8 +403,8 @@ Definition RT (A : Type) : Type :=
 
 	Notre implémentation fournit un ensemble jouet de job à ordonnancer sous la forme d'un tableau de \texttt{coq\_N} éléments (où \texttt{coq\_N} est une borne supérieure au nombre de \emph{jobs} à ordonnancer connue à la compilation). Les jobs sont discriminés par leur position au sein de ce tableau. Chaque élément de ce tableau correspond donc à un \emph{job} de l'ensemble à ordonnancer. Il contient les informations immuables qui le caractérisent (par exemple sa \emph{release date}, son échéance, son budget temporel d'exécution), ainsi qu'une portion de mémoire non initialisée qui sera utilisée par la fonction d'élection pour y écrire la structure \texttt{entry} qui lui est associée. De plus, chaque élément contient deux mots mémoire supplémentaires. Ils sont utilisés pour maintenir deux listes nécessaires au fonctionnement de l'ordonnanceur. La première est la liste des nouveaux \emph{jobs} à ordonnancer, exposée par l'environnement et maintenue par le \emph{back-end}. La seconde est la liste des \emph{jobs} prêt à être exécutés, maintenue par la fonction d'élection.
 
-	Chaque élément est représenté en C avec le type suivant :
-	\begin{listing}[!hb]
+	Chaque élément est représenté en C avec le type décrit en listing \ref{code:array_elem_impl}.
+	\begin{listing}[!ht]
 	\begin{minted}{c}
 typedef struct __internal_s__ {
     struct __internal_job__   job;
@@ -415,15 +417,6 @@ typedef struct __internal_s__ {
 	\label{code:array_elem_impl}
 	\end{listing}
 
-	L'implémentation de l'état, donnée en listing \ref{code:sched_state_impl}, est donc constituée :
-	\begin{itemize}
-		\item du tableau contenant les informations sur les \emph{jobs} et l'espace supplémentaire requis par la fonction d'élection pour y stocker les structures \texttt{entry}
-		\item d'une référence vers la liste des nouveaux \emph{jobs} à ordonnancer
-		\item d'une référence vers la liste des \emph{jobs} prêts à être ordonnancés
-		\item de la variable gardant le compte des interruptions d'horloge
-		\item de la variable indiquant si le dernier \emph{job} exécuté a terminé son exécution
-	\end{itemize}
-
 	\begin{listing}[!ht]
 	\begin{minted}{c}
 internal_t INTERNAL_ARRAY[coq_N] = EXAMPLE_JOB_SET;
@@ -435,6 +428,15 @@ coq_CBool JOB_DONE = false;
 	\caption{Implémentation de l'environnement et de la partie mutable de l'état de l'ordonnanceur}
 	\label{code:sched_state_impl}
 	\end{listing}
+
+	L'implémentation de l'état, donnée en listing \ref{code:sched_state_impl}, est donc constituée :
+	\begin{itemize}
+		\item du tableau contenant les informations sur les \emph{jobs} et l'espace supplémentaire requis par la fonction d'élection pour y stocker les structures \texttt{entry}
+		\item d'une référence vers la liste des nouveaux \emph{jobs} à ordonnancer
+		\item d'une référence vers la liste des \emph{jobs} prêts à être ordonnancés
+		\item de la variable gardant le compte des interruptions d'horloge
+		\item de la variable indiquant si le dernier \emph{job} exécuté a terminé son exécution
+	\end{itemize}
 
 	\subsubsection{Oracles}
 
