@@ -1,5 +1,7 @@
 % This file should contain the abstract.
 
+\vfil
+
 Les travaux présentés dans ce document de thèse sont liés à la vérification formelle de propriétés sur des composants de systèmes d'exploitation. Les premiers travaux piliers de ce domaine sont ceux du projet seL4 ; démontrant que la vérification de propriétés formelles sur un micro noyau est réalisable, malgré un coût élevé. Pour réduire le coût de la preuve, le projet CertikOS a proposé une méthode de preuve plus étagée et plus modulaire, en tirant à l'extrême la méthode de preuve par raffinement. L'équipe du noyau Pip a pris le contrepied de ces travaux, en prônant le minimalisme, en utilisant une méthodologie reposant sur un \emph{shallow embedding} et en prouvant les propriétés désirées directement plutôt qu'en utilisant la méthode par raffinement.
 
 Les travaux présentés dans cette thèse sont plus spécifiquement liés au noyau Pip. Les travaux précédents sur le noyau Pip ont porté sur une preuve de préservation de l'isolation des services fournis par Pip manipulant la mémoire. Cependant, un aspect critique du noyau devait encore être conçu : le transfert de flot d'exécution d'une partition de mémoire à une autre.
@@ -9,3 +11,5 @@ La première contribution de cette thèse présente un nouveau service de Pip co
 La seconde contribution de cette thèse est la première implémentation au monde d'un ordonnanceur \emph{Earliest Deadline First} pour jobs arbitraires muni d'une preuve formelle de sa correction. La preuve garantit que la fonction d'élection respecte la politique \emph{EDF}, garantissant l'optimalité du planning sur les machines mono-processeur. La preuve a été conduite en partie en suivant la méthodologie habituelle de Pip, utilisant un \emph{shallow embedding} et une monade d'état. Elle a cependant été réalisée par raffinement. De plus, l'ordonnanceur se sert du service de transfert de flot d'exécution ; montrant la polyvalence et l'utilisabilité du service.
 
 La dernière contribution présentée dans cette thèse est une preuve de concept libérant le code des services de Pip de ses liens avec le modèle d'isolation. Cette indépendance permet de créer des modèles alternatifs, permettant de raisonner sur le code à propos de nouvelles propriété tout en limitant l'effort de preuve. Cette contribution ouvre de nouvelles perspectives de recherche liées à la réduction du coup de raisonnement sur des propriétés additionnelles sur Pip. Cette preuve de concept n'apporte cependant pas que des avantages : en particulier sur la confiance accordée à la conjonction de propriétés formellement prouvées sur des modèles différents.
+
+\vfil

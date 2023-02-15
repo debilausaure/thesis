@@ -1,4 +1,6 @@
 % This file should contain the English abstract.
+\vfil
+
 The work described in this document is related to formal proofs on operating systems.
 
 The first breakthrough in the domain was the SeL4 project ; demonstrating that producing a complete proof on a microkernel was achievable, albeit very costly. 
@@ -12,3 +14,5 @@ The first contribution of this thesis outlines the design of a single service ab
 The second contribution outlined in this thesis is the first formally proven correct userland implementation of an Earliest Deadline First scheduler for arbitrary jobs. The formal proof guarantees that the scheduler's election function respects the Earliest Deadline First scheduling policy, and is guaranteed to be optimal on mono-processor systems. This proof was partly conducted using Pip's usual methodology, leveraging a shallow embedding of the scheduler's code in Coq and a state monad. Nonetheless, while the Pip kernel properties were proven directly, the presented scheduler proofs include three refinement levels ; from the scheduling policy to the actual implementation. Furthermore, the scheduler uses the previously described service in order to pass the control flow to partitions and regain the execution flow through interrupts, showcasing its usability and versatility.
 
 The last contribution presented in this thesis is a proof of concept severing Pip's isolation model from its code. This isolation model independance allows to build alternative models designed to reason on new properties while limiting the proof effort. As such, this contribution opens new research perspectives that were previously too costly to consider. Nonetheless, this proof of concept does not bring the same level of confidence on the composition of properties about the code formally proven on different models.
+
+\vfil
